@@ -30,5 +30,5 @@ return [
     | from MCP servers will be cached. Set to 0 to disable caching entirely.
     |
     */
-    'cache_duration' => env('RELAY_TOOLS_CACHE_DURATION', 60),
+    'cache_duration' => env('RELAY_TOOLS_CACHE_DURATION', 0),
 ];

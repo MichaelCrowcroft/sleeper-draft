@@ -19,7 +19,12 @@ class HealthCheckTool implements ToolInterface
 
     public function inputSchema(): array
     {
-        return ['type' => 'object', 'properties' => (object) [], 'additionalProperties' => false];
+        return [
+            'type' => 'object',
+            'properties' => (object) [],
+            'required' => [],
+            'additionalProperties' => false,
+        ];
     }
 
     public function annotations(): array
