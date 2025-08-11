@@ -36,7 +36,7 @@ import { Head } from '@inertiajs/vue3';
                                 href="https://donate.stripe.com/3cI7sKcfB6sB0FC33le3e00"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="inline-flex items-center gap-2 rounded-md border border-[#f53003]/20 bg-[#FFF0EE] px-4 py-2 text-sm font-medium text-[#f53003] hover:bg-[#FFE6E3] dark:border-[#FF4433]/30 dark:bg-[#2b0d0d] dark:text-[#FF9188] dark:hover:bg-[#3a1212]"
+                                class="inline-flex items-center gap-2 rounded-md border border-[#2563eb]/20 bg-[#eff6ff] px-4 py-2 text-sm font-medium text-[#2563eb] hover:bg-[#dbeafe] dark:border-[#60a5fa]/30 dark:bg-[#172554] dark:text-[#93c5fd] dark:hover:bg-[#1e293b]"
                             >
                                 Support the project
                             </a>
