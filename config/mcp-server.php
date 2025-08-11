@@ -333,10 +333,6 @@ return [
 
     // Static Resources - Fixed data sources with known URIs
     'resources' => [
-        // Example resource - Remove in production
-        \OPGG\LaravelMcpServer\Services\ResourceService\Examples\LogFileResource::class,
-        \OPGG\LaravelMcpServer\Services\ResourceService\Examples\UserListResource::class,
-
         // ===== REGISTER YOUR STATIC RESOURCES BELOW =====
         // Examples:
         // App\MCP\Resources\ApplicationLogsResource::class,
@@ -347,10 +343,6 @@ return [
 
     // Resource Templates - Dynamic resources using URI patterns
     'resource_templates' => [
-        // Example template - Remove in production
-        \OPGG\LaravelMcpServer\Services\ResourceService\Examples\LogFileTemplate::class,
-        \OPGG\LaravelMcpServer\Services\ResourceService\Examples\UserResourceTemplate::class,
-
         // ===== REGISTER YOUR RESOURCE TEMPLATES BELOW =====
         // Examples:
         // App\MCP\ResourceTemplates\UserProfileTemplate::class,     // users/{id}/profile
@@ -429,9 +421,6 @@ return [
     |
     */
     'prompts' => [
-        // Example prompt - Remove in production
-        \OPGG\LaravelMcpServer\Services\PromptService\Examples\WelcomePrompt::class,
-
         // ===== REGISTER YOUR CUSTOM PROMPTS BELOW =====
         // Examples:
 
