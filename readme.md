@@ -32,42 +32,44 @@ php artisan serve
 ```
 
 
-## Connect to the MCP server
+## Non-technical quick start (hosted MCP)
 
-This server uses the MCP "streamable_http" transport. The HTTP JSON-RPC endpoint is available at:
+If you don’t want to run anything locally, you can use the hosted MCP server.
 
-- Base URL: `http://127.0.0.1:8000/mcp`
+- Host: [nfl.michaelcrowcroft.com](https://nfl.michaelcrowcroft.com)
+- Endpoint (HTTP JSON-RPC): [https://nfl.michaelcrowcroft.com/mcp](https://nfl.michaelcrowcroft.com/mcp)
 
-You can interact with the MCP methods directly over HTTP. Common methods include `tools/list` and `tools/call`.
+How to connect from an MCP-compatible client (e.g., Cursor, Claude Desktop):
 
-### List tools
-```bash
-curl -s \
-  -H 'Content-Type: application/json' \
-  -X POST http://127.0.0.1:8000/mcp \
-  -d '{"jsonrpc":"2.0","id":"1","method":"tools/list","params":{}}' | jq
-```
+1) Open your client’s settings and find the MCP or “Tool/Server” section.
+2) Add a new HTTP/JSON-RPC server and set the endpoint to the link above.
+3) Leave auth/headers empty (no API key required). Save/apply.
+4) Ask your assistant to list tools and start using them.
 
-### Call a tool (example: health.check)
-```bash
-curl -s \
-  -H 'Content-Type: application/json' \
-  -X POST http://127.0.0.1:8000/mcp \
-  -d '{"jsonrpc":"2.0","id":"2","method":"tools/call","params":{"name":"health.check","arguments":{}}}' | jq
-```
-
-### Inspect a tool schema (via tool.schema)
-```bash
-curl -s \
-  -H 'Content-Type: application/json' \
-  -X POST http://127.0.0.1:8000/mcp \
-  -d '{"jsonrpc":"2.0","id":"3","method":"tools/call","params":{"name":"tool.schema","arguments":{"tool_name":"user.lookup"}}}' | jq
-```
+Try these prompts once connected:
+- “List available tools.”
+- “Look up Sleeper user by username ‘your_username’ and list their 2024 leagues.”
+- “Resolve the current NFL week, then get weekly projections.”
 
 Notes
-- The server name and version are configured in `config/mcp-server.php`.
-- The default route path is `mcp`; change `default_path` in `config/mcp-server.php` to customize.
-- Middleware is minimal by default for local development. Adjust `middlewares` in `config/mcp-server.php` for production.
+- This endpoint uses public Sleeper data; no account or token needed.
+- Don’t send secrets. Usage may be rate-limited by upstream APIs.
+
+
+## MCP overview
+
+This MCP server exposes Sleeper fantasy football data and workflows as tools your assistant can call. High‑level capabilities:
+
+- Users and leagues: lookups, list leagues for a season
+- League data: rosters, matchups, transactions, waivers, drafts, computed standings
+- Players and market: search, trending adds/drops, ADP
+- Projections: weekly projections; blend multiple sources
+- Lineups and decisions: validate lineups, optimize starters, start/sit comparisons
+- Waivers and trades: waiver recommendations, FAAB optimization, trade analysis
+- Draft helpers: draft board building, pick recommendations, live draft observe, draft picks
+- Roster analysis: roster needs vs. starting slots
+- Planning and preferences: playoff planning, strategy levers
+- Utilities: set context defaults, resolve current week, health check, cache invalidation, tool listing/schema
 
 
 ## Typical flows
