@@ -5,6 +5,8 @@ namespace App\MCP\Tools\Sleeper;
 use App\Services\SleeperSdk;
 use Illuminate\Support\Facades\App as LaravelApp;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
+use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
+use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 
 class UserLeaguesTool implements ToolInterface
 {
@@ -42,7 +44,11 @@ class UserLeaguesTool implements ToolInterface
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
 
-        $userId = (string) $arguments['user_id'];
+        $userIdRaw = $arguments['user_id'] ?? null;
+        if (! is_string($userIdRaw) || trim($userIdRaw) === '') {
+            throw new JsonRpcErrorException(message: 'Missing required parameter: user_id', code: JsonRpcErrorCode::INVALID_PARAMS);
+        }
+        $userId = $userIdRaw;
         $sport = $arguments['sport'] ?? 'nfl';
         $season = $arguments['season'] ?? date('Y');
 
