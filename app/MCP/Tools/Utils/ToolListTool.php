@@ -21,7 +21,7 @@ class ToolListTool implements ToolInterface
     {
         return [
             'type' => 'object',
-            'properties' => (object) [],
+            'properties' => new \stdClass(),
             'required' => [],
             'additionalProperties' => false,
         ];

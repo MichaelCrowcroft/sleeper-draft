@@ -22,6 +22,7 @@ class PlayersTrendingTool implements ToolInterface
     {
         return [
             'type' => 'object',
+            'required' => [],
             'properties' => [
                 'type' => ['type' => 'string', 'enum' => ['add', 'drop'], 'default' => 'add'],
                 'sport' => ['type' => 'string', 'default' => 'nfl'],

@@ -21,6 +21,7 @@ class ContextSetDefaultsTool implements ToolInterface
     {
         return [
             'type' => 'object',
+            'required' => [],
             'properties' => [
                 'username' => ['type' => 'string'],
                 'user_id' => ['type' => 'string'],

@@ -28,18 +28,12 @@ class Ball extends Command
      */
     public function handle()
     {
-        // Filter out tools with no parameters to satisfy Anthropic's tool schema requirements
-        $tools = array_values(array_filter(
-            Relay::tools('fantasy-football-mcp'),
-            fn ($tool) => method_exists($tool, 'hasParameters') ? $tool->hasParameters() : true
-        ));
-
         $response = Prism::text()
             // ->using(Provider::Gemini, 'gemini-2.5-pro')
-            // ->using(Provider::Anthropic, 'claude-sonnet-4-20250514')
-            ->using(Provider::OpenAI, 'gpt-5')
+            ->using(Provider::Anthropic, 'claude-sonnet-4-20250514')
+            // ->using(Provider::OpenAI, 'gpt-5')
             ->withPrompt('Who is the most valuable player to draft in the 2024 NFL season for fantasy football? Use the fantasy football mcp to get current data.')
-            ->withTools($tools)
+            ->withTools(Relay::tools('fantasy-football-mcp'))
             ->asText();
 
         dump($response);

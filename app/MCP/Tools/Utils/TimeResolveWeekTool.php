@@ -22,6 +22,7 @@ class TimeResolveWeekTool implements ToolInterface
     {
         return [
             'type' => 'object',
+            'required' => [],
             'properties' => [
                 'sport' => ['type' => 'string', 'default' => 'nfl'],
             ],

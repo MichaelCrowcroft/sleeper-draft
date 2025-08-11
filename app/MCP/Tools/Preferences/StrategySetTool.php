@@ -21,6 +21,7 @@ class StrategySetTool implements ToolInterface
     {
         return [
             'type' => 'object',
+            'required' => [],
             'properties' => [
                 'risk' => ['type' => 'string', 'enum' => ['low','medium','high']],
                 'stack_qb' => ['type' => 'boolean'],
