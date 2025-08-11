@@ -15,16 +15,16 @@ class UserLeaguesTool implements ToolInterface
 
     public function description(): string
     {
-        return 'List Sleeper leagues for a user in a season. Requires either user_id or username.';
+        return 'List Sleeper leagues for a user in a season. Use user.lookup tool first to get user_id from username.';
     }
 
     public function inputSchema(): array
     {
         return [
             'type' => 'object',
+            'required' => ['user_id'],
             'properties' => [
                 'user_id' => ['type' => 'string'],
-                'username' => ['type' => 'string'],
                 'season' => ['type' => 'string', 'default' => date('Y')],
                 'sport' => ['type' => 'string', 'enum' => ['nfl', 'nba', 'mlb', 'nhl'], 'default' => 'nfl'],
             ],
@@ -42,23 +42,9 @@ class UserLeaguesTool implements ToolInterface
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
 
+        $userId = (string) $arguments['user_id'];
         $sport = $arguments['sport'] ?? 'nfl';
         $season = $arguments['season'] ?? date('Y');
-
-        // Validate that either user_id or username is provided
-        if (empty($arguments['user_id']) && empty($arguments['username'])) {
-            throw new \OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException(
-                message: 'Either user_id or username must be provided',
-                code: \OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode::INVALID_REQUEST
-            );
-        }
-
-        if (! empty($arguments['username'])) {
-            $user = $sdk->getUserByUsername($arguments['username']);
-            $userId = (string) $user['user_id'];
-        } else {
-            $userId = (string) $arguments['user_id'];
-        }
 
         $leagues = $sdk->getUserLeagues($userId, $sport, $season);
 
