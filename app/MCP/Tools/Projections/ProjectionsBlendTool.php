@@ -10,7 +10,7 @@ class ProjectionsBlendTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'projections.blend';
+        return 'projections_blend';
     }
 
     public function description(): string

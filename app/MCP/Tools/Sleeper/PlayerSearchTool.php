@@ -10,7 +10,7 @@ class PlayerSearchTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'players.search';
+        return 'players_search';
     }
 
     public function description(): string

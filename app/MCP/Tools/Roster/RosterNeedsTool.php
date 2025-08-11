@@ -10,7 +10,7 @@ class RosterNeedsTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'roster.needs';
+        return 'roster_needs';
     }
 
     public function description(): string

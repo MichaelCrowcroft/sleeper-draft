@@ -10,12 +10,12 @@ class UserLeaguesTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'user.leagues';
+        return 'user_leagues';
     }
 
     public function description(): string
     {
-        return 'List Sleeper leagues for a user in a season. Use user.lookup tool first to get user_id from username.';
+        return 'List Sleeper leagues for a user in a season. Use user_lookup tool first to get user_id from username.';
     }
 
     public function inputSchema(): array

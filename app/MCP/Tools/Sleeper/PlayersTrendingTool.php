@@ -10,7 +10,7 @@ class PlayersTrendingTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'players.trending';
+        return 'players_trending';
     }
 
     public function description(): string

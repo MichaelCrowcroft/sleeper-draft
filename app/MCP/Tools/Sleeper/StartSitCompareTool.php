@@ -10,7 +10,7 @@ class StartSitCompareTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'start_sit.compare';
+        return 'start_sit_compare';
     }
 
     public function description(): string

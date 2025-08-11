@@ -9,7 +9,7 @@ class StrategySetTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'strategy.set';
+        return 'strategy_set';
     }
 
     public function description(): string

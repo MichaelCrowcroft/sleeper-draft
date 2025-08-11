@@ -10,7 +10,7 @@ class LeagueStandingsTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'league.standings';
+        return 'league_standings';
     }
 
     public function description(): string

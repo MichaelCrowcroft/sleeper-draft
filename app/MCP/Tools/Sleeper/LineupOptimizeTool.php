@@ -10,7 +10,7 @@ class LineupOptimizeTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'lineup.optimize';
+        return 'lineup_optimize';
     }
 
     public function description(): string

@@ -9,7 +9,7 @@ class ToolListTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'tool.list';
+        return 'tool_list';
     }
 
     public function description(): string

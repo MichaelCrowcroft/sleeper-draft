@@ -15,7 +15,7 @@ class WaiverRecommendationsTool implements ToolInterface
 
     public function name(): string
     {
-        return 'waiver.recommendations';
+        return 'waiver_recommendations';
     }
 
     public function description(): string

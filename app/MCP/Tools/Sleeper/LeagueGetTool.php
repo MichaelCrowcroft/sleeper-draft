@@ -10,7 +10,7 @@ class LeagueGetTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'league.get';
+        return 'league_get';
     }
 
     public function description(): string

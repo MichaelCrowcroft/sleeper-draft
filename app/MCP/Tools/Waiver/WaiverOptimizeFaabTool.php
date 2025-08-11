@@ -10,7 +10,7 @@ class WaiverOptimizeFaabTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'waiver.optimize_faab';
+        return 'waiver_optimize_faab';
     }
 
     public function description(): string

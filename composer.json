@@ -14,6 +14,8 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "opgginc/laravel-mcp-server": "^1.4",
+        "prism-php/prism": "^0.83.2",
+        "prism-php/relay": "^1.3",
         "saloonphp/laravel-plugin": "^3.0",
         "saloonphp/saloon": "^3.0",
         "tightenco/ziggy": "^2.4"

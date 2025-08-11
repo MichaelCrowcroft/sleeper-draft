@@ -10,7 +10,7 @@ class LeagueDraftsTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'league.drafts';
+        return 'league_drafts';
     }
 
     public function description(): string

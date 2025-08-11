@@ -10,7 +10,7 @@ class TimeResolveWeekTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'time.resolve_week';
+        return 'time_resolve_week';
     }
 
     public function description(): string

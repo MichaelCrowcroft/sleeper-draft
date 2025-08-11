@@ -10,12 +10,12 @@ class LeagueWaiversTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'league.waivers';
+        return 'league_waivers';
     }
 
     public function description(): string
     {
-        return 'Alias for league.transactions of type waivers for a given week.';
+        return 'Alias for league_transactions of type waivers for a given week.';
     }
 
     public function inputSchema(): array

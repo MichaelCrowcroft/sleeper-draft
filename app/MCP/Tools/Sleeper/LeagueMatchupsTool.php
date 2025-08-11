@@ -10,7 +10,7 @@ class LeagueMatchupsTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'league.matchups';
+        return 'league_matchups';
     }
 
     public function description(): string

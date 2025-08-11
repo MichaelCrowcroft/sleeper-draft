@@ -8,7 +8,7 @@ class ToolSchemaTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'tool.schema';
+        return 'tool_schema';
     }
 
     public function description(): string

@@ -10,7 +10,7 @@ class DraftPickRecommendTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'draft.pick.recommend';
+        return 'draft_pick_recommend';
     }
 
     public function description(): string

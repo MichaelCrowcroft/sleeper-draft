@@ -10,7 +10,7 @@ class DraftPicksTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'draft.picks';
+        return 'draft_picks';
     }
 
     public function description(): string

@@ -9,7 +9,7 @@ class CacheInvalidateTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'cache.invalidate';
+        return 'cache_invalidate';
     }
 
     public function description(): string

@@ -15,7 +15,7 @@ class TradeAnalyzeTool implements ToolInterface
 
     public function name(): string
     {
-        return 'trade.analyze';
+        return 'trade_analyze';
     }
 
     public function description(): string

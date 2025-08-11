@@ -10,7 +10,7 @@ class UserLookupTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'user.lookup';
+        return 'user_lookup';
     }
 
     public function description(): string

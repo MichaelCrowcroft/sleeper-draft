@@ -10,7 +10,7 @@ class ProjectionsWeekTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'projections.week';
+        return 'projections_week';
     }
 
     public function description(): string

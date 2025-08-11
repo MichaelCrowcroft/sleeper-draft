@@ -9,7 +9,7 @@ class HealthCheckTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'health.check';
+        return 'health_check';
     }
 
     public function description(): string

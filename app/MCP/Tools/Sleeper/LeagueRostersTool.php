@@ -10,7 +10,7 @@ class LeagueRostersTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'league.rosters';
+        return 'league_rosters';
     }
 
     public function description(): string

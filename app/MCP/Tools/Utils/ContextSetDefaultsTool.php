@@ -9,7 +9,7 @@ class ContextSetDefaultsTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'context.set_defaults';
+        return 'context_set_defaults';
     }
 
     public function description(): string

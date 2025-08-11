@@ -10,7 +10,7 @@ class DraftBoardBuildTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'draft.board.build';
+        return 'draft_board_build';
     }
 
     public function description(): string

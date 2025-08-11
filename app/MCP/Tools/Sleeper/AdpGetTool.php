@@ -10,7 +10,7 @@ class AdpGetTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'adp.get';
+        return 'adp_get';
     }
 
     public function description(): string

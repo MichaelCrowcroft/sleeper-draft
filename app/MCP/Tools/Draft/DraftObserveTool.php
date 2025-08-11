@@ -10,7 +10,7 @@ class DraftObserveTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'draft.observe';
+        return 'draft_observe';
     }
 
     public function description(): string

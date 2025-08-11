@@ -10,7 +10,7 @@ class LineupValidateTool implements ToolInterface
 {
     public function name(): string
     {
-        return 'lineup.validate';
+        return 'lineup_validate';
     }
 
     public function description(): string
