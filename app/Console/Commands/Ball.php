@@ -30,11 +30,13 @@ class Ball extends Command
     {
         $response = Prism::text()
             // ->using(Provider::Gemini, 'gemini-2.5-flash')
-            ->using(Provider::OpenAI, 'gpt-5')
-            ->withPrompt('Who is the most valuable player to draft in the 2025 NFL season?')
+            ->using(Provider::Anthropic, 'claude-sonnet-4-20250514')
+            // ->using(Provider::OpenAI, 'gpt-5')
+            ->withPrompt('Who is the most valuable player to draft in the 2024 NFL season?')
             ->withTools(Relay::tools('fantasy-football-mcp'))
             ->asText();
 
-        return $response->text;
+        dump($response);
+        return 1;
     }
 }
