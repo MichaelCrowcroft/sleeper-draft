@@ -21,8 +21,9 @@ class ToolListTool implements ToolInterface
     {
         return [
             'type' => 'object',
-            'properties' => new \stdClass(),
-            'required' => [],
+            'properties' => [
+                '_dummy' => ['type' => 'string', 'description' => 'Unused parameter for Anthropic compatibility'],
+            ],
             'additionalProperties' => false,
         ];
     }
