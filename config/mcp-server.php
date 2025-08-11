@@ -259,35 +259,35 @@ return [
         App\MCP\Tools\Sleeper\DraftPicksTool::class,
 
         // Phase 2 Tools
-        // App\MCP\Tools\Sleeper\PlayerSearchTool::class,
-        // App\MCP\Tools\Sleeper\PlayersTrendingTool::class,
-        // App\MCP\Tools\Sleeper\ProjectionsWeekTool::class,
-        // App\MCP\Tools\Sleeper\AdpGetTool::class,
+        App\MCP\Tools\Sleeper\PlayerSearchTool::class,
+        App\MCP\Tools\Sleeper\PlayersTrendingTool::class,
+        App\MCP\Tools\Sleeper\ProjectionsWeekTool::class,
+        App\MCP\Tools\Sleeper\AdpGetTool::class,
 
         // Phase 3 Tools
-        // App\MCP\Tools\Sleeper\LineupValidateTool::class,
-        // App\MCP\Tools\Sleeper\LineupOptimizeTool::class,
-        // App\MCP\Tools\Sleeper\StartSitCompareTool::class,
-        // App\MCP\Tools\Sleeper\WaiverRecommendationsTool::class,
-        // App\MCP\Tools\Sleeper\TradeAnalyzeTool::class,
+        App\MCP\Tools\Sleeper\LineupValidateTool::class,
+        App\MCP\Tools\Sleeper\LineupOptimizeTool::class,
+        App\MCP\Tools\Sleeper\StartSitCompareTool::class,
+        App\MCP\Tools\Sleeper\WaiverRecommendationsTool::class,
+        App\MCP\Tools\Sleeper\TradeAnalyzeTool::class,
 
         // Phase 4/5 Utilities
-        // App\MCP\Tools\Utils\ContextSetDefaultsTool::class,
-        // App\MCP\Tools\Utils\TimeResolveWeekTool::class,
-        // App\MCP\Tools\Utils\HealthCheckTool::class,
-        // App\MCP\Tools\Utils\CacheInvalidateTool::class,
-        // App\MCP\Tools\Utils\ToolListTool::class,
-        // App\MCP\Tools\Utils\ToolSchemaTool::class,
+        App\MCP\Tools\Utils\ContextSetDefaultsTool::class,
+        App\MCP\Tools\Utils\TimeResolveWeekTool::class,
+        App\MCP\Tools\Utils\HealthCheckTool::class,
+        App\MCP\Tools\Utils\CacheInvalidateTool::class,
+        App\MCP\Tools\Utils\ToolListTool::class,
+        App\MCP\Tools\Utils\ToolSchemaTool::class,
 
         // Competitive add-ons
-        // App\MCP\Tools\Draft\DraftBoardBuildTool::class,
-        // App\MCP\Tools\Draft\DraftPickRecommendTool::class,
-        // App\MCP\Tools\Draft\DraftObserveTool::class,
-        // App\MCP\Tools\Roster\RosterNeedsTool::class,
-        // App\MCP\Tools\Waiver\WaiverOptimizeFaabTool::class,
-        // App\MCP\Tools\Projections\ProjectionsBlendTool::class,
-        // App\MCP\Tools\Planning\PlayoffsPlanTool::class,
-        // App\MCP\Tools\Preferences\StrategySetTool::class,
+        App\MCP\Tools\Draft\DraftBoardBuildTool::class,
+        App\MCP\Tools\Draft\DraftPickRecommendTool::class,
+        App\MCP\Tools\Draft\DraftObserveTool::class,
+        App\MCP\Tools\Roster\RosterNeedsTool::class,
+        App\MCP\Tools\Waiver\WaiverOptimizeFaabTool::class,
+        App\MCP\Tools\Projections\ProjectionsBlendTool::class,
+        App\MCP\Tools\Planning\PlayoffsPlanTool::class,
+        App\MCP\Tools\Preferences\StrategySetTool::class,
     ],
 
     /*
