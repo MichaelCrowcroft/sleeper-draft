@@ -36,8 +36,8 @@ php artisan serve
 
 If you don’t want to run anything locally, you can use the hosted MCP server.
 
-- Host: [nfl.michaelcrowcroft.com](https://nfl.michaelcrowcroft.com)
-- Endpoint (HTTP JSON-RPC): [https://nfl.michaelcrowcroft.com/mcp](https://nfl.michaelcrowcroft.com/mcp)
+- Host: [www.sleeperdraft.com](https://www.sleeperdraft.com)
+- Endpoint (HTTP JSON-RPC): [https://www.sleeperdraft.com/mcp](https://www.sleeperdraft.com/mcp)
 
 How to connect from an MCP-compatible client (e.g., Cursor, Claude Desktop):
 

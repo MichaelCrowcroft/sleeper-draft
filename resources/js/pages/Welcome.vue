@@ -46,7 +46,7 @@ import { Head } from '@inertiajs/vue3';
                             <div class="font-semibold">Quick connect</div>
                             <div class="rounded-md border border-black/10 bg-[#FCFCFB] p-4 dark:border-white/10 dark:bg-[#0f0f0f]">
                                 <div class="mb-2 text-[12px] uppercase tracking-wide text-[#706f6c] dark:text-[#A1A09A]">Endpoint</div>
-                                <div class="select-all break-all rounded-md bg-white px-3 py-2 text-[13px] shadow-inner dark:bg-[#161615]">https://nfl.michaelcrowcroft.com/mcp</div>
+                                <div class="select-all break-all rounded-md bg-white px-3 py-2 text-[13px] shadow-inner dark:bg-[#161615]">https://www.sleeperdraft.com/mcp</div>
                             </div>
                         </div>
                     </div>
@@ -70,7 +70,7 @@ import { Head } from '@inertiajs/vue3';
     "fantasy-football-mcp": {
       "transport": {
         "type": "http",
-        "url": "https://nfl.michaelcrowcroft.com/mcp"
+        "url": "https://www.sleeperdraft.com/mcp"
       }
     }
   }
