@@ -4,7 +4,7 @@ import sleeperIcon from '../../images/sleeper-draft-icon.png';
 </script>
 
 <template>
-    <Head title="Sleeper Tools">
+    <Head title="MCP Tools for Fantasy Football">
     </Head>
     <div class="min-h-screen bg-[#FDFDFC] px-6 py-12 text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
         <div class="mx-auto max-w-6xl">
