@@ -39,12 +39,46 @@ If you don’t want to run anything locally, you can use the hosted MCP server.
 - Host: [www.sleeperdraft.com](https://www.sleeperdraft.com)
 - Endpoint (HTTP JSON-RPC): [https://www.sleeperdraft.com/mcp](https://www.sleeperdraft.com/mcp)
 
-How to connect from an MCP-compatible client (e.g., Cursor, Claude Desktop):
+How to connect from an MCP-compatible client:
 
-1) Open your client’s settings and find the MCP or “Tool/Server” section.
-2) Add a new HTTP/JSON-RPC server and set the endpoint to the link above.
-3) Leave auth/headers empty (no API key required). Save/apply.
-4) Ask your assistant to list tools and start using them.
+- Claude Desktop (remote HTTP not supported directly):
+
+  Add a command-based server entry that bridges to the hosted HTTP endpoint via `supergateway`.
+
+  ```json
+  {
+    "mcpServers": {
+      "sleeperdraft-mcp": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "supergateway",
+          "--streamableHttp",
+          "https://www.sleeperdraft.com/mcp"
+        ]
+      }
+    }
+  }
+  ```
+
+- Cursor (supports HTTP):
+
+  Add a new HTTP/JSON-RPC server with the endpoint above, or include this in `~/.cursor/mcp.json`:
+
+  ```json
+  {
+    "mcpServers": {
+      "fantasy-football-mcp": {
+        "transport": {
+          "type": "http",
+          "url": "https://www.sleeperdraft.com/mcp"
+        }
+      }
+    }
+  }
+  ```
+
+Restart your client after saving. In Cursor, you can also manage servers in Settings → MCP.
 
 Try these prompts once connected:
 - “List available tools.”

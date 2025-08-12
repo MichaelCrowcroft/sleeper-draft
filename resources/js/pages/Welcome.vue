@@ -1,6 +1,31 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import sleeperIcon from '../../images/sleeper-draft-icon.png';
+
+const claudeConfig = `{
+  "mcpServers": {
+    "sleeperdraft-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "supergateway",
+        "--streamableHttp",
+        "https://www.sleeperdraft.com/mcp"
+      ]
+    }
+  }
+}`;
+
+const cursorConfig = `{
+  "mcpServers": {
+    "fantasy-football-mcp": {
+      "transport": {
+        "type": "http",
+        "url": "https://www.sleeperdraft.com/mcp"
+      }
+    }
+  }
+}`;
 </script>
 
 <template>
@@ -66,16 +91,20 @@ import sleeperIcon from '../../images/sleeper-draft-icon.png';
                                 </li>
                                 <li>Add this server:</li>
                             </ol>
-                            <pre class="overflow-auto rounded-md bg-white p-3 text-[12px] leading-relaxed dark:bg-[#161615]"><code>{
-  "mcpServers": {
-    "fantasy-football-mcp": {
-      "transport": {
-        "type": "http",
-        "url": "https://www.sleeperdraft.com/mcp"
-      }
-    }
-  }
-}</code></pre>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="mb-1 text-[12px] font-medium text-[#575654] dark:text-[#A1A09A]">Claude Desktop (via supergateway)</div>
+                                    <div class="overflow-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]">
+                                        <highlightjs language="json" :code="claudeConfig" :autodetect="false" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="mb-1 text-[12px] font-medium text-[#575654] dark:text-[#A1A09A]">Cursor (HTTP)</div>
+                                    <div class="overflow-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]">
+                                        <highlightjs language="json" :code="cursorConfig" :autodetect="false" />
+                                    </div>
+                                </div>
+                            </div>
                             <p class="mt-2 text-[12px] leading-6 text-[#706f6c] dark:text-[#A1A09A]">Restart your client. In Cursor, manage servers in Settings → MCP; in Claude, the server appears under MCP servers.</p>
                         </div>
                     </div>
