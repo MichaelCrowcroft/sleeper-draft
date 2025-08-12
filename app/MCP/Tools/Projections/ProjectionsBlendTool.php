@@ -43,8 +43,10 @@ class ProjectionsBlendTool implements ToolInterface
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
         $sport = $arguments['sport'] ?? 'nfl';
-        $season = (string) $arguments['season'];
-        $week = (int) $arguments['week'];
+        // Auto-resolve if missing
+        $state = $sdk->getState($sport);
+        $season = (string) ($arguments['season'] ?? ($state['season'] ?? date('Y')));
+        $week = (int) ($arguments['week'] ?? (int) ($state['week'] ?? 1));
 
         $projections = $sdk->getWeeklyProjections($season, $week, $sport);
         // Placeholder blend: pass-through; expose in standard shape

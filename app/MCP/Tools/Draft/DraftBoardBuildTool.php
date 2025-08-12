@@ -22,7 +22,7 @@ class DraftBoardBuildTool implements ToolInterface
     {
         return [
             'type' => 'object',
-            'required' => ['season','week'],
+            'required' => [],
             'properties' => [
                 'sport' => ['type' => 'string', 'default' => 'nfl'],
                 'season' => ['type' => 'string'],
@@ -45,8 +45,10 @@ class DraftBoardBuildTool implements ToolInterface
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
         $sport = $arguments['sport'] ?? 'nfl';
-        $season = (string) $arguments['season'];
-        $week = (int) $arguments['week'];
+        // Resolve season/week if not provided
+        $state = $sdk->getState($sport);
+        $season = (string) ($arguments['season'] ?? ($state['season'] ?? date('Y')));
+        $week = (int) ($arguments['week'] ?? (int) ($state['week'] ?? 1));
         $format = $arguments['format'] ?? 'redraft';
         $limit = (int) ($arguments['limit'] ?? 300);
         $tierGap = (float) ($arguments['tier_gaps'] ?? 10.0);
@@ -89,6 +91,7 @@ class DraftBoardBuildTool implements ToolInterface
         $tiers = [];
         foreach (['QB','RB','WR','TE'] as $pos) {
             $posRows = array_values(array_filter($rows, fn ($r) => ($r['position'] ?? null) === $pos));
+            usort($posRows, fn ($a, $b) => $b['score'] <=> $a['score']);
             $tier = 1;
             $last = null;
             foreach ($posRows as $idx => $r) {

@@ -39,21 +39,27 @@ class CacheInvalidateTool implements ToolInterface
     {
         $scope = $arguments['scope'];
         $id = $arguments['id'] ?? '';
-        $prefix = match ($scope) {
-            'user' => 'sleeper:user:'.$id,
-            'league' => 'sleeper:league:'.$id,
-            'season' => 'sleeper:projections:nfl:'.$id, // simplistic
-            'all' => 'sleeper:',
-            default => 'sleeper:',
-        };
-
-        // Laravel cache does not support prefix clear natively; no-op here except for full clear via flush
-        $cleared = 0;
-        if ($scope === 'all') {
-            Cache::flush();
-            $cleared = -1;
+        $tags = ['sleeper'];
+        if ($scope === 'user' && $id !== '') {
+            $tags[] = 'user:'.$id;
+        } elseif ($scope === 'league' && $id !== '') {
+            $tags[] = 'league:'.$id;
+        } elseif ($scope === 'season' && $id !== '') {
+            $tags[] = 'season:'.$id;
         }
 
-        return ['cleared_keys' => $cleared, 'note' => $scope === 'all' ? 'cache flushed' : 'prefix clearing not supported'];
+        $supportsTags = method_exists(Cache::store(), 'tags');
+        if ($scope === 'all') {
+            Cache::flush();
+            return ['cleared_keys' => -1, 'note' => 'cache flushed'];
+        }
+
+        if ($supportsTags && count($tags) > 1) {
+            Cache::tags($tags)->flush();
+            return ['cleared_keys' => -1, 'note' => 'flushed tagged cache: '.implode(',', $tags)];
+        }
+
+        // Fallback: no-op when tags unsupported
+        return ['cleared_keys' => 0, 'note' => 'tagged cache not supported by current driver'];
     }
 }

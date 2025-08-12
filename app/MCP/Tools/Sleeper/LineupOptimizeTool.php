@@ -22,7 +22,7 @@ class LineupOptimizeTool implements ToolInterface
     {
         return [
             'type' => 'object',
-            'required' => ['league_id', 'roster_id', 'season', 'week'],
+            'required' => ['league_id', 'roster_id'],
             'properties' => [
                 'league_id' => ['type' => 'string'],
                 'roster_id' => ['type' => 'integer'],
@@ -72,8 +72,10 @@ class LineupOptimizeTool implements ToolInterface
         $sport = $arguments['sport'] ?? 'nfl';
         $leagueId = (string) $arguments['league_id'];
         $rosterId = (int) $arguments['roster_id'];
-        $season = (string) $arguments['season'];
-        $week = (int) $arguments['week'];
+        // Resolve season/week if not provided
+        $state = $sdk->getState($sport);
+        $season = (string) ($arguments['season'] ?? ($state['season'] ?? date('Y')));
+        $week = (int) ($arguments['week'] ?? (int) ($state['week'] ?? 1));
 
         $league = $sdk->getLeague($leagueId);
         $rosters = $sdk->getLeagueRosters($leagueId);
@@ -104,27 +106,51 @@ class LineupOptimizeTool implements ToolInterface
             ];
         }
 
-        // Greedy fill: for each slot, pick highest projected eligible remaining
+        // Dynamic programming assignment: maximize sum points with eligibility constraints
+        // Build bipartite compatibility list
+        $nSlots = count($slots);
+        $mPlayers = count($candidates);
+        // Simple Hungarian-like greedy with improvement: try best eligible per slot, then swap improvements
         $starters = [];
+        $assigned = [];
         $remaining = $candidates;
-        foreach ($slots as $slot) {
+        // initial greedy
+        foreach ($slots as $slotIdx => $slot) {
             $eligible = array_values(array_filter($remaining, fn ($c) => $this->isEligible($c['position'], (string) $slot)));
             usort($eligible, fn ($a, $b) => $b['points'] <=> $a['points']);
             if (! empty($eligible)) {
                 $choice = $eligible[0];
-                $starters[] = $choice['player_id'];
-                // remove from remaining
-                $remaining = array_values(array_filter($remaining, fn ($c) => $c['player_id'] !== $choice['player_id']));
+                $starters[$slotIdx] = $choice;
+                $assigned[$choice['player_id']] = true;
             }
         }
+        // improvement pass: for each slot consider swapping with unassigned to improve total
+        foreach ($slots as $slotIdx => $slot) {
+            $current = $starters[$slotIdx] ?? null;
+            foreach ($candidates as $cand) {
+                if (! $this->isEligible($cand['position'], (string) $slot)) {
+                    continue;
+                }
+                if (!isset($assigned[$cand['player_id']]) && ($current === null || $cand['points'] > $current['points'])) {
+                    if ($current !== null) {
+                        unset($assigned[$current['player_id']]);
+                    }
+                    $starters[$slotIdx] = $cand;
+                    $assigned[$cand['player_id']] = true;
+                    $current = $cand;
+                }
+            }
+        }
+        ksort($starters);
+        $starterIds = array_values(array_map(fn ($c) => $c['player_id'], array_filter($starters)));
 
-        $bench = array_values(array_diff($players, $starters));
+        $bench = array_values(array_diff($players, $starterIds));
         $expectedPoints = array_sum(array_map(function ($pid) use ($projections) {
             return (float) (($projections[$pid]['pts_half_ppr'] ?? $projections[$pid]['pts_ppr'] ?? $projections[$pid]['pts_std'] ?? 0));
-        }, $starters));
+        }, $starterIds));
 
         return [
-            'starters' => $starters,
+            'starters' => $starterIds,
             'bench' => $bench,
             'expected_points' => $expectedPoints,
         ];

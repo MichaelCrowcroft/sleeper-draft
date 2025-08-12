@@ -21,7 +21,6 @@ class ToolSchemaTool implements ToolInterface
         return [
             'type' => 'object',
             'required' => ['tool_name'],
-            'required' => ['tool_name'],
             'properties' => [
                 'tool_name' => ['type' => 'string'],
             ],
