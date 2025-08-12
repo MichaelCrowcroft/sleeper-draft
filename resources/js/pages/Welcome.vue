@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
+import sleeperIcon from '../../images/sleeper-draft-icon.png';
 </script>
 
 <template>
@@ -10,12 +11,12 @@ import { Head } from '@inertiajs/vue3';
             <div class="rounded-2xl border border-black/10 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-[#141414]">
                 <div class="grid items-start gap-10 lg:grid-cols-2">
                     <div>
-                        <div class="inline-flex items-center gap-2 rounded-full border border-black/10 bg-[#FFF4EF] px-3 py-1 text-[12px] font-medium text-[#9A3E00] dark:border-white/10 dark:bg-[#2a150e] dark:text-[#FFB48A]">
-                            Fantasy Football MCP
+                        <div class="flex items-center gap-4">
+                            <img :src="sleeperIcon" alt="Sleeper Draft" class="size-24" />
+                            <h1 class="text-3xl font-semibold leading-snug sm:text-4xl">
+                                MCP Tools for Fantasy Football
+                            </h1>
                         </div>
-                        <h1 class="mt-4 text-3xl font-semibold leading-snug sm:text-4xl">
-                            Sleeper tools for LLMs, over HTTP MCP
-                        </h1>
                         <p class="mt-3 text-[15px] leading-7 text-[#575654] dark:text-[#A1A09A]">
                             This Laravel server exposes a Model Context Protocol (MCP) endpoint with tools for Sleeper: users, leagues, rosters, drafts, transactions, waivers, projections, and more.
                         </p>
