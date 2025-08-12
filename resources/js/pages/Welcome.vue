@@ -4,7 +4,7 @@ import sleeperIcon from '../../images/sleeper-draft-icon.png';
 
 const claudeConfig = `{
   "mcpServers": {
-    "sleeperdraft-mcp": {
+    "fantasy-football-mcp": {
       "command": "npx",
       "args": [
         "-y",
