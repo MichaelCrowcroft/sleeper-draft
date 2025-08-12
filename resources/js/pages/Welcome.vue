@@ -74,6 +74,20 @@ const cursorConfig = `{
                                 <div class="mb-2 text-[12px] uppercase tracking-wide text-[#706f6c] dark:text-[#A1A09A]">Endpoint</div>
                                 <div class="select-all break-all rounded-md bg-white px-3 py-2 text-[13px] shadow-inner dark:bg-[#161615]">https://www.sleeperdraft.com/mcp</div>
                             </div>
+                            <div class="grid gap-3 sm:grid-cols-2">
+                                <div class="rounded-md border border-black/10 bg-[#FCFCFB] p-4 dark:border-white/10 dark:bg-[#0f0f0f]">
+                                    <div class="mb-1 text-[12px] uppercase tracking-wide text-[#706f6c] dark:text-[#A1A09A]">Server details</div>
+                                    <ul class="list-disc space-y-1 pl-5 text-[13px] text-[#575654] dark:text-[#A1A09A]">
+                                        <li><span class="font-medium">Protocol</span>: HTTP JSON-RPC (streamable_http)</li>
+                                        <li><span class="font-medium">Path</span>: /mcp</li>
+                                        <li><span class="font-medium">Versioning</span>: Server name/version sent on handshake</li>
+                                    </ul>
+                                </div>
+                                <div class="rounded-md border border-black/10 bg-[#FCFCFB] p-4 dark:border-white/10 dark:bg-[#0f0f0f]">
+                                    <div class="mb-1 text-[12px] uppercase tracking-wide text-[#706f6c] dark:text-[#A1A09A]">Resources & Prompts</div>
+                                    <p class="text-[13px] text-[#575654] dark:text-[#A1A09A]">Support is available via configuration. This app ships with tools by default; you can register Resources and Prompts in <span class="rounded bg-white px-1.5 py-0.5 text-[12px] dark:bg-[#161615]">config/mcp-server.php</span>.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

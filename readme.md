@@ -31,6 +31,14 @@ php artisan key:generate
 php artisan serve
 ```
 
+## Server configuration and protocol updates
+
+- **Transport provider**: HTTP JSON-RPC via `streamable_http` (faster and simpler than legacy SSE). Configure in `config/mcp-server.php` under `server_provider`.
+- **Endpoint path**: Defaults to `/mcp` (configurable via `config/mcp-server.php` → `default_path`). With `php artisan serve`, the full URL is `http://127.0.0.1:8000/mcp`.
+- **Middleware and security**: Production deployments should enable auth, throttling, and CORS in `config/mcp-server.php` → `middlewares`.
+- **Resources and Prompts registry**: The server now supports MCP Resources and Prompts (see `config/mcp-server.php` → `resources`, `resource_templates`, and `prompts`). This project doesn’t register any by default, but the scaffolding is ready.
+- **Naming and versioning**: You can set a friendly server `name` and semantic `version` in `config/mcp-server.php` → `server` for client handshakes.
+
 
 ## Non-technical quick start (hosted MCP)
 
