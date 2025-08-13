@@ -46,6 +46,7 @@ class ContextSetDefaultsTool implements ToolInterface
         $current = Cache::get($key, []);
         $next = array_filter(array_merge($current, $arguments), fn ($v) => $v !== null && $v !== '');
         Cache::put($key, $next, now()->addDays(7));
+
         return ['success' => true, 'context' => $next];
     }
 }

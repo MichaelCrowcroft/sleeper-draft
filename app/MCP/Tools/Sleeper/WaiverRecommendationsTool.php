@@ -53,8 +53,9 @@ class WaiverRecommendationsTool implements ToolInterface
         $sport = $arguments['sport'] ?? 'nfl';
         $leagueId = (string) $arguments['league_id'];
         $rosterId = (int) $arguments['roster_id'];
-        $season = (string) $arguments['season'];
-        $week = (int) $arguments['week'];
+        $state = $sdk->getState($sport);
+        $season = (string) ($arguments['season'] ?? ($state['season'] ?? date('Y')));
+        $week = (int) ($arguments['week'] ?? (int) ($state['week'] ?? 1));
         $max = (int) ($arguments['max_candidates'] ?? 10);
 
         $league = $sdk->getLeague($leagueId);
@@ -91,6 +92,6 @@ class WaiverRecommendationsTool implements ToolInterface
         usort($candidates, fn ($a, $b) => $b['score'] <=> $a['score']);
         $candidates = array_slice($candidates, 0, $max);
 
-        return [ 'picks' => $candidates ];
+        return ['picks' => $candidates];
     }
 }

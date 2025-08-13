@@ -3,8 +3,8 @@
 namespace App\MCP\Tools\Draft;
 
 use App\Services\SleeperSdk;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\App as LaravelApp;
+use Illuminate\Support\Facades\Cache;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
 class DraftPickRecommendTool implements ToolInterface
@@ -23,14 +23,14 @@ class DraftPickRecommendTool implements ToolInterface
     {
         return [
             'type' => 'object',
-            'required' => ['league_id','roster_id'],
+            'required' => ['league_id', 'roster_id'],
             'properties' => [
                 'league_id' => ['type' => 'string'],
                 'roster_id' => ['type' => 'integer'],
                 'season' => ['type' => 'string'],
                 'week' => ['type' => 'integer', 'minimum' => 1],
                 'sport' => ['type' => 'string', 'default' => 'nfl'],
-                'format' => ['type' => 'string', 'enum' => ['redraft','dynasty','bestball'], 'default' => 'redraft'],
+                'format' => ['type' => 'string', 'enum' => ['redraft', 'dynasty', 'bestball'], 'default' => 'redraft'],
                 'limit' => ['type' => 'integer', 'default' => 10],
                 'already_drafted' => ['type' => 'array', 'items' => ['type' => 'string']],
                 // Round/pick context for pick-horizon/opportunity cost
@@ -39,7 +39,7 @@ class DraftPickRecommendTool implements ToolInterface
                 'round_size' => ['type' => 'integer', 'minimum' => 2],
                 'snake' => ['type' => 'boolean', 'default' => true],
                 // Strategy profile stub
-                'strategy' => ['type' => 'string', 'enum' => ['balanced','hero_rb','zero_rb','wr_heavy','risk_on','bestball_stack'], 'default' => 'balanced'],
+                'strategy' => ['type' => 'string', 'enum' => ['balanced', 'hero_rb', 'zero_rb', 'wr_heavy', 'risk_on', 'bestball_stack'], 'default' => 'balanced'],
             ],
             'additionalProperties' => false,
         ];
@@ -72,9 +72,9 @@ class DraftPickRecommendTool implements ToolInterface
 
         $myRoster = collect($rosters)->firstWhere('roster_id', $rosterId) ?? [];
         $currentPlayers = array_map('strval', (array) ($myRoster['players'] ?? []));
-        $needCounts = ['QB'=>0,'RB'=>0,'WR'=>0,'TE'=>0];
-        $myTeamsByPos = ['QB'=>[], 'RB'=>[], 'WR'=>[], 'TE'=>[]];
-        $myByesByPos = ['QB'=>[], 'RB'=>[], 'WR'=>[], 'TE'=>[]];
+        $needCounts = ['QB' => 0, 'RB' => 0, 'WR' => 0, 'TE' => 0];
+        $myTeamsByPos = ['QB' => [], 'RB' => [], 'WR' => [], 'TE' => []];
+        $myByesByPos = ['QB' => [], 'RB' => [], 'WR' => [], 'TE' => []];
         foreach ($currentPlayers as $pid) {
             $pos = strtoupper((string) (($catalog[$pid]['position'] ?? '') ?: ''));
             if (isset($needCounts[$pos])) {
@@ -91,26 +91,33 @@ class DraftPickRecommendTool implements ToolInterface
         }
 
         // Replacement level baselines per position using league roster settings
-        $rosterPositions = array_values(array_filter((array) ($league['roster_positions'] ?? []), fn ($p) => !in_array(strtoupper((string) $p), ['BN','IR','TAXI'], true)));
-        $posCounts = ['QB'=>0,'RB'=>0,'WR'=>0,'TE'=>0];
+        $rosterPositions = array_values(array_filter((array) ($league['roster_positions'] ?? []), fn ($p) => ! in_array(strtoupper((string) $p), ['BN', 'IR', 'TAXI'], true)));
+        $posCounts = ['QB' => 0, 'RB' => 0, 'WR' => 0, 'TE' => 0];
         foreach ($rosterPositions as $slot) {
             $slot = strtoupper((string) $slot);
-            if (in_array($slot, ['QB','RB','WR','TE'], true)) {
+            if (in_array($slot, ['QB', 'RB', 'WR', 'TE'], true)) {
                 $posCounts[$slot] = ($posCounts[$slot] ?? 0) + 1;
-            } elseif (in_array($slot, ['FLEX','WR_RB','WR_TE','RB_TE','REC_FLEX'], true)) {
+            } elseif (in_array($slot, ['FLEX', 'WR_RB', 'WR_TE', 'RB_TE', 'REC_FLEX'], true)) {
                 // allocate fractional counts to RB/WR/TE
-                $posCounts['RB'] += 0.34; $posCounts['WR'] += 0.34; $posCounts['TE'] += 0.32;
-            } elseif (in_array($slot, ['SUPER_FLEX','SUPERFLEX','SFLEX'], true)) {
-                $posCounts['QB'] += 0.5; $posCounts['RB'] += 0.2; $posCounts['WR'] += 0.2; $posCounts['TE'] += 0.1;
+                $posCounts['RB'] += 0.34;
+                $posCounts['WR'] += 0.34;
+                $posCounts['TE'] += 0.32;
+            } elseif (in_array($slot, ['SUPER_FLEX', 'SUPERFLEX', 'SFLEX'], true)) {
+                $posCounts['QB'] += 0.5;
+                $posCounts['RB'] += 0.2;
+                $posCounts['WR'] += 0.2;
+                $posCounts['TE'] += 0.1;
             }
         }
         // Determine replacement thresholds by position from projections
         $replacement = [];
-        foreach (['QB','RB','WR','TE'] as $pos) {
+        foreach (['QB', 'RB', 'WR', 'TE'] as $pos) {
             $pool = [];
             foreach ($catalog as $pidX => $metaX) {
                 $p = strtoupper((string) ($metaX['position'] ?? ''));
-                if ($p !== $pos) continue;
+                if ($p !== $pos) {
+                    continue;
+                }
                 $pidX = (string) ($metaX['player_id'] ?? $pidX);
                 $pool[] = (float) (($projections[$pidX]['pts_half_ppr'] ?? $projections[$pidX]['pts_ppr'] ?? $projections[$pidX]['pts_std'] ?? 0));
             }
@@ -131,19 +138,23 @@ class DraftPickRecommendTool implements ToolInterface
 
         // Monte Carlo availability estimate by position
         $mcRuns = 500;
-        $posRunRisk = ['QB'=>0.0,'RB'=>0.0,'WR'=>0.0,'TE'=>0.0];
+        $posRunRisk = ['QB' => 0.0, 'RB' => 0.0, 'WR' => 0.0, 'TE' => 0.0];
         foreach (array_keys($posRunRisk) as $posKey) {
             $posPool = [];
             foreach ($catalog as $pidX => $metaX) {
                 $p = strtoupper((string) ($metaX['position'] ?? ''));
-                if ($p !== $posKey) continue;
+                if ($p !== $posKey) {
+                    continue;
+                }
                 $pidX = (string) ($metaX['player_id'] ?? $pidX);
                 $posPool[] = [
                     'player_id' => $pidX,
                     'adp' => $adpIndex[$pidX] ?? 999.0,
                 ];
             }
-            if (empty($posPool)) continue;
+            if (empty($posPool)) {
+                continue;
+            }
             $exhausted = 0;
             for ($i = 0; $i < $mcRuns; $i++) {
                 $countGone = 0;
@@ -173,7 +184,7 @@ class DraftPickRecommendTool implements ToolInterface
                 continue;
             }
             $pos = strtoupper((string) ($meta['position'] ?? ''));
-            if (! in_array($pos, ['QB','RB','WR','TE'], true)) {
+            if (! in_array($pos, ['QB', 'RB', 'WR', 'TE'], true)) {
                 continue;
             }
             $proj = (float) (($projections[$pid]['pts_half_ppr'] ?? $projections[$pid]['pts_ppr'] ?? $projections[$pid]['pts_std'] ?? 0));
@@ -228,20 +239,38 @@ class DraftPickRecommendTool implements ToolInterface
             if ($team !== '') {
                 if ($pos === 'QB' && (isset($myTeamsByPos['WR'][$team]) || isset($myTeamsByPos['TE'][$team]))) {
                     $stackBonus = 1.0;
-                } elseif (in_array($pos, ['WR','TE'], true) && isset($myTeamsByPos['QB'][$team])) {
+                } elseif (in_array($pos, ['WR', 'TE'], true) && isset($myTeamsByPos['QB'][$team])) {
                     $stackBonus = 1.0;
                 }
             }
 
             // Round-aware weights
-            $wV = 1.5; $wOpp = 1.0; $wADP = max(0.2, 1.0 - 0.05 * ($round - 1)); $wCons = 0.7; $wBye = 0.1; $wInj = 0.5; $wStack = 0.3;
+            $wV = 1.5;
+            $wOpp = 1.0;
+            $wADP = max(0.2, 1.0 - 0.05 * ($round - 1));
+            $wCons = 0.7;
+            $wBye = 0.1;
+            $wInj = 0.5;
+            $wStack = 0.3;
             // Strategy adjustments
             $risk = strtolower((string) ($strategy['risk'] ?? ''));
-            if ($risk === 'high') { $wV += 0.3; $wADP *= 0.8; }
-            if ($risk === 'low') { $wV -= 0.2; $wADP *= 1.2; }
-            if (!empty($strategy['stack_qb'])) { $wStack = 0.6; }
-            if (!empty($strategy['hero_rb']) && $pos === 'RB' && $round <= 4) { $construction += 0.5; }
-            if (!empty($strategy['zero_rb']) && $pos === 'RB' && $round <= 6) { $construction = max(0.0, $construction - 0.7); }
+            if ($risk === 'high') {
+                $wV += 0.3;
+                $wADP *= 0.8;
+            }
+            if ($risk === 'low') {
+                $wV -= 0.2;
+                $wADP *= 1.2;
+            }
+            if (! empty($strategy['stack_qb'])) {
+                $wStack = 0.6;
+            }
+            if (! empty($strategy['hero_rb']) && $pos === 'RB' && $round <= 4) {
+                $construction += 0.5;
+            }
+            if (! empty($strategy['zero_rb']) && $pos === 'RB' && $round <= 6) {
+                $construction = max(0.0, $construction - 0.7);
+            }
 
             $score = $wV * $vorp + $wOpp * $oppCost + $wCons * $construction + $wADP * $adpLeverage - $wBye * $byePenalty - $wInj * $injuryPenalty + $wStack * $stackBonus;
             $candidates[] = [
@@ -266,13 +295,13 @@ class DraftPickRecommendTool implements ToolInterface
         usort($candidates, fn ($a, $b) => $b['score'] <=> $a['score']);
         $top = array_slice($candidates, 0, $limit);
 
-        return [ 'recommendations' => $top, 'pos_run_risk' => $posRunRisk, 'meta' => [
+        return ['recommendations' => $top, 'pos_run_risk' => $posRunRisk, 'meta' => [
             'current_pick_overall' => $currentPickOverall,
             'picks_until_next' => $picksUntilNext,
             'round' => $round,
             'pick_in_round' => $pickInRound,
             'round_size' => $roundSize,
             'snake' => $snake,
-        ] ];
+        ]];
     }
 }

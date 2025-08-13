@@ -35,7 +35,7 @@ class TradeAnalyzeTool implements ToolInterface
                 'sport' => ['type' => 'string', 'default' => 'nfl'],
                 'offer' => [
                     'type' => 'object',
-                    'required' => ['from_roster_id','to_roster_id','sending','receiving'],
+                    'required' => ['from_roster_id', 'to_roster_id', 'sending', 'receiving'],
                     'properties' => [
                         'from_roster_id' => ['type' => 'integer'],
                         'to_roster_id' => ['type' => 'integer'],
@@ -44,7 +44,7 @@ class TradeAnalyzeTool implements ToolInterface
                     ],
                     'additionalProperties' => false,
                 ],
-                'format' => ['type' => 'string', 'enum' => ['redraft','dynasty','bestball'], 'default' => 'redraft'],
+                'format' => ['type' => 'string', 'enum' => ['redraft', 'dynasty', 'bestball'], 'default' => 'redraft'],
             ],
             'additionalProperties' => false,
         ];
@@ -61,8 +61,9 @@ class TradeAnalyzeTool implements ToolInterface
         $sdk = LaravelApp::make(SleeperSdk::class);
         $sport = $arguments['sport'] ?? 'nfl';
         $leagueId = (string) $arguments['league_id'];
-        $season = (string) $arguments['season'];
-        $week = (int) $arguments['week'];
+        $state = $sdk->getState($sport);
+        $season = (string) ($arguments['season'] ?? ($state['season'] ?? date('Y')));
+        $week = (int) ($arguments['week'] ?? (int) ($state['week'] ?? 1));
         $format = $arguments['format'] ?? 'redraft';
         $offer = $arguments['offer'];
 
@@ -89,6 +90,7 @@ class TradeAnalyzeTool implements ToolInterface
                 $marketScore = $adpVal > 0 ? (200.0 - min($adpVal, 200.0)) : 0.0; // higher for better ADP
                 $sum += $proj + $marketScore / 10.0;
             }
+
             return $sum;
         };
 

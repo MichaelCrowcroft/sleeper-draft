@@ -21,6 +21,7 @@ abstract class BaseTool implements ToolInterface
     protected function resolveArg(array $arguments, string $key, mixed $fallback = null): mixed
     {
         $context = $this->getContextDefaults();
+
         return $arguments[$key] ?? $context[$key] ?? $fallback;
     }
 
@@ -42,6 +43,7 @@ abstract class BaseTool implements ToolInterface
         $state = $sdk->getState($sport);
         $resolvedSeason = (string) ($season !== '' ? $season : ($state['season'] ?? date('Y')));
         $resolvedWeek = (int) ($week !== null ? $week : (int) ($state['week'] ?? 1));
+
         return [$resolvedSeason, $resolvedWeek];
     }
 }

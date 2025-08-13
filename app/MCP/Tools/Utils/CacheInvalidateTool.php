@@ -23,7 +23,7 @@ class CacheInvalidateTool implements ToolInterface
             'type' => 'object',
             'required' => ['scope'],
             'properties' => [
-                'scope' => ['type' => 'string', 'enum' => ['user','league','season','all']],
+                'scope' => ['type' => 'string', 'enum' => ['user', 'league', 'season', 'all']],
                 'id' => ['type' => 'string'],
             ],
             'additionalProperties' => false,
@@ -48,14 +48,18 @@ class CacheInvalidateTool implements ToolInterface
             $tags[] = 'season:'.$id;
         }
 
-        $supportsTags = method_exists(Cache::store(), 'tags');
+        $repository = Cache::store();
+        $underlying = method_exists($repository, 'getStore') ? $repository->getStore() : null;
+        $supportsTags = $underlying instanceof \Illuminate\Cache\TaggableStore;
         if ($scope === 'all') {
             Cache::flush();
+
             return ['cleared_keys' => -1, 'note' => 'cache flushed'];
         }
 
         if ($supportsTags && count($tags) > 1) {
             Cache::tags($tags)->flush();
+
             return ['cleared_keys' => -1, 'note' => 'flushed tagged cache: '.implode(',', $tags)];
         }
 

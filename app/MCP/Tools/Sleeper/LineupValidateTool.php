@@ -98,6 +98,7 @@ class LineupValidateTool implements ToolInterface
         // Build starting slots from league settings
         $slots = array_values(array_filter((array) ($league['roster_positions'] ?? []), function ($p) {
             $p = strtoupper((string) $p);
+
             return ! in_array($p, ['BN', 'IR', 'TAXI'], true);
         }));
 

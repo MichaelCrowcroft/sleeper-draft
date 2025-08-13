@@ -22,7 +22,7 @@ class WaiverOptimizeFaabTool implements ToolInterface
     {
         return [
             'type' => 'object',
-            'required' => ['league_id','roster_id','season','week','budget'],
+            'required' => ['league_id', 'roster_id', 'season', 'week', 'budget'],
             'properties' => [
                 'league_id' => ['type' => 'string'],
                 'roster_id' => ['type' => 'integer'],
@@ -101,6 +101,7 @@ class WaiverOptimizeFaabTool implements ToolInterface
         }
 
         usort($recs, fn ($a, $b) => ($b['recommended_bid'] <=> $a['recommended_bid']) ?: ($b['projected_points'] <=> $a['projected_points']));
+
         return ['bids' => $recs];
     }
 }

@@ -29,7 +29,7 @@ class LineupOptimizeTool implements ToolInterface
                 'season' => ['type' => 'string'],
                 'week' => ['type' => 'integer', 'minimum' => 1],
                 'sport' => ['type' => 'string', 'default' => 'nfl'],
-                'strategy' => ['type' => 'string', 'enum' => ['median','ceiling','floor'], 'default' => 'median'],
+                'strategy' => ['type' => 'string', 'enum' => ['median', 'ceiling', 'floor'], 'default' => 'median'],
             ],
             'additionalProperties' => false,
         ];
@@ -45,23 +45,24 @@ class LineupOptimizeTool implements ToolInterface
         $slot = strtoupper($slot);
         $playerPosition = strtoupper($playerPosition);
         if ($slot === 'FLEX') {
-            return in_array($playerPosition, ['RB','WR','TE'], true);
+            return in_array($playerPosition, ['RB', 'WR', 'TE'], true);
         }
         if ($slot === 'SUPER_FLEX' || $slot === 'SUPERFLEX' || $slot === 'SFLEX') {
-            return in_array($playerPosition, ['QB','RB','WR','TE'], true);
+            return in_array($playerPosition, ['QB', 'RB', 'WR', 'TE'], true);
         }
         if ($slot === 'REC_FLEX') {
-            return in_array($playerPosition, ['WR','TE'], true);
+            return in_array($playerPosition, ['WR', 'TE'], true);
         }
         if (str_contains($slot, 'WR_RB')) {
-            return in_array($playerPosition, ['WR','RB'], true);
+            return in_array($playerPosition, ['WR', 'RB'], true);
         }
         if (str_contains($slot, 'WR_TE')) {
-            return in_array($playerPosition, ['WR','TE'], true);
+            return in_array($playerPosition, ['WR', 'TE'], true);
         }
         if (str_contains($slot, 'RB_TE')) {
-            return in_array($playerPosition, ['RB','TE'], true);
+            return in_array($playerPosition, ['RB', 'TE'], true);
         }
+
         return $playerPosition === $slot;
     }
 
@@ -87,7 +88,8 @@ class LineupOptimizeTool implements ToolInterface
 
         $slots = array_values(array_filter((array) ($league['roster_positions'] ?? []), function ($p) {
             $p = strtoupper((string) $p);
-            return ! in_array($p, ['BN','IR','TAXI'], true);
+
+            return ! in_array($p, ['BN', 'IR', 'TAXI'], true);
         }));
 
         // Build candidate list with projected points
@@ -131,7 +133,7 @@ class LineupOptimizeTool implements ToolInterface
                 if (! $this->isEligible($cand['position'], (string) $slot)) {
                     continue;
                 }
-                if (!isset($assigned[$cand['player_id']]) && ($current === null || $cand['points'] > $current['points'])) {
+                if (! isset($assigned[$cand['player_id']]) && ($current === null || $cand['points'] > $current['points'])) {
                     if ($current !== null) {
                         unset($assigned[$current['player_id']]);
                     }

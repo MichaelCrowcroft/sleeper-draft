@@ -41,6 +41,7 @@ class TimeResolveWeekTool implements ToolInterface
         $sdk = LaravelApp::make(SleeperSdk::class);
         $sport = $arguments['sport'] ?? 'nfl';
         $state = $sdk->getState($sport);
+
         return [
             'season' => (string) ($state['season'] ?? date('Y')),
             'week' => (int) ($state['week'] ?? 1),

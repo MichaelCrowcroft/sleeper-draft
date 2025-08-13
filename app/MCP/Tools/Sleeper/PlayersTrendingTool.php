@@ -48,6 +48,7 @@ class PlayersTrendingTool implements ToolInterface
         $limit = (int) ($arguments['limit'] ?? 25);
 
         $entries = $sdk->getPlayersTrending($type, $sport, $lookback, $limit);
-        return [ 'type' => $type, 'entries' => $entries ];
+
+        return ['type' => $type, 'entries' => $entries];
     }
 }

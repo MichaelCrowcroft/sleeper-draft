@@ -40,13 +40,14 @@ class LeagueWaiversTool implements ToolInterface
     {
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
-        $week = (int) $arguments['week'];
+        $state = $sdk->getState('nfl');
+        $week = (int) ($arguments['week'] ?? (int) ($state['week'] ?? 1));
         $transactions = $sdk->getLeagueTransactions($arguments['league_id'], $week);
 
         $waivers = array_values(array_filter($transactions, function ($tx) {
             return ($tx['type'] ?? '') === 'waiver' || ($tx['type'] ?? '') === 'free_agent';
         }));
 
-        return [ 'waivers' => $waivers ];
+        return ['waivers' => $waivers];
     }
 }

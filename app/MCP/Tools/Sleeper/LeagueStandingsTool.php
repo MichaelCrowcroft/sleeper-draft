@@ -71,6 +71,6 @@ class LeagueStandingsTool implements ToolInterface
             $row['rank'] = $index + 1;
         }
 
-        return [ 'standings' => $standings ];
+        return ['standings' => $standings];
     }
 }

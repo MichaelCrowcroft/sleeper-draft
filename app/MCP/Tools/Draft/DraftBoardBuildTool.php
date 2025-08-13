@@ -27,7 +27,7 @@ class DraftBoardBuildTool implements ToolInterface
                 'sport' => ['type' => 'string', 'default' => 'nfl'],
                 'season' => ['type' => 'string'],
                 'week' => ['type' => 'integer', 'minimum' => 1],
-                'format' => ['type' => 'string', 'enum' => ['redraft','dynasty','bestball'], 'default' => 'redraft'],
+                'format' => ['type' => 'string', 'enum' => ['redraft', 'dynasty', 'bestball'], 'default' => 'redraft'],
                 'tier_gaps' => ['type' => 'number', 'default' => 10.0],
                 'limit' => ['type' => 'integer', 'minimum' => 1, 'default' => 300],
             ],
@@ -89,7 +89,7 @@ class DraftBoardBuildTool implements ToolInterface
 
         // Build tiers per position using score gaps
         $tiers = [];
-        foreach (['QB','RB','WR','TE'] as $pos) {
+        foreach (['QB', 'RB', 'WR', 'TE'] as $pos) {
             $posRows = array_values(array_filter($rows, fn ($r) => ($r['position'] ?? null) === $pos));
             usort($posRows, fn ($a, $b) => $b['score'] <=> $a['score']);
             $tier = 1;

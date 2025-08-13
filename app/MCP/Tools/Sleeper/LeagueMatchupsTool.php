@@ -40,9 +40,10 @@ class LeagueMatchupsTool implements ToolInterface
     {
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
-        $week = (int) ($arguments['week'] ?? 1);
+        $state = $sdk->getState('nfl');
+        $week = (int) ($arguments['week'] ?? (int) ($state['week'] ?? 1));
         $matchups = $sdk->getLeagueMatchups($arguments['league_id'], $week);
 
-        return [ 'week' => $week, 'matchups' => $matchups ];
+        return ['week' => $week, 'matchups' => $matchups];
     }
 }

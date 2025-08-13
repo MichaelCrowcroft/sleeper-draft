@@ -48,6 +48,7 @@ class ToolListTool implements ToolInterface
                 }
             }
         }
+
         return ['tools' => $tools];
     }
 }

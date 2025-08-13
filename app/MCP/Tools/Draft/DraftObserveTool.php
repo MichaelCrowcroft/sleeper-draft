@@ -42,6 +42,7 @@ class DraftObserveTool implements ToolInterface
         $sdk = LaravelApp::make(SleeperSdk::class);
         $picks = $sdk->getDraftPicks($arguments['draft_id']);
         $limit = (int) ($arguments['limit'] ?? 1000);
+
         return ['picks' => array_slice($picks, 0, $limit)];
     }
 }

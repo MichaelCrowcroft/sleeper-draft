@@ -41,6 +41,6 @@ class LeagueDraftsTool implements ToolInterface
         $sdk = LaravelApp::make(SleeperSdk::class);
         $drafts = $sdk->getLeagueDrafts($arguments['league_id']);
 
-        return [ 'drafts' => $drafts ];
+        return ['drafts' => $drafts];
     }
 }

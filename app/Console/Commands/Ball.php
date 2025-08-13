@@ -3,9 +3,9 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Prism\Relay\Facades\Relay;
 use Prism\Prism\Enums\Provider;
 use Prism\Prism\Prism;
+use Prism\Relay\Facades\Relay;
 
 class Ball extends Command
 {
@@ -38,6 +38,7 @@ class Ball extends Command
 
         dump($response);
         dump($response->text);
+
         return 1;
     }
 }

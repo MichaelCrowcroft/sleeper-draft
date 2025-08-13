@@ -41,6 +41,6 @@ class DraftPicksTool implements ToolInterface
         $sdk = LaravelApp::make(SleeperSdk::class);
         $picks = $sdk->getDraftPicks($arguments['draft_id']);
 
-        return [ 'picks' => $picks ];
+        return ['picks' => $picks];
     }
 }

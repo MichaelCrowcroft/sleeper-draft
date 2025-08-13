@@ -22,7 +22,7 @@ class ProjectionsWeekTool implements ToolInterface
     {
         return [
             'type' => 'object',
-            'required' => ['season', 'week'],
+            'required' => [],
             'properties' => [
                 'sport' => ['type' => 'string', 'default' => 'nfl'],
                 'season' => ['type' => 'string'],
@@ -42,10 +42,12 @@ class ProjectionsWeekTool implements ToolInterface
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
         $sport = $arguments['sport'] ?? 'nfl';
-        $season = (string) $arguments['season'];
-        $week = (int) $arguments['week'];
+        $state = LaravelApp::make(SleeperSdk::class)->getState($sport);
+        $season = (string) ($arguments['season'] ?? ($state['season'] ?? date('Y')));
+        $week = (int) ($arguments['week'] ?? (int) ($state['week'] ?? 1));
 
         $projections = $sdk->getWeeklyProjections($season, $week, $sport);
-        return [ 'season' => $season, 'week' => $week, 'projections' => $projections ];
+
+        return ['season' => $season, 'week' => $week, 'projections' => $projections];
     }
 }

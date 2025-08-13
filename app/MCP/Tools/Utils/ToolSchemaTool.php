@@ -49,6 +49,7 @@ class ToolSchemaTool implements ToolInterface
                 }
             }
         }
+
         return ['error' => 'Tool not found'];
     }
 }

@@ -40,9 +40,10 @@ class LeagueTransactionsTool implements ToolInterface
     {
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
-        $week = (int) $arguments['week'];
+        $state = $sdk->getState('nfl');
+        $week = (int) ($arguments['week'] ?? (int) ($state['week'] ?? 1));
         $transactions = $sdk->getLeagueTransactions($arguments['league_id'], $week);
 
-        return [ 'transactions' => $transactions ];
+        return ['transactions' => $transactions];
     }
 }

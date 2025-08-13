@@ -10,7 +10,7 @@ class GetWeeklyProjections extends Request
     protected Method $method = Method::GET;
 
     public function __construct(
-        protected string $sport = 'nfl',
+        protected string $sport,
         protected string $season,
         protected int $week
     ) {}

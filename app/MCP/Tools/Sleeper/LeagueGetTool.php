@@ -43,7 +43,7 @@ class LeagueGetTool implements ToolInterface
 
         return [
             'league' => $league,
-            'settings' => $league['settings'] ?? new \stdClass(),
+            'settings' => $league['settings'] ?? new \stdClass,
         ];
     }
 }

@@ -22,7 +22,7 @@ class ProjectionsBlendTool implements ToolInterface
     {
         return [
             'type' => 'object',
-            'required' => ['season','week'],
+            'required' => ['season', 'week'],
             'properties' => [
                 'sport' => ['type' => 'string', 'default' => 'nfl'],
                 'season' => ['type' => 'string'],

@@ -22,7 +22,7 @@ class RosterNeedsTool implements ToolInterface
     {
         return [
             'type' => 'object',
-            'required' => ['league_id','roster_id'],
+            'required' => ['league_id', 'roster_id'],
             'properties' => [
                 'league_id' => ['type' => 'string'],
                 'roster_id' => ['type' => 'integer'],
@@ -54,10 +54,11 @@ class RosterNeedsTool implements ToolInterface
 
         $starterSlots = array_values(array_filter((array) ($league['roster_positions'] ?? []), function ($p) {
             $p = strtoupper((string) $p);
-            return ! in_array($p, ['BN','IR','TAXI'], true);
+
+            return ! in_array($p, ['BN', 'IR', 'TAXI'], true);
         }));
 
-        $counts = ['QB'=>0,'RB'=>0,'WR'=>0,'TE'=>0];
+        $counts = ['QB' => 0, 'RB' => 0, 'WR' => 0, 'TE' => 0];
         foreach ($players as $pid) {
             $pos = strtoupper((string) (($catalog[$pid]['position'] ?? '') ?: ''));
             if (isset($counts[$pos])) {
@@ -66,17 +67,17 @@ class RosterNeedsTool implements ToolInterface
         }
 
         // approximate required counts by counting hard slots; FLEX counted separately
-        $required = ['QB'=>0,'RB'=>0,'WR'=>0,'TE'=>0,'FLEX'=>0];
+        $required = ['QB' => 0, 'RB' => 0, 'WR' => 0, 'TE' => 0, 'FLEX' => 0];
         foreach ($starterSlots as $slot) {
             $slot = strtoupper((string) $slot);
             if (isset($required[$slot])) {
                 $required[$slot]++;
-            } elseif (in_array($slot, ['SUPER_FLEX','SUPERFLEX','SFLEX'])) {
+            } elseif (in_array($slot, ['SUPER_FLEX', 'SUPERFLEX', 'SFLEX'])) {
                 $required['FLEX']++;
                 $required['QB']++;
-            } elseif (in_array($slot, ['FLEX','REC_FLEX','WR_RB','WR_TE','RB_TE'])) {
+            } elseif (in_array($slot, ['FLEX', 'REC_FLEX', 'WR_RB', 'WR_TE', 'RB_TE'])) {
                 $required['FLEX']++;
-            } elseif (in_array($slot, ['WR','RB','QB','TE'])) {
+            } elseif (in_array($slot, ['WR', 'RB', 'QB', 'TE'])) {
                 $required[$slot]++;
             }
         }

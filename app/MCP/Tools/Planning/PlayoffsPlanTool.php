@@ -2,8 +2,6 @@
 
 namespace App\MCP\Tools\Planning;
 
-use App\Services\SleeperSdk;
-use Illuminate\Support\Facades\App as LaravelApp;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
 class PlayoffsPlanTool implements ToolInterface
@@ -26,7 +24,7 @@ class PlayoffsPlanTool implements ToolInterface
             'properties' => [
                 'sport' => ['type' => 'string', 'default' => 'nfl'],
                 'season' => ['type' => 'string'],
-                'weeks' => ['type' => 'array', 'items' => ['type' => 'integer'], 'default' => [15,16,17]],
+                'weeks' => ['type' => 'array', 'items' => ['type' => 'integer'], 'default' => [15, 16, 17]],
             ],
             'additionalProperties' => false,
         ];
@@ -40,7 +38,8 @@ class PlayoffsPlanTool implements ToolInterface
     public function execute(array $arguments): mixed
     {
         // Placeholder: Sleeper doesn’t expose positional SOS directly. Provide structure.
-        $weeks = (array) ($arguments['weeks'] ?? [15,16,17]);
+        $weeks = (array) ($arguments['weeks'] ?? [15, 16, 17]);
+
         return [
             'weeks' => $weeks,
             'notes' => 'To fully implement, integrate SOS model and schedule feed; this returns structure for downstream use.',

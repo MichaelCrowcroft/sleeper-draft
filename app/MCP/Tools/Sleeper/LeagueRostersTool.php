@@ -41,6 +41,6 @@ class LeagueRostersTool implements ToolInterface
         $sdk = LaravelApp::make(SleeperSdk::class);
         $rosters = $sdk->getLeagueRosters($arguments['league_id']);
 
-        return [ 'rosters' => $rosters ];
+        return ['rosters' => $rosters];
     }
 }

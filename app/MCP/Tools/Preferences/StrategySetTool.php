@@ -23,7 +23,7 @@ class StrategySetTool implements ToolInterface
             'type' => 'object',
             'required' => [],
             'properties' => [
-                'risk' => ['type' => 'string', 'enum' => ['low','medium','high']],
+                'risk' => ['type' => 'string', 'enum' => ['low', 'medium', 'high']],
                 'stack_qb' => ['type' => 'boolean'],
                 'hero_rb' => ['type' => 'boolean'],
                 'zero_rb' => ['type' => 'boolean'],
@@ -44,6 +44,7 @@ class StrategySetTool implements ToolInterface
         $current = Cache::get($key, []);
         $next = array_filter(array_merge($current, $arguments), fn ($v) => $v !== null);
         Cache::put($key, $next, now()->addDays(30));
+
         return ['success' => true, 'strategy' => $next];
     }
 }

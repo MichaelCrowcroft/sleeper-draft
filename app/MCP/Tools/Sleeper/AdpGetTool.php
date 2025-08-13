@@ -22,11 +22,11 @@ class AdpGetTool implements ToolInterface
     {
         return [
             'type' => 'object',
-            'required' => ['season'],
+            'required' => [],
             'properties' => [
                 'sport' => ['type' => 'string', 'default' => 'nfl'],
                 'season' => ['type' => 'string'],
-                'format' => ['type' => 'string', 'enum' => ['redraft','dynasty','bestball'], 'default' => 'redraft'],
+                'format' => ['type' => 'string', 'enum' => ['redraft', 'dynasty', 'bestball'], 'default' => 'redraft'],
             ],
             'additionalProperties' => false,
         ];
@@ -42,10 +42,11 @@ class AdpGetTool implements ToolInterface
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
         $sport = $arguments['sport'] ?? 'nfl';
-        $season = (string) $arguments['season'];
+        $season = (string) ($arguments['season'] ?? ((string) (LaravelApp::make(SleeperSdk::class)->getState($sport)['season'] ?? date('Y'))));
         $format = $arguments['format'] ?? 'redraft';
 
         $adp = $sdk->getAdp($season, $format, $sport);
-        return [ 'season' => $season, 'format' => $format, 'adp' => $adp ];
+
+        return ['season' => $season, 'format' => $format, 'adp' => $adp];
     }
 }
