@@ -163,17 +163,9 @@ return [
     |
     */
     'middlewares' => [
-        // Development: Minimal middleware for easier testing
-        // 'throttle:60,1',
-
-        // Production: Uncomment and customize these for security
         // 'auth:sanctum',     // Require authentication
-        // 'throttle:100,1',   // Rate limiting
+        'throttle:100,1',   // Rate limiting
         // 'cors',             // CORS support (requires fruitcake/laravel-cors package)
-
-        // Custom middleware examples:
-        // 'mcp.audit',        // Log all MCP requests
-        // 'mcp.whitelist',    // IP whitelisting
     ],
 
     /*

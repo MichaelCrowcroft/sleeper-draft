@@ -94,13 +94,13 @@ const cursorConfig = `{
                             <div class="space-y-3">
                                 <div>
                                     <div class="mb-1 text-[12px] font-medium text-[#575654] dark:text-[#A1A09A]">Claude Desktop (via supergateway)</div>
-                                    <div class="overflow-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]">
+                                    <div class="overflow-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner text-white dark:border-[#2d2d2d] dark:bg-[#1e1e1e] dark:text-white">
                                         <highlightjs language="json" :code="claudeConfig" :autodetect="false" />
                                     </div>
                                 </div>
                                 <div>
                                     <div class="mb-1 text-[12px] font-medium text-[#575654] dark:text-[#A1A09A]">Cursor (HTTP)</div>
-                                    <div class="overflow-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]">
+                                    <div class="overflow-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner text-white dark:border-[#2d2d2d] dark:bg-[#1e1e1e] dark:text-white">
                                         <highlightjs language="json" :code="cursorConfig" :autodetect="false" />
                                     </div>
                                 </div>

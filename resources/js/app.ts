@@ -9,6 +9,8 @@ import { initializeTheme } from './composables/useAppearance';
 import hljs from 'highlight.js/lib/core';
 import jsonLang from 'highlight.js/lib/languages/json';
 import { App as VueApp } from 'vue';
+import hljsVuePlugin from '@highlightjs/vue-plugin';
+import 'highlight.js/styles/vs2015.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -20,6 +22,7 @@ createInertiaApp({
         createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(ZiggyVue)
+            .use(hljsVuePlugin)
             .mount(el) as unknown as VueApp;
         // Expose hljs on window for components to use if needed
         // @ts-expect-error attaching to window for convenience in components

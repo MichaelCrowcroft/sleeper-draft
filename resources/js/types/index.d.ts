@@ -38,3 +38,9 @@ export interface User {
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;
+
+declare module '@inertiajs/core' {
+    interface PageProps {
+        leagues?: Array<{ id: number; sleeper_league_id: string; name: string; season: string; sport: string; avatar?: string | null; rosters_count?: number }>;
+    }
+}

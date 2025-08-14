@@ -5,26 +5,41 @@ import { Separator } from '@/components/ui/separator';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 
+interface Props {
+  league: {
+    id: number;
+    name: string;
+    season: string;
+    sport: string;
+  };
+}
+
+const props = defineProps<Props>();
+
 const sidebarNavItems: NavItem[] = [
     {
-        title: 'Profile',
-        href: '/settings/profile',
+        title: 'Overview',
+        href: `/leagues/${props.league.id}`,
     },
     {
-        title: 'Password',
-        href: '/settings/password',
+        title: 'Roster',
+        href: `/leagues/${props.league.id}/roster`,
     },
     {
-        title: 'Appearance',
-        href: '/settings/appearance',
+        title: 'Matchups',
+        href: `/leagues/${props.league.id}/matchups`,
     },
     {
-        title: 'Sleeper',
-        href: '/settings/sleeper',
+        title: 'Standings',
+        href: `/leagues/${props.league.id}/standings`,
     },
     {
-        title: 'API Tokens',
-        href: '/settings/api-tokens',
+        title: 'Transactions',
+        href: `/leagues/${props.league.id}/transactions`,
+    },
+    {
+        title: 'Draft',
+        href: `/leagues/${props.league.id}/draft`,
     },
 ];
 
@@ -35,7 +50,10 @@ const currentPath = page.props.ziggy?.location ? new URL(page.props.ziggy.locati
 
 <template>
     <div class="px-4 py-6">
-        <Heading title="Settings" description="Manage your profile and account settings" />
+        <Heading
+            :title="league.name"
+            :description="`${league.sport.toUpperCase()} • ${league.season} Season`"
+        />
 
         <div class="flex flex-col lg:flex-row lg:space-x-12">
             <aside class="w-full max-w-xl lg:w-48">
@@ -56,8 +74,8 @@ const currentPath = page.props.ziggy?.location ? new URL(page.props.ziggy.locati
 
             <Separator class="my-6 lg:hidden" />
 
-            <div class="flex-1 md:max-w-2xl">
-                <section class="max-w-xl space-y-12">
+            <div class="flex-1 md:max-w-4xl">
+                <section class="space-y-12">
                     <slot />
                 </section>
             </div>

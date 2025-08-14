@@ -4,6 +4,8 @@ import { renderToString } from 'vue/server-renderer';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createSSRApp, DefineComponent, h } from 'vue';
 import { ZiggyVue } from 'ziggy-js';
+import hljsVuePlugin from '@highlightjs/vue-plugin';
+import 'highlight.js/styles/vs2015.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -16,6 +18,7 @@ createServer((page) =>
         setup: ({ App, props, plugin }) =>
             createSSRApp({ render: () => h(App, props) })
                 .use(plugin)
+                .use(hljsVuePlugin)
                 .use(ZiggyVue, {
                     ...page.props.ziggy,
                     location: new URL(page.props.ziggy.location),

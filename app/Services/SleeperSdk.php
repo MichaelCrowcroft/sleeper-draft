@@ -240,7 +240,34 @@ class SleeperSdk
             return $this->safeJson($response);
         }, tags: ['sleeper', 'adp', 'season:'.$season]);
 
-        return is_array($data) ? $data : [];
+        // If Sleeper's ADP endpoint is unavailable (returns 404/HTML or empty),
+        // fall back to a trend-based market ranking so downstream tools continue to work.
+        if (! is_array($data) || empty($data)) {
+            // Use trending adds over the last 7 days as a proxy for market interest.
+            // This returns an ordered list we can map to a pseudo-ADP rank.
+            $lookbackHours = 24 * 7;
+            $limit = 500; // cap to a reasonable board size
+            $trending = $this->getPlayersTrending('add', $sport, $lookbackHours, $limit);
+
+            $ranked = [];
+            $rank = 1;
+            foreach ($trending as $row) {
+                $playerId = (string) ($row['player_id'] ?? '');
+                if ($playerId === '') {
+                    continue;
+                }
+                $ranked[] = [
+                    'player_id' => $playerId,
+                    'adp' => $rank,
+                    'source' => 'fallback_trending',
+                ];
+                $rank++;
+            }
+
+            return $ranked;
+        }
+
+        return $data;
     }
 
     public function getState(string $sport = 'nfl', ?int $ttlSeconds = null): array

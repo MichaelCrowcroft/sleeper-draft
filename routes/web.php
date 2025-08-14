@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\LeagueController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -12,8 +12,11 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/api/chats', [ChatController::class, 'index'])->name('api.chats.index');
+Route::middleware('auth')->group(function () {
+    Route::get('/leagues', [LeagueController::class, 'index'])->name('leagues.index');
+    Route::post('/leagues/sync', [LeagueController::class, 'sync'])->name('leagues.sync');
+    Route::get('/leagues/{league}', [LeagueController::class, 'show'])->name('leagues.show');
+});
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
-require __DIR__.'/chat.php';

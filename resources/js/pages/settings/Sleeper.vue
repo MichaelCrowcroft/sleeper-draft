@@ -2,7 +2,7 @@
 import InputError from '@/components/InputError.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,6 +56,7 @@ const submit = () => {
                         <Transition enter-active-class="transition ease-in-out" enter-from-class="opacity-0" leave-active-class="transition ease-in-out" leave-to-class="opacity-0">
                             <p v-show="form.recentlySuccessful" class="text-sm text-neutral-600">Saved.</p>
                         </Transition>
+                        <Link href="/leagues" class="text-sm underline">View leagues</Link>
                     </div>
                 </form>
             </div>

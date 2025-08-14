@@ -4,7 +4,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { LayoutGrid, MessageSquare } from 'lucide-vue-next';
+import { LayoutGrid } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -14,9 +14,9 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Chats',
-        href: '/chat',
-        icon: MessageSquare,
+        title: 'Leagues',
+        href: '/leagues',
+        icon: LayoutGrid,
     },
 ];
 
