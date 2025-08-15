@@ -60,7 +60,12 @@ class DraftBoardBuildTool implements ToolInterface
 
         $catalog = $sdk->getPlayersCatalog($sport);
         $projections = $sdk->getWeeklyProjections($season, $week, $sport);
-        $adp = $sdk->getAdp($season, $format, $sport, ttlSeconds: null, allowTrendingFallback: false);
+        // Fallback to Week 1 projections if the target season/week has no data (e.g., preseason for future seasons)
+        if (empty($projections)) {
+            $projections = $sdk->getWeeklyProjections($season, 1, $sport);
+        }
+        // Enable trending fallback for seasons where Sleeper has not published ADP yet (e.g., 2025 early offseason)
+        $adp = $sdk->getAdp($season, $format, $sport, ttlSeconds: null, allowTrendingFallback: true);
 
         $adpIndex = [];
         foreach ($adp as $row) {
@@ -135,24 +140,38 @@ class DraftBoardBuildTool implements ToolInterface
             }
         }
 
+        // Build board from market first (ADP), limiting to offensive skill positions only
+        $allowedPositions = ['QB', 'RB', 'WR', 'TE'];
         $rows = [];
-        foreach ($catalog as $pid => $meta) {
-            $pid = (string) ($meta['player_id'] ?? $pid);
-            $pos = $meta['position'] ?? null;
-            if (! $pos || $pos === 'DEF' || $pos === 'K') {
+        $seen = [];
+
+        // 1) Sleeper ADP ordered by ADP asc
+        usort($adp, function ($a, $b) {
+            $adpA = (float) ($a['adp'] ?? 999.0);
+            $adpB = (float) ($b['adp'] ?? 999.0);
+
+            return $adpA <=> $adpB;
+        });
+
+        foreach ($adp as $row) {
+            if (count($rows) >= $limit) {
+                break;
+            }
+            $pid = (string) ($row['player_id'] ?? '');
+            if ($pid === '' || isset($seen[$pid]) || ! isset($catalog[$pid])) {
+                continue;
+            }
+            $meta = $catalog[$pid];
+            $pos = strtoupper((string) ($meta['position'] ?? ''));
+            if (! in_array($pos, $allowedPositions, true)) {
                 continue;
             }
             $proj = (float) (($projections[$pid]['pts_half_ppr'] ?? $projections[$pid]['pts_ppr'] ?? $projections[$pid]['pts_std'] ?? 0));
             $adpSleeper = $adpIndex[$pid] ?? null;
             $adpEspn = $espnAdpIndex[$pid] ?? null;
-            $adpVal = 999.0;
-            if ($adpSleeper !== null && $adpEspn !== null) {
-                $adpVal = ($adpSleeper + $adpEspn) / 2.0;
-            } elseif ($adpSleeper !== null) {
-                $adpVal = $adpSleeper;
-            } elseif ($adpEspn !== null) {
-                $adpVal = $adpEspn;
-            }
+            $adpVal = $adpSleeper !== null && $adpEspn !== null
+                ? ($adpSleeper + $adpEspn) / 2.0
+                : ($adpSleeper ?? $adpEspn ?? 999.0);
             $score = $proj + max(0.0, (200.0 - min(200.0, $adpVal))) / 20.0;
 
             $rows[] = [
@@ -166,8 +185,102 @@ class DraftBoardBuildTool implements ToolInterface
                 'projected_points' => $proj,
                 'score' => $score,
             ];
+            $seen[$pid] = true;
         }
 
+        // 2) Supplement with ESPN market ranks where available
+        if (count($rows) < $limit && ! empty($espnAdpIndex)) {
+            asort($espnAdpIndex, SORT_NUMERIC); // best (lowest) first
+            foreach ($espnAdpIndex as $pid => $espnVal) {
+                if (count($rows) >= $limit) {
+                    break;
+                }
+                $pid = (string) $pid;
+                if (isset($seen[$pid]) || ! isset($catalog[$pid])) {
+                    continue;
+                }
+                $meta = $catalog[$pid];
+                $pos = strtoupper((string) ($meta['position'] ?? ''));
+                if (! in_array($pos, $allowedPositions, true)) {
+                    continue;
+                }
+                $proj = (float) (($projections[$pid]['pts_half_ppr'] ?? $projections[$pid]['pts_ppr'] ?? $projections[$pid]['pts_std'] ?? 0));
+                $adpSleeper = $adpIndex[$pid] ?? null;
+                $adpEspn = (float) $espnVal;
+                $adpVal = $adpSleeper !== null ? ($adpSleeper + $adpEspn) / 2.0 : $adpEspn;
+                $score = $proj + max(0.0, (200.0 - min(200.0, $adpVal))) / 20.0;
+
+                $rows[] = [
+                    'player_id' => $pid,
+                    'name' => $meta['full_name'] ?? trim(($meta['first_name'] ?? '').' '.($meta['last_name'] ?? '')),
+                    'position' => $pos,
+                    'team' => $meta['team'] ?? null,
+                    'adp' => $adpVal,
+                    'adp_sleeper' => $adpSleeper,
+                    'adp_espn' => $adpEspn,
+                    'projected_points' => $proj,
+                    'score' => $score,
+                ];
+                $seen[$pid] = true;
+            }
+        }
+
+        // 3) If still short, include top projected players (offensive positions only)
+        if (count($rows) < $limit && ! empty($projections)) {
+            // Build a list of candidates by projection
+            $projectionCandidates = [];
+            foreach ($projections as $pid => $p) {
+                $pid = (string) $pid;
+                if (isset($seen[$pid]) || ! isset($catalog[$pid])) {
+                    continue;
+                }
+                $meta = $catalog[$pid];
+                $pos = strtoupper((string) ($meta['position'] ?? ''));
+                if (! in_array($pos, $allowedPositions, true)) {
+                    continue;
+                }
+                $pts = (float) (($p['pts_half_ppr'] ?? $p['pts_ppr'] ?? $p['pts_std'] ?? 0));
+                if ($pts <= 0) {
+                    continue;
+                }
+                $projectionCandidates[] = [
+                    'pid' => $pid,
+                    'pos' => $pos,
+                    'pts' => $pts,
+                ];
+            }
+            usort($projectionCandidates, fn ($a, $b) => $b['pts'] <=> $a['pts']);
+            foreach ($projectionCandidates as $c) {
+                if (count($rows) >= $limit) {
+                    break;
+                }
+                $pid = $c['pid'];
+                $meta = $catalog[$pid];
+                $pos = $c['pos'];
+                $proj = (float) $c['pts'];
+                $adpSleeper = $adpIndex[$pid] ?? null;
+                $adpEspn = $espnAdpIndex[$pid] ?? null;
+                $adpVal = $adpSleeper !== null && $adpEspn !== null
+                    ? ($adpSleeper + $adpEspn) / 2.0
+                    : ($adpSleeper ?? $adpEspn ?? 999.0);
+                $score = $proj + max(0.0, (200.0 - min(200.0, $adpVal))) / 20.0;
+
+                $rows[] = [
+                    'player_id' => $pid,
+                    'name' => $meta['full_name'] ?? trim(($meta['first_name'] ?? '').' '.($meta['last_name'] ?? '')),
+                    'position' => $pos,
+                    'team' => $meta['team'] ?? null,
+                    'adp' => $adpVal,
+                    'adp_sleeper' => $adpSleeper,
+                    'adp_espn' => $adpEspn,
+                    'projected_points' => $proj,
+                    'score' => $score,
+                ];
+                $seen[$pid] = true;
+            }
+        }
+
+        // Final ordering by score and limit
         usort($rows, fn ($a, $b) => $b['score'] <=> $a['score']);
         $rows = array_slice($rows, 0, $limit);
 
