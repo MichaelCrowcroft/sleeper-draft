@@ -26,8 +26,8 @@ class AdpProxyGetTool extends BaseTool
             'required' => ['season'],
             'properties' => [
                 'season' => ['type' => 'integer'],
-                'view' => ['type' => 'string', 'default' => 'mDraftDetail'],
-                'limit' => ['type' => 'integer', 'default' => 2000],
+                'view' => ['type' => 'string', 'default' => 'kona_player_info'],
+                'limit' => ['type' => 'integer', 'default' => 300],
                 'sport' => ['type' => 'string', 'default' => 'nfl'],
             ],
             'additionalProperties' => false,
@@ -47,8 +47,8 @@ class AdpProxyGetTool extends BaseTool
         $sleeper = LaravelApp::make(SleeperSdk::class);
 
         $season = (int) $this->getParam($arguments, 'season', required: true);
-        $view = (string) ($arguments['view'] ?? 'mDraftDetail');
-        $limit = (int) ($arguments['limit'] ?? 2000);
+        $view = (string) ($arguments['view'] ?? 'kona_player_info');
+        $limit = (int) ($arguments['limit'] ?? 300);
         $sport = (string) ($arguments['sport'] ?? 'nfl');
 
         $espnPlayers = $espn->getFantasyPlayers($season, $view, $limit);
@@ -70,7 +70,8 @@ class AdpProxyGetTool extends BaseTool
             if (isset($item['averageDraftPosition']) && is_numeric($item['averageDraftPosition'])) {
                 $adp = (float) $item['averageDraftPosition'];
             } elseif (isset($item['draftRanksByRankType']) && is_array($item['draftRanksByRankType'])) {
-                $rankType = $item['draftRanksByRankType']['STANDARD'] ?? ($item['draftRanksByRankType']['PPR'] ?? null);
+                // Prefer PPR rankings for redraft format
+                $rankType = $item['draftRanksByRankType']['PPR'] ?? ($item['draftRanksByRankType']['STANDARD'] ?? null);
                 if (is_array($rankType) && isset($rankType['rank']) && is_numeric($rankType['rank'])) {
                     $adp = (float) $rankType['rank'];
                 }
@@ -97,8 +98,12 @@ class AdpProxyGetTool extends BaseTool
     private static function normalizeName(string $name): string
     {
         $n = strtolower(trim($name));
+        // Remove common suffixes for better matching
+        $n = preg_replace('/\s+(jr|sr|ii|iii|iv)\.?$/i', '', $n ?? '');
+        // Remove punctuation and special characters, keep spaces
         $n = preg_replace('/[^a-z\s]/', '', $n ?? '');
-        $n = preg_replace('/\s+/', ' ', $n ?? '');
+        // Normalize whitespace
+        $n = preg_replace('/\s+/', ' ', trim($n ?? ''));
 
         return $n ?? '';
     }
