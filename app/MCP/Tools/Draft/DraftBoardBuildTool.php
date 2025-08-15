@@ -77,7 +77,7 @@ class DraftBoardBuildTool implements ToolInterface
         $espnAdpIndex = [];
         if ($blendAdp) {
             $espnView = (string) ($arguments['espn_view'] ?? 'kona_player_info');
-            $espnPlayers = $espn->getFantasyPlayers((int) $season, $espnView, 500);
+            $espnPlayers = $espn->getFantasyPlayers((int) $season, $espnView, 300);
 
             // Build ESPN ID and name maps → Sleeper player_id
             $nameToPid = [];
@@ -317,8 +317,12 @@ class DraftBoardBuildTool implements ToolInterface
     private static function normalizeName(string $name): string
     {
         $n = strtolower(trim($name));
+        // Remove common suffixes for better matching
+        $n = preg_replace('/\s+(jr|sr|ii|iii|iv)\.?$/i', '', $n ?? '');
+        // Remove punctuation and special characters, keep spaces
         $n = preg_replace('/[^a-z\s]/', '', $n ?? '');
-        $n = preg_replace('/\s+/', ' ', $n ?? '');
+        // Normalize whitespace
+        $n = preg_replace('/\s+/', ' ', trim($n ?? ''));
 
         return $n ?? '';
     }
