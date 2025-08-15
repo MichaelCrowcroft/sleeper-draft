@@ -14,7 +14,7 @@ class HealthCheckTool implements ToolInterface
 
     public function description(): string
     {
-        return 'Verify MCP server and Sleeper reachability.';
+        return 'Verify MCP server, Sleeper, and ESPN reachability.';
     }
 
     public function inputSchema(): array
@@ -43,11 +43,27 @@ class HealthCheckTool implements ToolInterface
         } catch (\Throwable $e) {
             $sleeperOk = false;
         }
+        // ESPN core athletes quick check
+        try {
+            $espnCore = Http::timeout(5)->get('https://sports.core.api.espn.com/v3/sports/football/nfl/athletes?page=1&limit=1');
+            $espnCoreOk = $espnCore->successful();
+        } catch (\Throwable $e) {
+            $espnCoreOk = false;
+        }
+        // ESPN fantasy quick check (minimal page)
+        try {
+            $espnFantasy = Http::timeout(5)->get('https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/'.date('Y').'/players?view=mDraftDetail&limit=1');
+            $espnFantasyOk = $espnFantasy->successful();
+        } catch (\Throwable $e) {
+            $espnFantasyOk = false;
+        }
         $latency = (int) ((microtime(true) - $start) * 1000);
 
         return [
             'server_ok' => $serverOk,
             'sleeper_ok' => $sleeperOk,
+            'espn_core_ok' => $espnCoreOk,
+            'espn_fantasy_ok' => $espnFantasyOk,
             'latency_ms' => $latency,
         ];
     }

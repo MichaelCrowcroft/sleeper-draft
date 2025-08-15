@@ -43,7 +43,7 @@ const cursorConfig = `{
                             </h1>
                         </div>
                         <p class="mt-3 text-[15px] leading-7 text-[#575654] dark:text-[#A1A09A]">
-                            This Laravel server exposes a Model Context Protocol (MCP) endpoint with tools for Sleeper: users, leagues, rosters, drafts, transactions, waivers, projections, and more.
+                            This Laravel server exposes a Model Context Protocol (MCP) endpoint with tools for Sleeper and ESPN: users, leagues, rosters, drafts, transactions, waivers, projections, ADP, and more.
                         </p>
 
                         <div class="mt-6 flex flex-wrap items-center gap-3">
@@ -155,7 +155,7 @@ const cursorConfig = `{
                                 <li><span class="font-medium">players_search</span> — Search players by name, team, or position.</li>
                                 <li><span class="font-medium">players_trending</span> — Trending adds/drops over a window.</li>
                                 <li><span class="font-medium">projections_week</span> — Weekly projections for a season/week.</li>
-                                <li><span class="font-medium">adp_get</span> — Current ADP/market values.</li>
+                                <li><span class="font-medium">adp_get</span> — Current ADP/market values (Sleeper). Draft board can blend ESPN ADP.</li>
                             </ul>
                         </div>
                         <div>
@@ -172,7 +172,7 @@ const cursorConfig = `{
                         <div>
                             <div class="font-semibold">Draft Helpers</div>
                             <ul class="mt-2 list-disc space-y-1 pl-5">
-                                <li><span class="font-medium">draft_board_build</span> — Build a draft board with positional tiers.</li>
+                                <li><span class="font-medium">draft_board_build</span> — Build a draft board with positional tiers. Supports blending ESPN ADP with Sleeper.</li>
                                 <li><span class="font-medium">draft_pick_recommend</span> — Recommend best picks given needs and board.</li>
                                 <li><span class="font-medium">draft_observe</span> — Fetch current draft picks for a live board.</li>
                             </ul>
@@ -187,6 +187,14 @@ const cursorConfig = `{
                             <div class="font-semibold">Projections Blending</div>
                             <ul class="mt-2 list-disc space-y-1 pl-5">
                                 <li><span class="font-medium">projections_blend</span> — Blend multiple projection sources.</li>
+                                <li><span class="font-medium">projections_blend_espn_sleeper</span> — Blend ESPN fantasy dataset with Sleeper projections and trending.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div class="font-semibold">ESPN: Data</div>
+                            <ul class="mt-2 list-disc space-y-1 pl-5">
+                                <li><span class="font-medium">espn_core_athletes_get</span> — Get athletes from ESPN Core API.</li>
+                                <li><span class="font-medium">espn_fantasy_players_get</span> — Get fantasy players from ESPN Fantasy API (supports views and X‑Fantasy‑Filter).</li>
                             </ul>
                         </div>
                         <div>

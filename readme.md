@@ -1,9 +1,10 @@
-## Fantasy Football MCP Server (Sleeper)
+## Fantasy Football MCP Server (Sleeper + ESPN)
 
-An HTTP Model Context Protocol (MCP) server built with Laravel that gives LLMs tool access to Sleeper fantasy football data and workflows: league insights, lineup validation/optimization, waivers, drafting helpers, projections, and utilities.
+An HTTP Model Context Protocol (MCP) server built with Laravel that gives LLMs tool access to Sleeper (and optional ESPN) fantasy football data and workflows: league insights, lineup validation/optimization, waivers, drafting helpers, projections, and utilities.
 
 ### What this provides
 - Sleeper integration via tools for users, leagues, rosters, drafts, transactions, waivers, projections, ADP, and trending players
+- ESPN integration for core athletes and fantasy players with optional ADP blending in draft workflows
 - Strategy and planning helpers (draft board, pick recommendations, playoffs planning)
 - Roster analyses (needs, standings) and trade/waiver heuristics
 - Utility tools (context defaults, time/week resolution, health check, cache, tool listing/schema)
@@ -92,11 +93,11 @@ Notes
 
 ## MCP overview
 
-This MCP server exposes Sleeper fantasy football data and workflows as tools your assistant can call. High‑level capabilities:
+This MCP server exposes Sleeper fantasy football data (and selected ESPN data) and workflows as tools your assistant can call. High‑level capabilities:
 
 - Users and leagues: lookups, list leagues for a season
 - League data: rosters, matchups, transactions, waivers, drafts, computed standings
-- Players and market: search, trending adds/drops, ADP
+- Players and market: search, trending adds/drops, ADP (with optional ESPN ADP blending)
 - Projections: weekly projections; blend multiple sources
 - Lineups and decisions: validate lineups, optimize starters, start/sit comparisons
 - Waivers and trades: waiver recommendations, FAAB optimization, trade analysis
@@ -278,10 +279,10 @@ All tools below are registered in `config/mcp-server.php`. Each entry lists name
 ### Draft Helpers
 
 - draft_board_build
-  - Description: Build a draft board from ADP + projections with simple positional tiers.
+  - Description: Build a draft board from ADP + projections with simple positional tiers. Optionally blends ESPN ADP with Sleeper ADP.
   - Input schema:
     ```json
-    {"type":"object","required":["season","week"],"properties":{"sport":{"type":"string","default":"nfl"},"season":{"type":"string"},"week":{"type":"integer","minimum":1},"format":{"type":"string","enum":["redraft","dynasty","bestball"],"default":"redraft"},"tier_gaps":{"type":"number","default":10.0},"limit":{"type":"integer","minimum":1,"default":300}},"additionalProperties":false}
+    {"type":"object","required":["season","week"],"properties":{"sport":{"type":"string","default":"nfl"},"season":{"type":"string"},"week":{"type":"integer","minimum":1},"format":{"type":"string","enum":["redraft","dynasty","bestball"],"default":"redraft"},"tier_gaps":{"type":"number","default":10.0},"limit":{"type":"integer","minimum":1,"default":300},"blend_adp":{"type":"boolean","default":true},"espn_view":{"type":"string","default":"mDraftDetail"}},"additionalProperties":false}
     ```
 
 - draft_pick_recommend
@@ -314,6 +315,29 @@ All tools below are registered in `config/mcp-server.php`. Each entry lists name
   - Input schema:
     ```json
     {"type":"object","required":["season","week"],"properties":{"sport":{"type":"string","default":"nfl"},"season":{"type":"string"},"week":{"type":"integer","minimum":1},"weights":{"type":"object"}},"additionalProperties":false}
+    ```
+
+- projections_blend_espn_sleeper
+  - Description: Blend ESPN fantasy player dataset with Sleeper projections and trending.
+  - Input schema:
+    ```json
+    {"type":"object","properties":{"season":{"type":"string"},"week":{"type":"integer"},"sport":{"type":"string","default":"nfl"},"espn_view":{"type":"string","default":"mDraftDetail"},"limit":{"type":"integer"}},"additionalProperties":false}
+    ```
+
+### ESPN: Data
+
+- espn_core_athletes_get
+  - Description: Get athletes from ESPN Core API (sports.core.api.espn.com).
+  - Input schema:
+    ```json
+    {"type":"object","properties":{"page":{"type":"integer","default":1},"limit":{"type":"integer","default":20000}},"additionalProperties":false}
+    ```
+
+- espn_fantasy_players_get
+  - Description: Get fantasy players from ESPN Fantasy API (lm-api-reads.fantasy.espn.com). Supports ESPN views and X-Fantasy-Filter.
+  - Input schema:
+    ```json
+    {"type":"object","required":["season"],"properties":{"season":{"type":"integer"},"view":{"type":"string","default":"mDraftDetail"},"limit":{"type":"integer"},"fantasy_filter":{"type":"object"}},"additionalProperties":false}
     ```
 
 ### Planning and Preferences

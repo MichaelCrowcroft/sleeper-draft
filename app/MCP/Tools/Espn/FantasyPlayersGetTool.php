@@ -40,9 +40,12 @@ class FantasyPlayersGetTool extends BaseTool
 
     public function execute(array $arguments): mixed
     {
-        $this->validateRequired($arguments, ['season']);
         /** @var EspnSdk $sdk */
         $sdk = LaravelApp::make(EspnSdk::class);
+        // Inline validation to avoid dependency on BaseTool helpers in some runtimes
+        if (! isset($arguments['season']) || $arguments['season'] === null || $arguments['season'] === '') {
+            throw new \InvalidArgumentException('Missing required parameter: season');
+        }
         $season = (int) $arguments['season'];
         $view = (string) ($arguments['view'] ?? 'mDraftDetail');
         $limit = isset($arguments['limit']) ? (int) $arguments['limit'] : null;
@@ -51,5 +54,24 @@ class FantasyPlayersGetTool extends BaseTool
         $data = $sdk->getFantasyPlayers($season, $view, $limit, $filter);
 
         return ['season' => $season, 'view' => $view, 'limit' => $limit, 'players' => $data];
+    }
+
+    // Provide local fallbacks in case parent BaseTool helpers are not available at runtime
+    protected function validateRequired(array $arguments, array $required): void
+    {
+        foreach ($required as $field) {
+            if (! isset($arguments[$field]) || $arguments[$field] === null || $arguments[$field] === '') {
+                throw new \InvalidArgumentException("Missing required parameter: {$field}");
+            }
+        }
+    }
+
+    protected function getParam(array $arguments, string $key, mixed $default = null, bool $required = false): mixed
+    {
+        if ($required && (! isset($arguments[$key]) || $arguments[$key] === null || $arguments[$key] === '')) {
+            throw new \InvalidArgumentException("Missing required parameter: {$key}");
+        }
+
+        return $arguments[$key] ?? $default;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\MCP\Tools\Draft;
 
+use App\Services\EspnSdk;
 use App\Services\SleeperSdk;
 use Illuminate\Support\Facades\App as LaravelApp;
 use Illuminate\Support\Facades\Cache;
@@ -33,6 +34,8 @@ class DraftPickRecommendTool implements ToolInterface
                 'format' => ['type' => 'string', 'enum' => ['redraft', 'dynasty', 'bestball'], 'default' => 'redraft'],
                 'limit' => ['type' => 'integer', 'default' => 10],
                 'already_drafted' => ['type' => 'array', 'items' => ['type' => 'string']],
+                'blend_adp' => ['type' => 'boolean', 'default' => true],
+                'espn_view' => ['type' => 'string', 'default' => 'mDraftDetail'],
                 // Round/pick context for pick-horizon/opportunity cost
                 'round' => ['type' => 'integer', 'minimum' => 1],
                 'pick_in_round' => ['type' => 'integer', 'minimum' => 1],
@@ -64,6 +67,8 @@ class DraftPickRecommendTool implements ToolInterface
         $limit = (int) ($arguments['limit'] ?? 10);
         $alreadyDrafted = array_map('strval', (array) ($arguments['already_drafted'] ?? []));
 
+        /** @var EspnSdk $espn */
+        $espn = LaravelApp::make(EspnSdk::class);
         $league = $sdk->getLeague($leagueId);
         $rosters = $sdk->getLeagueRosters($leagueId);
         $catalog = $sdk->getPlayersCatalog($sport);
@@ -175,6 +180,44 @@ class DraftPickRecommendTool implements ToolInterface
         $adpIndex = [];
         foreach ($adp as $row) {
             $adpIndex[(string) ($row['player_id'] ?? '')] = (float) ($row['adp'] ?? 999.0);
+        }
+        // Optionally blend ESPN ADP
+        $blendAdp = (bool) ($arguments['blend_adp'] ?? true);
+        if ($blendAdp) {
+            $espnView = (string) ($arguments['espn_view'] ?? 'mDraftDetail');
+            $espnPlayers = $espn->getFantasyPlayers((int) $season, $espnView, 2000);
+            $nameToPid = [];
+            foreach ($catalog as $pidKey => $meta) {
+                $pid = (string) ($meta['player_id'] ?? $pidKey);
+                $fullName = (string) ($meta['full_name'] ?? trim(($meta['first_name'] ?? '').' '.($meta['last_name'] ?? '')));
+                $nameToPid[self::normalizeName($fullName)] = $pid;
+            }
+            foreach ($espnPlayers as $item) {
+                $adpCandidate = null;
+                if (isset($item['averageDraftPosition']) && is_numeric($item['averageDraftPosition'])) {
+                    $adpCandidate = (float) $item['averageDraftPosition'];
+                } elseif (isset($item['draftRanksByRankType']) && is_array($item['draftRanksByRankType'])) {
+                    $rankType = $item['draftRanksByRankType']['STANDARD'] ?? ($item['draftRanksByRankType']['PPR'] ?? null);
+                    if (is_array($rankType) && isset($rankType['rank']) && is_numeric($rankType['rank'])) {
+                        $adpCandidate = (float) $rankType['rank'];
+                    }
+                }
+                if ($adpCandidate === null) {
+                    continue;
+                }
+                $espnName = (string) ($item['fullName'] ?? ($item['player']['fullName'] ?? (($item['firstName'] ?? '').' '.($item['lastName'] ?? ''))));
+                $norm = self::normalizeName($espnName);
+                $pid = $nameToPid[$norm] ?? null;
+                if ($pid === null) {
+                    continue;
+                }
+                // Average with existing ADP when available
+                if (isset($adpIndex[$pid])) {
+                    $adpIndex[$pid] = ($adpIndex[$pid] + $adpCandidate) / 2.0;
+                } else {
+                    $adpIndex[$pid] = $adpCandidate;
+                }
+            }
         }
 
         $candidates = [];
@@ -302,6 +345,16 @@ class DraftPickRecommendTool implements ToolInterface
             'pick_in_round' => $pickInRound,
             'round_size' => $roundSize,
             'snake' => $snake,
+            'blend_adp' => (bool) ($arguments['blend_adp'] ?? true),
         ]];
+    }
+
+    private static function normalizeName(string $name): string
+    {
+        $n = strtolower(trim($name));
+        $n = preg_replace('/[^a-z\s]/', '', $n ?? '');
+        $n = preg_replace('/\s+/', ' ', $n ?? '');
+
+        return $n ?? '';
     }
 }

@@ -285,6 +285,7 @@ return [
         // ESPN tools
         App\MCP\Tools\Espn\CoreAthletesGetTool::class,
         App\MCP\Tools\Espn\FantasyPlayersGetTool::class,
+        App\MCP\Tools\Espn\AdpProxyGetTool::class,
     ],
 
     /*
