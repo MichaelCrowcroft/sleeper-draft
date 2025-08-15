@@ -67,14 +67,17 @@ class AdpGetTool implements ToolInterface
             $seasonInt = (int) $season;
             $espnPlayers = $espn->getFantasyPlayers($seasonInt, $espnView, $espnLimit);
             $catalog = $sdk->getPlayersCatalog($sport);
-
             $nameToPid = [];
+            $espnIdToPid = [];
             foreach ($catalog as $pidKey => $meta) {
                 $pid = (string) ($meta['player_id'] ?? $pidKey);
                 $fullName = (string) ($meta['full_name'] ?? trim(($meta['first_name'] ?? '').' '.($meta['last_name'] ?? '')));
                 $n = self::normalizeName($fullName);
                 if ($n !== '') {
                     $nameToPid[$n] = $pid;
+                }
+                if (isset($meta['espn_id']) && $meta['espn_id'] !== null && $meta['espn_id'] !== '') {
+                    $espnIdToPid[(string) $meta['espn_id']] = $pid;
                 }
             }
 
@@ -93,9 +96,23 @@ class AdpGetTool implements ToolInterface
                     continue;
                 }
 
-                $espnName = (string) ($item['fullName'] ?? ($item['player']['fullName'] ?? (($item['firstName'] ?? '').' '.($item['lastName'] ?? ''))));
-                $norm = self::normalizeName($espnName);
-                $pid = $nameToPid[$norm] ?? null;
+                // Prefer ESPN ID mapping; fallback to name
+                $pid = null;
+                $espnId = null;
+                if (isset($item['id']) && is_numeric($item['id'])) {
+                    $espnId = (string) $item['id'];
+                } elseif (isset($item['player']['id']) && is_numeric($item['player']['id'])) {
+                    $espnId = (string) $item['player']['id'];
+                } elseif (isset($item['playerId']) && is_numeric($item['playerId'])) {
+                    $espnId = (string) $item['playerId'];
+                }
+                if ($espnId !== null && isset($espnIdToPid[$espnId])) {
+                    $pid = $espnIdToPid[$espnId];
+                } else {
+                    $espnName = (string) ($item['fullName'] ?? ($item['player']['fullName'] ?? (($item['firstName'] ?? '').' '.($item['lastName'] ?? ''))));
+                    $norm = self::normalizeName($espnName);
+                    $pid = $nameToPid[$norm] ?? null;
+                }
                 if (! $pid) {
                     continue;
                 }

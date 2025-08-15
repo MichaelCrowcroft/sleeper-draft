@@ -60,7 +60,7 @@ class DraftBoardBuildTool implements ToolInterface
 
         $catalog = $sdk->getPlayersCatalog($sport);
         $projections = $sdk->getWeeklyProjections($season, $week, $sport);
-        $adp = $sdk->getAdp($season, $format, $sport);
+        $adp = $sdk->getAdp($season, $format, $sport, ttlSeconds: null, allowTrendingFallback: false);
 
         $adpIndex = [];
         foreach ($adp as $row) {
@@ -74,14 +74,18 @@ class DraftBoardBuildTool implements ToolInterface
             $espnView = (string) ($arguments['espn_view'] ?? 'mDraftDetail');
             $espnPlayers = $espn->getFantasyPlayers((int) $season, $espnView, 2000);
 
-            // Build name → Sleeper player_id map from Sleeper catalog
+            // Build ESPN ID and name maps → Sleeper player_id
             $nameToPid = [];
+            $espnIdToPid = [];
             foreach ($catalog as $pidKey => $meta) {
                 $pid = (string) ($meta['player_id'] ?? $pidKey);
                 $fullName = (string) ($meta['full_name'] ?? trim(($meta['first_name'] ?? '').' '.($meta['last_name'] ?? '')));
                 $norm = self::normalizeName($fullName);
                 if ($norm !== '') {
                     $nameToPid[$norm] = $pid;
+                }
+                if (isset($meta['espn_id']) && $meta['espn_id'] !== null && $meta['espn_id'] !== '') {
+                    $espnIdToPid[(string) $meta['espn_id']] = $pid;
                 }
             }
 
@@ -102,12 +106,28 @@ class DraftBoardBuildTool implements ToolInterface
                     continue;
                 }
 
-                $espnName = (string) ($item['fullName'] ?? ($item['player']['fullName'] ?? (($item['firstName'] ?? '').' '.($item['lastName'] ?? ''))));
-                $normName = self::normalizeName($espnName);
-                if ($normName === '' || ! isset($nameToPid[$normName])) {
+                // Prefer ESPN ID mapping when available; fallback to name
+                $pid = null;
+                $espnId = null;
+                if (isset($item['id']) && is_numeric($item['id'])) {
+                    $espnId = (string) $item['id'];
+                } elseif (isset($item['player']['id']) && is_numeric($item['player']['id'])) {
+                    $espnId = (string) $item['player']['id'];
+                } elseif (isset($item['playerId']) && is_numeric($item['playerId'])) {
+                    $espnId = (string) $item['playerId'];
+                }
+                if ($espnId !== null && isset($espnIdToPid[$espnId])) {
+                    $pid = $espnIdToPid[$espnId];
+                } else {
+                    $espnName = (string) ($item['fullName'] ?? ($item['player']['fullName'] ?? (($item['firstName'] ?? '').' '.($item['lastName'] ?? ''))));
+                    $normName = self::normalizeName($espnName);
+                    if ($normName !== '' && isset($nameToPid[$normName])) {
+                        $pid = $nameToPid[$normName];
+                    }
+                }
+                if ($pid === null) {
                     continue;
                 }
-                $pid = $nameToPid[$normName];
                 // Keep best (lowest) ADP proxy if duplicates occur
                 if (! isset($espnAdpIndex[$pid]) || $adpCandidate < $espnAdpIndex[$pid]) {
                     $espnAdpIndex[$pid] = $adpCandidate;

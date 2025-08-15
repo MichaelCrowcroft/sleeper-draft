@@ -73,7 +73,7 @@ class DraftPickRecommendTool implements ToolInterface
         $rosters = $sdk->getLeagueRosters($leagueId);
         $catalog = $sdk->getPlayersCatalog($sport);
         $projections = $sdk->getWeeklyProjections($season, $week, $sport);
-        $adp = $sdk->getAdp($season, $format, $sport);
+        $adp = $sdk->getAdp($season, $format, $sport, ttlSeconds: null, allowTrendingFallback: false);
 
         $myRoster = collect($rosters)->firstWhere('roster_id', $rosterId) ?? [];
         $currentPlayers = array_map('strval', (array) ($myRoster['players'] ?? []));
@@ -181,16 +181,20 @@ class DraftPickRecommendTool implements ToolInterface
         foreach ($adp as $row) {
             $adpIndex[(string) ($row['player_id'] ?? '')] = (float) ($row['adp'] ?? 999.0);
         }
-        // Optionally blend ESPN ADP
+        // Optionally blend ESPN ADP (prefer ESPN ID mapping)
         $blendAdp = (bool) ($arguments['blend_adp'] ?? true);
         if ($blendAdp) {
             $espnView = (string) ($arguments['espn_view'] ?? 'mDraftDetail');
             $espnPlayers = $espn->getFantasyPlayers((int) $season, $espnView, 2000);
             $nameToPid = [];
+            $espnIdToPid = [];
             foreach ($catalog as $pidKey => $meta) {
                 $pid = (string) ($meta['player_id'] ?? $pidKey);
                 $fullName = (string) ($meta['full_name'] ?? trim(($meta['first_name'] ?? '').' '.($meta['last_name'] ?? '')));
                 $nameToPid[self::normalizeName($fullName)] = $pid;
+                if (isset($meta['espn_id']) && $meta['espn_id'] !== null && $meta['espn_id'] !== '') {
+                    $espnIdToPid[(string) $meta['espn_id']] = $pid;
+                }
             }
             foreach ($espnPlayers as $item) {
                 $adpCandidate = null;
@@ -205,9 +209,23 @@ class DraftPickRecommendTool implements ToolInterface
                 if ($adpCandidate === null) {
                     continue;
                 }
-                $espnName = (string) ($item['fullName'] ?? ($item['player']['fullName'] ?? (($item['firstName'] ?? '').' '.($item['lastName'] ?? ''))));
-                $norm = self::normalizeName($espnName);
-                $pid = $nameToPid[$norm] ?? null;
+                // Map by ESPN ID, fall back to name
+                $pid = null;
+                $espnId = null;
+                if (isset($item['id']) && is_numeric($item['id'])) {
+                    $espnId = (string) $item['id'];
+                } elseif (isset($item['player']['id']) && is_numeric($item['player']['id'])) {
+                    $espnId = (string) $item['player']['id'];
+                } elseif (isset($item['playerId']) && is_numeric($item['playerId'])) {
+                    $espnId = (string) $item['playerId'];
+                }
+                if ($espnId !== null && isset($espnIdToPid[$espnId])) {
+                    $pid = $espnIdToPid[$espnId];
+                } else {
+                    $espnName = (string) ($item['fullName'] ?? ($item['player']['fullName'] ?? (($item['firstName'] ?? '').' '.($item['lastName'] ?? ''))));
+                    $norm = self::normalizeName($espnName);
+                    $pid = $nameToPid[$norm] ?? null;
+                }
                 if ($pid === null) {
                     continue;
                 }
