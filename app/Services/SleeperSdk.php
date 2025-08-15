@@ -230,7 +230,7 @@ class SleeperSdk
         return is_array($data) ? $data : [];
     }
 
-    public function getAdp(string $season, string $format = 'redraft', string $sport = 'nfl', ?int $ttlSeconds = null): array
+    public function getAdp(string $season, string $format = 'redraft', string $sport = 'nfl', ?int $ttlSeconds = null, bool $allowTrendingFallback = true): array
     {
         $ttlSeconds = $ttlSeconds ?? (int) Config::get('services.sleeper.ttl.adp', 86400);
         $cacheKey = "sleeper:adp:$sport:$season:$format";
@@ -241,8 +241,8 @@ class SleeperSdk
         }, tags: ['sleeper', 'adp', 'season:'.$season]);
 
         // If Sleeper's ADP endpoint is unavailable (returns 404/HTML or empty),
-        // fall back to a trend-based market ranking so downstream tools continue to work.
-        if (! is_array($data) || empty($data)) {
+        // optionally fall back to a trend-based market ranking so downstream tools continue to work.
+        if ((! is_array($data) || empty($data)) && $allowTrendingFallback) {
             // Use trending adds over the last 7 days as a proxy for market interest.
             // This returns an ordered list we can map to a pseudo-ADP rank.
             $lookbackHours = 24 * 7;
@@ -267,7 +267,7 @@ class SleeperSdk
             return $ranked;
         }
 
-        return $data;
+        return is_array($data) ? $data : [];
     }
 
     public function getState(string $sport = 'nfl', ?int $ttlSeconds = null): array
