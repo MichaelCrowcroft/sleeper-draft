@@ -240,9 +240,36 @@ class SleeperSdk
             return $this->safeJson($response);
         }, tags: ['sleeper', 'adp', 'season:'.$season]);
 
+        // Transform stats/adp response to expected ADP format
+        if (is_array($data) && ! empty($data)) {
+            $adpData = [];
+            foreach ($data as $playerId => $stats) {
+                // Use the appropriate ranking based on format
+                $rankKey = match ($format) {
+                    'ppr' => 'rank_ppr',
+                    'std' => 'rank_std',
+                    default => 'rank_half_ppr', // redraft, dynasty, bestball default to half-ppr
+                };
+
+                $rank = $stats[$rankKey] ?? null;
+                if ($rank !== null && is_numeric($rank)) {
+                    $adpData[] = [
+                        'player_id' => (string) $playerId,
+                        'adp' => (float) $rank,
+                        'source' => 'sleeper_stats',
+                    ];
+                }
+            }
+
+            // Sort by ADP (lower is better)
+            usort($adpData, fn ($a, $b) => $a['adp'] <=> $b['adp']);
+
+            return $adpData;
+        }
+
         // If Sleeper's ADP endpoint is unavailable (returns 404/HTML or empty),
         // optionally fall back to a trend-based market ranking so downstream tools continue to work.
-        if ((! is_array($data) || empty($data)) && $allowTrendingFallback) {
+        if ($allowTrendingFallback) {
             // Use trending adds over the last 7 days as a proxy for market interest.
             // This returns an ordered list we can map to a pseudo-ADP rank.
             $lookbackHours = 24 * 7;
@@ -267,7 +294,7 @@ class SleeperSdk
             return $ranked;
         }
 
-        return is_array($data) ? $data : [];
+        return [];
     }
 
     public function getState(string $sport = 'nfl', ?int $ttlSeconds = null): array

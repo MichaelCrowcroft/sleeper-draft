@@ -32,7 +32,7 @@ class DraftBoardBuildTool implements ToolInterface
                 'tier_gaps' => ['type' => 'number', 'default' => 10.0],
                 'limit' => ['type' => 'integer', 'minimum' => 1, 'default' => 300],
                 'blend_adp' => ['type' => 'boolean', 'default' => true],
-                'espn_view' => ['type' => 'string', 'default' => 'mDraftDetail'],
+                'espn_view' => ['type' => 'string', 'default' => 'kona_player_info'],
             ],
             'additionalProperties' => false,
         ];
@@ -76,7 +76,7 @@ class DraftBoardBuildTool implements ToolInterface
         $blendAdp = (bool) ($arguments['blend_adp'] ?? true);
         $espnAdpIndex = [];
         if ($blendAdp) {
-            $espnView = (string) ($arguments['espn_view'] ?? 'mDraftDetail');
+            $espnView = (string) ($arguments['espn_view'] ?? 'kona_player_info');
             $espnPlayers = $espn->getFantasyPlayers((int) $season, $espnView, 2000);
 
             // Build ESPN ID and name maps → Sleeper player_id

@@ -17,6 +17,6 @@ class GetAdp extends Request
 
     public function resolveEndpoint(): string
     {
-        return "/v1/adp/{$this->sport}/{$this->season}?format={$this->format}";
+        return "/v1/stats/{$this->sport}/{$this->season}/adp";
     }
 }
