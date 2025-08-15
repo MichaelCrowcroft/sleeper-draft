@@ -77,7 +77,7 @@ class DraftBoardBuildTool implements ToolInterface
         $espnAdpIndex = [];
         if ($blendAdp) {
             $espnView = (string) ($arguments['espn_view'] ?? 'kona_player_info');
-            $espnPlayers = $espn->getFantasyPlayers((int) $season, $espnView, 2000);
+            $espnPlayers = $espn->getFantasyPlayers((int) $season, $espnView, 500);
 
             // Build ESPN ID and name maps → Sleeper player_id
             $nameToPid = [];
@@ -100,8 +100,8 @@ class DraftBoardBuildTool implements ToolInterface
                 if (isset($item['averageDraftPosition']) && is_numeric($item['averageDraftPosition'])) {
                     $adpCandidate = (float) $item['averageDraftPosition'];
                 } elseif (isset($item['draftRanksByRankType']) && is_array($item['draftRanksByRankType'])) {
-                    // Fallback: treat rank as an ADP proxy if present
-                    $rankType = $item['draftRanksByRankType']['STANDARD'] ?? ($item['draftRanksByRankType']['PPR'] ?? null);
+                    // Prefer PPR for redraft, fall back to STANDARD
+                    $rankType = $item['draftRanksByRankType']['PPR'] ?? ($item['draftRanksByRankType']['STANDARD'] ?? null);
                     if (is_array($rankType) && isset($rankType['rank']) && is_numeric($rankType['rank'])) {
                         $adpCandidate = (float) $rankType['rank'];
                     }
