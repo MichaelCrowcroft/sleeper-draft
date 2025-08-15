@@ -2,11 +2,11 @@
 
 namespace App\MCP\Tools\Sleeper;
 
+use App\MCP\Tools\BaseTool;
 use App\Services\SleeperSdk;
 use Illuminate\Support\Facades\App as LaravelApp;
-use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
-class UserLeaguesTool implements ToolInterface
+class UserLeaguesTool extends BaseTool
 {
     public function name(): string
     {
@@ -39,20 +39,35 @@ class UserLeaguesTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
+        // Validate required parameters
+        $this->validateRequired($arguments, ['user_id']);
+
+        $userId = $this->getParam($arguments, 'user_id', '', true);
+        $sport = $this->getParam($arguments, 'sport', 'nfl');
+        $season = $this->getParam($arguments, 'season', date('Y'));
+
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
 
-        $userId = (string) $arguments['user_id'];
-        $sport = $arguments['sport'] ?? 'nfl';
-        $season = $arguments['season'] ?? date('Y');
+        try {
+            $leagues = $sdk->getUserLeagues($userId, $sport, $season);
 
-        $leagues = $sdk->getUserLeagues($userId, $sport, $season);
-
-        return [
-            'user_id' => $userId,
-            'season' => $season,
-            'sport' => $sport,
-            'leagues' => $leagues,
-        ];
+            return [
+                'success' => true,
+                'user_id' => $userId,
+                'season' => $season,
+                'sport' => $sport,
+                'leagues' => $leagues ?? [],
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Failed to retrieve user leagues: '.$e->getMessage(),
+                'user_id' => $userId,
+                'season' => $season,
+                'sport' => $sport,
+                'leagues' => [],
+            ];
+        }
     }
 }

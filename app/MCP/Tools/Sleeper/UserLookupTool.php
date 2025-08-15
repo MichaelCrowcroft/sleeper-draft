@@ -2,11 +2,11 @@
 
 namespace App\MCP\Tools\Sleeper;
 
+use App\MCP\Tools\BaseTool;
 use App\Services\SleeperSdk;
 use Illuminate\Support\Facades\App as LaravelApp;
-use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
-class UserLookupTool implements ToolInterface
+class UserLookupTool extends BaseTool
 {
     public function name(): string
     {
@@ -37,10 +37,37 @@ class UserLookupTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
+        // Validate required parameters
+        $this->validateRequired($arguments, ['username']);
+
+        $username = $this->getParam($arguments, 'username', '', true);
+
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
-        $user = $sdk->getUserByUsername($arguments['username']);
 
-        return ['user' => $user];
+        try {
+            $user = $sdk->getUserByUsername($username);
+
+            if (empty($user)) {
+                return [
+                    'success' => false,
+                    'error' => 'User not found',
+                    'username' => $username,
+                    'user' => null,
+                ];
+            }
+
+            return [
+                'success' => true,
+                'user' => $user,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Failed to retrieve user: '.$e->getMessage(),
+                'username' => $username,
+                'user' => null,
+            ];
+        }
     }
 }

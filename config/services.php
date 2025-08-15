@@ -24,6 +24,18 @@ return [
         ],
     ],
 
+    'espn' => [
+        'ttl' => [
+            'core_athletes' => env('ESPN_TTL_CORE_ATHLETES', 86400),
+            'fantasy_players' => env('ESPN_TTL_FANTASY_PLAYERS', 3600),
+        ],
+        'retry' => [
+            'max_attempts' => env('ESPN_RETRY_ATTEMPTS', 3),
+            'base_ms' => env('ESPN_RETRY_BASE_MS', 200),
+            'max_ms' => env('ESPN_RETRY_MAX_MS', 2000),
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

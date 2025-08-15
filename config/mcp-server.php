@@ -278,8 +278,13 @@ return [
         App\MCP\Tools\Roster\RosterNeedsTool::class,
         App\MCP\Tools\Waiver\WaiverOptimizeFaabTool::class,
         App\MCP\Tools\Projections\ProjectionsBlendTool::class,
+        App\MCP\Tools\Projections\ProjectionsEspnSleeperBlendTool::class,
         App\MCP\Tools\Planning\PlayoffsPlanTool::class,
         App\MCP\Tools\Preferences\StrategySetTool::class,
+
+        // ESPN tools
+        App\MCP\Tools\Espn\CoreAthletesGetTool::class,
+        App\MCP\Tools\Espn\FantasyPlayersGetTool::class,
     ],
 
     /*

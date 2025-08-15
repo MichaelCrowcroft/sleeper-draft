@@ -2,11 +2,11 @@
 
 namespace App\MCP\Tools\Sleeper;
 
+use App\MCP\Tools\BaseTool;
 use App\Services\SleeperSdk;
 use Illuminate\Support\Facades\App as LaravelApp;
-use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
-class LeagueGetTool implements ToolInterface
+class LeagueGetTool extends BaseTool
 {
     public function name(): string
     {
@@ -37,13 +37,40 @@ class LeagueGetTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
+        // Validate required parameters
+        $this->validateRequired($arguments, ['league_id']);
+
+        $leagueId = $this->getParam($arguments, 'league_id', '', true);
+
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
-        $league = $sdk->getLeague($arguments['league_id']);
 
-        return [
-            'league' => $league,
-            'settings' => $league['settings'] ?? new \stdClass,
-        ];
+        try {
+            $league = $sdk->getLeague($leagueId);
+
+            if (empty($league)) {
+                return [
+                    'success' => false,
+                    'error' => 'League not found',
+                    'league_id' => $leagueId,
+                    'league' => null,
+                    'settings' => new \stdClass,
+                ];
+            }
+
+            return [
+                'success' => true,
+                'league' => $league,
+                'settings' => $league['settings'] ?? new \stdClass,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Failed to retrieve league: '.$e->getMessage(),
+                'league_id' => $leagueId,
+                'league' => null,
+                'settings' => new \stdClass,
+            ];
+        }
     }
 }

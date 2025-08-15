@@ -30,7 +30,7 @@ class ApiTokenController extends Controller
                     'last_used_at' => $token->last_used_at,
                     'created_at' => $token->created_at,
                     'abilities' => $token->abilities,
-                    'token_preview' => substr($token->token, 0, 8) . '...' . substr($token->token, -8),
+                    'token_preview' => substr($token->token, 0, 8).'...'.substr($token->token, -8),
                 ];
             });
 

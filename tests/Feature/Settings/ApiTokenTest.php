@@ -14,9 +14,8 @@ it('can display the api tokens page', function () {
         ->get(route('api-tokens.index'));
 
     $response->assertSuccessful();
-    $response->assertInertia(fn ($page) =>
-        $page->component('settings/ApiTokens')
-            ->has('tokens')
+    $response->assertInertia(fn ($page) => $page->component('settings/ApiTokens')
+        ->has('tokens')
     );
 });
 
@@ -149,12 +148,12 @@ it('only affects mcp tokens when revoking', function () {
 it('can authenticate with sanctum token', function () {
     $token = $this->user->createToken('MCP: Test Token', ['mcp:access']);
 
-    $response = $this->withHeader('Authorization', 'Bearer ' . $token->plainTextToken)
+    $response = $this->withHeader('Authorization', 'Bearer '.$token->plainTextToken)
         ->postJson('/mcp', [
             'jsonrpc' => '2.0',
             'method' => 'initialize',
             'id' => 1,
-            'params' => []
+            'params' => [],
         ]);
 
     // Should not get 401 unauthorized (would happen without token)

@@ -2,11 +2,11 @@
 
 namespace App\MCP\Tools\Sleeper;
 
+use App\MCP\Tools\BaseTool;
 use App\Services\SleeperSdk;
 use Illuminate\Support\Facades\App as LaravelApp;
-use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
-class PlayerSearchTool implements ToolInterface
+class PlayerSearchTool extends BaseTool
 {
     public function name(): string
     {
@@ -41,15 +41,26 @@ class PlayerSearchTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
+        // Validate required parameters
+        $this->validateRequired($arguments, ['query']);
+
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
-        $sport = $arguments['sport'] ?? 'nfl';
-        $catalog = $sdk->getPlayersCatalog($sport);
 
-        $query = strtolower($arguments['query']);
-        $position = isset($arguments['position']) ? strtolower($arguments['position']) : null;
-        $team = isset($arguments['team']) ? strtolower($arguments['team']) : null;
-        $limit = (int) ($arguments['limit'] ?? 25);
+        $sport = $this->getParam($arguments, 'sport', 'nfl');
+        $query = strtolower($this->getParam($arguments, 'query', '', true));
+        $position = $this->getParam($arguments, 'position');
+        $team = $this->getParam($arguments, 'team');
+        $limit = (int) $this->getParam($arguments, 'limit', 25);
+
+        if ($position) {
+            $position = strtolower($position);
+        }
+        if ($team) {
+            $team = strtolower($team);
+        }
+
+        $catalog = $sdk->getPlayersCatalog($sport);
 
         $results = [];
         foreach ($catalog as $playerId => $p) {
