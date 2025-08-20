@@ -27,7 +27,7 @@ class UserLookupTool extends BaseTool
                 'username' => [
                     'type' => 'string',
                     'minLength' => 1,
-                    'description' => 'Sleeper username to look up. If not provided and user is authenticated, uses the authenticated user\'s sleeper username.'
+                    'description' => 'Sleeper username to look up. If not provided and user is authenticated, uses the authenticated user\'s sleeper username.',
                 ],
             ],
             'additionalProperties' => false,

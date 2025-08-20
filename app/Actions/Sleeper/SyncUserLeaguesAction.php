@@ -61,6 +61,10 @@ class SyncUserLeaguesAction
 
                 // Fetch rosters for this league
                 $rosters = $this->sleeper->getLeagueRosters($leagueId);
+                if (empty($rosters)) {
+                    continue; // No rosters to sync for this league yet
+                }
+
                 foreach ($rosters as $r) {
                     $ownerId = isset($r['owner_id']) ? (string) $r['owner_id'] : null;
                     if ($ownerId !== $user->sleeper_user_id) {
@@ -69,7 +73,7 @@ class SyncUserLeaguesAction
 
                     $rosterId = (string) ($r['roster_id'] ?? '');
                     if (empty($rosterId)) {
-                        continue;
+                        continue; // Skip rosters without IDs (early season)
                     }
 
                     // Use updateOrCreate for proper CRUD update behavior
@@ -80,7 +84,6 @@ class SyncUserLeaguesAction
                         ],
                         [
                             'user_id' => $user->id,
-                            'roster_id' => isset($r['roster_id']) ? (int) $r['roster_id'] : null,
                             'owner_id' => $ownerId,
                             'wins' => isset($r['settings']['wins']) ? (int) $r['settings']['wins'] : 0,
                             'losses' => isset($r['settings']['losses']) ? (int) $r['settings']['losses'] : 0,

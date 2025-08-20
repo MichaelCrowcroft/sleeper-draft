@@ -83,7 +83,7 @@ class LineupValidateTool implements ToolInterface
         $rosters = $sdk->getLeagueRosters($leagueId);
         $catalog = $sdk->getPlayersCatalog($sport);
 
-        $roster = collect($rosters)->firstWhere('roster_id', $rosterId) ?? [];
+        $roster = collect($rosters)->firstWhere('sleeper_roster_id', (string) $rosterId) ?? [];
         $rosterPlayers = array_map('strval', (array) ($roster['players'] ?? []));
 
         $errors = [];

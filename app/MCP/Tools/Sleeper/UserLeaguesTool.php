@@ -26,7 +26,7 @@ class UserLeaguesTool extends BaseTool
             'properties' => [
                 'user_id' => [
                     'type' => 'string',
-                    'description' => 'Sleeper user ID. If not provided and user is authenticated, uses the authenticated user\'s sleeper user ID.'
+                    'description' => 'Sleeper user ID. If not provided and user is authenticated, uses the authenticated user\'s sleeper user ID.',
                 ],
                 'season' => ['type' => 'string', 'default' => date('Y')],
                 'sport' => ['type' => 'string', 'enum' => ['nfl', 'nba', 'mlb', 'nhl'], 'default' => 'nfl'],

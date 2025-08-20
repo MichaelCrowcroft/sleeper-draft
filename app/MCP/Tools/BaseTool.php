@@ -34,7 +34,7 @@ abstract class BaseTool implements ToolInterface
     {
         $user = $this->getAuthenticatedUser();
 
-        if (!$user) {
+        if (! $user) {
             return [];
         }
 
@@ -161,8 +161,8 @@ abstract class BaseTool implements ToolInterface
 
         $username = $this->getSleeperUsername($arguments);
 
-        if (!$username) {
-            throw new \InvalidArgumentException("Unable to determine sleeper user ID. Please provide username or authenticate with a token.");
+        if (! $username) {
+            throw new \InvalidArgumentException('Unable to determine sleeper user ID. Please provide username or authenticate with a token.');
         }
 
         /** @var SleeperSdk $sdk */
@@ -171,13 +171,13 @@ abstract class BaseTool implements ToolInterface
         try {
             $sleeperUser = $sdk->getUserByUsername($username);
 
-            if (empty($sleeperUser) || !isset($sleeperUser['user_id'])) {
+            if (empty($sleeperUser) || ! isset($sleeperUser['user_id'])) {
                 throw new \InvalidArgumentException("User not found on Sleeper: {$username}");
             }
 
             return $sleeperUser['user_id'];
         } catch (\Exception $e) {
-            throw new \InvalidArgumentException("Failed to get user ID for {$username}: " . $e->getMessage());
+            throw new \InvalidArgumentException("Failed to get user ID for {$username}: ".$e->getMessage());
         }
     }
 }

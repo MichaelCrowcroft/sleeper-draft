@@ -57,7 +57,7 @@ class WaiverOptimizeFaabTool implements ToolInterface
         $candidatesIn = array_map('strval', (array) ($arguments['candidates'] ?? []));
 
         $rosters = $sdk->getLeagueRosters($leagueId);
-        $roster = collect($rosters)->firstWhere('roster_id', $rosterId) ?? [];
+        $roster = collect($rosters)->firstWhere('sleeper_roster_id', (string) $rosterId) ?? [];
         $owned = array_map('strval', (array) ($roster['players'] ?? []));
 
         $catalog = $sdk->getPlayersCatalog($sport);

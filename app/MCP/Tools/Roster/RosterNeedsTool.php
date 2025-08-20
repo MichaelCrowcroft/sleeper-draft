@@ -49,7 +49,7 @@ class RosterNeedsTool implements ToolInterface
         $rosters = $sdk->getLeagueRosters($leagueId);
         $catalog = $sdk->getPlayersCatalog($sport);
 
-        $myRoster = collect($rosters)->firstWhere('roster_id', $rosterId) ?? [];
+        $myRoster = collect($rosters)->firstWhere('sleeper_roster_id', (string) $rosterId) ?? [];
         $players = array_map('strval', (array) ($myRoster['players'] ?? []));
 
         $starterSlots = array_values(array_filter((array) ($league['roster_positions'] ?? []), function ($p) {

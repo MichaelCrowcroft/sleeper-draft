@@ -75,7 +75,7 @@ class DraftPickRecommendTool implements ToolInterface
         $projections = $sdk->getWeeklyProjections($season, $week, $sport);
         $adp = $sdk->getAdp($season, $format, $sport, ttlSeconds: null, allowTrendingFallback: false);
 
-        $myRoster = collect($rosters)->firstWhere('roster_id', $rosterId) ?? [];
+        $myRoster = collect($rosters)->firstWhere('sleeper_roster_id', (string) $rosterId) ?? [];
         $currentPlayers = array_map('strval', (array) ($myRoster['players'] ?? []));
         $needCounts = ['QB' => 0, 'RB' => 0, 'WR' => 0, 'TE' => 0];
         $myTeamsByPos = ['QB' => [], 'RB' => [], 'WR' => [], 'TE' => []];

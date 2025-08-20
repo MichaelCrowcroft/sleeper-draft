@@ -11,7 +11,6 @@ class Roster extends Model
         'user_id',
         'league_id',
         'sleeper_roster_id',
-        'roster_id',
         'owner_id',
         'wins',
         'losses',

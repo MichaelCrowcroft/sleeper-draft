@@ -27,7 +27,7 @@ class UnifiedLineupTool implements ToolInterface
                 'mode' => [
                     'type' => 'string',
                     'enum' => ['optimize', 'validate', 'compare'],
-                    'description' => 'Type of lineup operation to perform'
+                    'description' => 'Type of lineup operation to perform',
                 ],
 
                 // Common parameters
@@ -68,8 +68,8 @@ class UnifiedLineupTool implements ToolInterface
     private function optimizeLineup(array $arguments): array
     {
         // Validate required parameters
-        if (!isset($arguments['league_id']) || !isset($arguments['roster_id'])) {
-            throw new \InvalidArgumentException("Missing required parameters: league_id and roster_id");
+        if (! isset($arguments['league_id']) || ! isset($arguments['roster_id'])) {
+            throw new \InvalidArgumentException('Missing required parameters: league_id and roster_id');
         }
 
         /** @var SleeperSdk $sdk */
@@ -87,7 +87,7 @@ class UnifiedLineupTool implements ToolInterface
         $catalog = $sdk->getPlayersCatalog($sport);
         $projections = $sdk->getWeeklyProjections($season, $week, $sport);
 
-        $roster = collect($rosters)->firstWhere('roster_id', $rosterId) ?? [];
+        $roster = collect($rosters)->firstWhere('sleeper_roster_id', (string) $rosterId) ?? [];
         $availablePlayers = array_map('strval', (array) ($roster['players'] ?? []));
 
         // Get roster positions
@@ -98,7 +98,7 @@ class UnifiedLineupTool implements ToolInterface
         foreach ($availablePlayers as $pid) {
             $meta = $catalog[$pid] ?? [];
             $pos = strtoupper((string) ($meta['position'] ?? ''));
-            if (!isset($playersByPosition[$pos])) {
+            if (! isset($playersByPosition[$pos])) {
                 $playersByPosition[$pos] = [];
             }
             $playersByPosition[$pos][] = [
@@ -125,9 +125,9 @@ class UnifiedLineupTool implements ToolInterface
 
             if (in_array($slot, ['QB', 'RB', 'WR', 'TE'], true)) {
                 // Direct position match
-                if (!empty($playersByPosition[$slot])) {
+                if (! empty($playersByPosition[$slot])) {
                     foreach ($playersByPosition[$slot] as $player) {
-                        if (!in_array($player['player_id'], $usedPlayers)) {
+                        if (! in_array($player['player_id'], $usedPlayers)) {
                             $bestPlayer = $player;
                             $usedPlayers[] = $player['player_id'];
                             break;
@@ -146,9 +146,9 @@ class UnifiedLineupTool implements ToolInterface
                 };
 
                 foreach ($eligiblePositions as $pos) {
-                    if (!empty($playersByPosition[$pos])) {
+                    if (! empty($playersByPosition[$pos])) {
                         foreach ($playersByPosition[$pos] as $player) {
-                            if (!in_array($player['player_id'], $usedPlayers)) {
+                            if (! in_array($player['player_id'], $usedPlayers)) {
                                 $bestPlayer = $player;
                                 $usedPlayers[] = $player['player_id'];
                                 break 2; // Break out of both loops
@@ -160,9 +160,9 @@ class UnifiedLineupTool implements ToolInterface
                 // Super flex - can use any position
                 $allPositions = ['QB', 'RB', 'WR', 'TE'];
                 foreach ($allPositions as $pos) {
-                    if (!empty($playersByPosition[$pos])) {
+                    if (! empty($playersByPosition[$pos])) {
                         foreach ($playersByPosition[$pos] as $player) {
-                            if (!in_array($player['player_id'], $usedPlayers)) {
+                            if (! in_array($player['player_id'], $usedPlayers)) {
                                 $bestPlayer = $player;
                                 $usedPlayers[] = $player['player_id'];
                                 break 2;
@@ -194,15 +194,15 @@ class UnifiedLineupTool implements ToolInterface
             'league_id' => $leagueId,
             'roster_id' => $rosterId,
             'season' => $season,
-            'week' => $week
+            'week' => $week,
         ];
     }
 
     private function validateLineup(array $arguments): array
     {
         // Validate required parameters
-        if (!isset($arguments['league_id']) || !isset($arguments['roster_id'])) {
-            throw new \InvalidArgumentException("Missing required parameters: league_id and roster_id");
+        if (! isset($arguments['league_id']) || ! isset($arguments['roster_id'])) {
+            throw new \InvalidArgumentException('Missing required parameters: league_id and roster_id');
         }
 
         /** @var SleeperSdk $sdk */
@@ -215,20 +215,20 @@ class UnifiedLineupTool implements ToolInterface
         $rosters = $sdk->getLeagueRosters($leagueId);
         $catalog = $sdk->getPlayersCatalog($sport);
 
-        $roster = collect($rosters)->firstWhere('roster_id', $rosterId) ?? [];
+        $roster = collect($rosters)->firstWhere('sleeper_roster_id', (string) $rosterId) ?? [];
         $availablePlayers = array_map('strval', (array) ($roster['players'] ?? []));
         $rosterPositions = array_values(array_filter((array) ($league['roster_positions'] ?? []), fn ($p) => ! in_array(strtoupper((string) $p), ['BN', 'IR', 'TAXI'], true)));
 
         $validationResults = [
             'is_valid' => true,
             'issues' => [],
-            'summary' => []
+            'summary' => [],
         ];
 
         // Check if we have enough players
         if (count($availablePlayers) < count($rosterPositions)) {
             $validationResults['is_valid'] = false;
-            $validationResults['issues'][] = "Not enough players: have " . count($availablePlayers) . ", need " . count($rosterPositions);
+            $validationResults['issues'][] = 'Not enough players: have '.count($availablePlayers).', need '.count($rosterPositions);
         }
 
         // Check position requirements
@@ -236,7 +236,7 @@ class UnifiedLineupTool implements ToolInterface
         foreach ($availablePlayers as $pid) {
             $meta = $catalog[$pid] ?? [];
             $pos = strtoupper((string) ($meta['position'] ?? ''));
-            if (!isset($positionCounts[$pos])) {
+            if (! isset($positionCounts[$pos])) {
                 $positionCounts[$pos] = 0;
             }
             $positionCounts[$pos]++;
@@ -250,15 +250,15 @@ class UnifiedLineupTool implements ToolInterface
             'mode' => 'validate',
             'validation' => $validationResults,
             'league_id' => $leagueId,
-            'roster_id' => $rosterId
+            'roster_id' => $rosterId,
         ];
     }
 
     private function comparePlayers(array $arguments): array
     {
         // Validate required parameters
-        if (!isset($arguments['player_a_id']) || !isset($arguments['player_b_id'])) {
-            throw new \InvalidArgumentException("Missing required parameters: player_a_id and player_b_id");
+        if (! isset($arguments['player_a_id']) || ! isset($arguments['player_b_id'])) {
+            throw new \InvalidArgumentException('Missing required parameters: player_a_id and player_b_id');
         }
 
         /** @var SleeperSdk $sdk */
@@ -302,7 +302,7 @@ class UnifiedLineupTool implements ToolInterface
             'mode' => 'compare',
             'comparison' => $comparison,
             'season' => $season,
-            'week' => $week
+            'week' => $week,
         ];
     }
 }

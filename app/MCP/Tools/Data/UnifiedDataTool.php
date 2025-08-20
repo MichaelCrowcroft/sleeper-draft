@@ -27,7 +27,7 @@ class UnifiedDataTool implements ToolInterface
                 'data_type' => [
                     'type' => 'string',
                     'enum' => ['league', 'rosters', 'drafts', 'draft_picks', 'players', 'transactions'],
-                    'description' => 'Type of data to retrieve'
+                    'description' => 'Type of data to retrieve',
                 ],
 
                 // Common parameters
@@ -74,8 +74,8 @@ class UnifiedDataTool implements ToolInterface
 
     private function getLeagueData(array $arguments): array
     {
-        if (!isset($arguments['league_id'])) {
-            throw new \InvalidArgumentException("Missing required parameter: league_id");
+        if (! isset($arguments['league_id'])) {
+            throw new \InvalidArgumentException('Missing required parameter: league_id');
         }
 
         /** @var SleeperSdk $sdk */
@@ -87,14 +87,14 @@ class UnifiedDataTool implements ToolInterface
         return [
             'data_type' => 'league',
             'league' => $league,
-            'league_id' => $leagueId
+            'league_id' => $leagueId,
         ];
     }
 
     private function getRostersData(array $arguments): array
     {
-        if (!isset($arguments['league_id'])) {
-            throw new \InvalidArgumentException("Missing required parameter: league_id");
+        if (! isset($arguments['league_id'])) {
+            throw new \InvalidArgumentException('Missing required parameter: league_id');
         }
 
         /** @var SleeperSdk $sdk */
@@ -107,14 +107,14 @@ class UnifiedDataTool implements ToolInterface
             'data_type' => 'rosters',
             'rosters' => $rosters,
             'league_id' => $leagueId,
-            'count' => count($rosters)
+            'count' => count($rosters),
         ];
     }
 
     private function getDraftsData(array $arguments): array
     {
-        if (!isset($arguments['league_id'])) {
-            throw new \InvalidArgumentException("Missing required parameter: league_id");
+        if (! isset($arguments['league_id'])) {
+            throw new \InvalidArgumentException('Missing required parameter: league_id');
         }
 
         /** @var SleeperSdk $sdk */
@@ -127,14 +127,14 @@ class UnifiedDataTool implements ToolInterface
             'data_type' => 'drafts',
             'drafts' => $drafts,
             'league_id' => $leagueId,
-            'count' => count($drafts)
+            'count' => count($drafts),
         ];
     }
 
     private function getDraftPicksData(array $arguments): array
     {
-        if (!isset($arguments['draft_id'])) {
-            throw new \InvalidArgumentException("Missing required parameter: draft_id");
+        if (! isset($arguments['draft_id'])) {
+            throw new \InvalidArgumentException('Missing required parameter: draft_id');
         }
 
         /** @var SleeperSdk $sdk */
@@ -150,14 +150,14 @@ class UnifiedDataTool implements ToolInterface
             'picks' => $limitedPicks,
             'draft_id' => $draftId,
             'count' => count($limitedPicks),
-            'limit' => $limit
+            'limit' => $limit,
         ];
     }
 
     private function searchPlayers(array $arguments): array
     {
-        if (!isset($arguments['query'])) {
-            throw new \InvalidArgumentException("Missing required parameter: query");
+        if (! isset($arguments['query'])) {
+            throw new \InvalidArgumentException('Missing required parameter: query');
         }
 
         /** @var SleeperSdk $sdk */
@@ -210,15 +210,15 @@ class UnifiedDataTool implements ToolInterface
             'count' => count($results),
             'filters' => [
                 'position' => $position,
-                'team' => $team
-            ]
+                'team' => $team,
+            ],
         ];
     }
 
     private function getTransactionsData(array $arguments): array
     {
-        if (!isset($arguments['league_id'])) {
-            throw new \InvalidArgumentException("Missing required parameter: league_id");
+        if (! isset($arguments['league_id'])) {
+            throw new \InvalidArgumentException('Missing required parameter: league_id');
         }
 
         /** @var SleeperSdk $sdk */
@@ -233,7 +233,7 @@ class UnifiedDataTool implements ToolInterface
             'transactions' => $transactions,
             'league_id' => $leagueId,
             'week' => $week,
-            'count' => count($transactions)
+            'count' => count($transactions),
         ];
     }
 }

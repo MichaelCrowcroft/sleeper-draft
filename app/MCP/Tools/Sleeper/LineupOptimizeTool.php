@@ -83,7 +83,7 @@ class LineupOptimizeTool implements ToolInterface
         $catalog = $sdk->getPlayersCatalog($sport);
         $projections = $sdk->getWeeklyProjections($season, $week, $sport);
 
-        $roster = collect($rosters)->firstWhere('roster_id', $rosterId) ?? [];
+        $roster = collect($rosters)->firstWhere('sleeper_roster_id', (string) $rosterId) ?? [];
         $players = array_map('strval', (array) ($roster['players'] ?? []));
 
         $slots = array_values(array_filter((array) ($league['roster_positions'] ?? []), function ($p) {

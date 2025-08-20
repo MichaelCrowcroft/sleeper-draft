@@ -51,17 +51,17 @@ class WaiverRecommendationsTool implements ToolInterface
         $sdk = LaravelApp::make(SleeperSdk::class);
 
         // Validate required parameters
-        if (!isset($arguments['league_id'])) {
-            throw new \InvalidArgumentException("Missing required parameter: league_id");
+        if (! isset($arguments['league_id'])) {
+            throw new \InvalidArgumentException('Missing required parameter: league_id');
         }
-        if (!isset($arguments['roster_id'])) {
-            throw new \InvalidArgumentException("Missing required parameter: roster_id");
+        if (! isset($arguments['roster_id'])) {
+            throw new \InvalidArgumentException('Missing required parameter: roster_id');
         }
-        if (!isset($arguments['season'])) {
-            throw new \InvalidArgumentException("Missing required parameter: season");
+        if (! isset($arguments['season'])) {
+            throw new \InvalidArgumentException('Missing required parameter: season');
         }
-        if (!isset($arguments['week'])) {
-            throw new \InvalidArgumentException("Missing required parameter: week");
+        if (! isset($arguments['week'])) {
+            throw new \InvalidArgumentException('Missing required parameter: week');
         }
 
         $sport = $arguments['sport'] ?? 'nfl';
@@ -77,7 +77,7 @@ class WaiverRecommendationsTool implements ToolInterface
         $catalog = $sdk->getPlayersCatalog($sport);
         $projections = $sdk->getWeeklyProjections($season, $week, $sport);
 
-        $roster = collect($rosters)->firstWhere('roster_id', $rosterId) ?? [];
+        $roster = collect($rosters)->firstWhere('sleeper_roster_id', (string) $rosterId) ?? [];
         $owned = array_map('strval', (array) ($roster['players'] ?? []));
 
         $trendingAdds = $sdk->getPlayersTrending('add', $sport, 48, 100);

@@ -2,10 +2,8 @@
 
 namespace App\MCP\Tools\Recommendations;
 
-use App\Services\EspnSdk;
 use App\Services\SleeperSdk;
 use Illuminate\Support\Facades\App as LaravelApp;
-use Illuminate\Support\Facades\Cache;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
 class UnifiedRecommendationsTool implements ToolInterface
@@ -29,7 +27,7 @@ class UnifiedRecommendationsTool implements ToolInterface
                 'mode' => [
                     'type' => 'string',
                     'enum' => ['draft', 'waiver', 'trade', 'playoffs'],
-                    'description' => 'Type of recommendation to generate'
+                    'description' => 'Type of recommendation to generate',
                 ],
 
                 // Common parameters
@@ -58,7 +56,7 @@ class UnifiedRecommendationsTool implements ToolInterface
                         'to_roster_id' => ['type' => 'integer'],
                         'sending' => ['type' => 'array', 'items' => ['type' => 'string']],
                         'receiving' => ['type' => 'array', 'items' => ['type' => 'string']],
-                    ]
+                    ],
                 ],
 
                 // Playoffs-specific parameters
@@ -95,8 +93,8 @@ class UnifiedRecommendationsTool implements ToolInterface
     private function getDraftRecommendations(array $arguments): array
     {
         // Validate required parameters
-        if (!isset($arguments['league_id']) || !isset($arguments['roster_id'])) {
-            throw new \InvalidArgumentException("Missing required parameters: league_id and roster_id");
+        if (! isset($arguments['league_id']) || ! isset($arguments['roster_id'])) {
+            throw new \InvalidArgumentException('Missing required parameters: league_id and roster_id');
         }
 
         /** @var SleeperSdk $sdk */
@@ -117,7 +115,7 @@ class UnifiedRecommendationsTool implements ToolInterface
         $projections = $sdk->getWeeklyProjections($season, $week, $sport);
         $adp = $sdk->getAdp($season, $format, $sport, ttlSeconds: null, allowTrendingFallback: false);
 
-        $myRoster = collect($rosters)->firstWhere('roster_id', $rosterId) ?? [];
+        $myRoster = collect($rosters)->firstWhere('sleeper_roster_id', (string) $rosterId) ?? [];
         $currentPlayers = array_map('strval', (array) ($myRoster['players'] ?? []));
 
         // Build ADP index
@@ -164,15 +162,15 @@ class UnifiedRecommendationsTool implements ToolInterface
             'league_id' => $leagueId,
             'roster_id' => $rosterId,
             'season' => $season,
-            'week' => $week
+            'week' => $week,
         ];
     }
 
     private function getWaiverRecommendations(array $arguments): array
     {
         // Validate required parameters
-        if (!isset($arguments['league_id']) || !isset($arguments['roster_id'])) {
-            throw new \InvalidArgumentException("Missing required parameters: league_id and roster_id");
+        if (! isset($arguments['league_id']) || ! isset($arguments['roster_id'])) {
+            throw new \InvalidArgumentException('Missing required parameters: league_id and roster_id');
         }
 
         /** @var SleeperSdk $sdk */
@@ -227,15 +225,15 @@ class UnifiedRecommendationsTool implements ToolInterface
             'league_id' => $leagueId,
             'roster_id' => $rosterId,
             'season' => $season,
-            'week' => $week
+            'week' => $week,
         ];
     }
 
     private function getTradeAnalysis(array $arguments): array
     {
         // Validate required parameters
-        if (!isset($arguments['league_id']) || !isset($arguments['offer'])) {
-            throw new \InvalidArgumentException("Missing required parameters: league_id and offer");
+        if (! isset($arguments['league_id']) || ! isset($arguments['offer'])) {
+            throw new \InvalidArgumentException('Missing required parameters: league_id and offer');
         }
 
         /** @var SleeperSdk $sdk */
@@ -285,11 +283,11 @@ class UnifiedRecommendationsTool implements ToolInterface
                 'sending_value' => $sendingValue,
                 'receiving_value' => $receivingValue,
                 'sending_players' => $offer['sending'],
-                'receiving_players' => $offer['receiving']
+                'receiving_players' => $offer['receiving'],
             ],
             'league_id' => $leagueId,
             'season' => $season,
-            'week' => $week
+            'week' => $week,
         ];
     }
 
@@ -308,20 +306,20 @@ class UnifiedRecommendationsTool implements ToolInterface
                 'qb_targets' => 'Focus on QBs with favorable schedules in playoff weeks',
                 'rb_stashing' => 'Consider stashing high-upside RBs for potential bye weeks',
                 'wr_streaming' => 'Look for WRs facing weaker secondary matchups',
-                'te_opportunities' => 'TE premium increases in playoff weeks due to higher scoring'
+                'te_opportunities' => 'TE premium increases in playoff weeks due to higher scoring',
             ],
             'strategy_tips' => [
                 'matchup_research' => 'Prioritize players with favorable playoff schedules',
                 'injury_monitoring' => 'Pay extra attention to injury reports in playoff weeks',
-                'situational_usage' => 'Consider players with higher snap counts in playoffs'
-            ]
+                'situational_usage' => 'Consider players with higher snap counts in playoffs',
+            ],
         ];
 
         return [
             'mode' => 'playoffs',
             'planning' => $planning,
             'season' => $season,
-            'weeks' => $weeks
+            'weeks' => $weeks,
         ];
     }
 
