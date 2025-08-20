@@ -15,16 +15,19 @@ class UserLeaguesTool extends BaseTool
 
     public function description(): string
     {
-        return 'List Sleeper leagues for a user in a season. Use user_lookup tool first to get user_id from username.';
+        return 'List Sleeper leagues for a user in a season. If authenticated, uses the authenticated user\'s sleeper account. Otherwise, requires user_id parameter.';
     }
 
     public function inputSchema(): array
     {
         return [
             'type' => 'object',
-            'required' => ['user_id'],
+            'required' => [], // user_id is optional when authenticated
             'properties' => [
-                'user_id' => ['type' => 'string'],
+                'user_id' => [
+                    'type' => 'string',
+                    'description' => 'Sleeper user ID. If not provided and user is authenticated, uses the authenticated user\'s sleeper user ID.'
+                ],
                 'season' => ['type' => 'string', 'default' => date('Y')],
                 'sport' => ['type' => 'string', 'enum' => ['nfl', 'nba', 'mlb', 'nhl'], 'default' => 'nfl'],
             ],
@@ -39,17 +42,15 @@ class UserLeaguesTool extends BaseTool
 
     public function execute(array $arguments): mixed
     {
-        // Validate required parameters
-        $this->validateRequired($arguments, ['user_id']);
-
-        $userId = $this->getParam($arguments, 'user_id', '', true);
-        $sport = $this->getParam($arguments, 'sport', 'nfl');
-        $season = $this->getParam($arguments, 'season', date('Y'));
-
-        /** @var SleeperSdk $sdk */
-        $sdk = LaravelApp::make(SleeperSdk::class);
-
         try {
+            // Get user ID - either from authenticated user or parameters
+            $userId = $this->getSleeperUserId($arguments);
+            $sport = $this->getParam($arguments, 'sport', 'nfl');
+            $season = $this->getParam($arguments, 'season', date('Y'));
+
+            /** @var SleeperSdk $sdk */
+            $sdk = LaravelApp::make(SleeperSdk::class);
+
             $leagues = $sdk->getUserLeagues($userId, $sport, $season);
 
             return [
@@ -58,14 +59,21 @@ class UserLeaguesTool extends BaseTool
                 'season' => $season,
                 'sport' => $sport,
                 'leagues' => $leagues ?? [],
+                'authenticated' => $this->isAuthenticated(),
+                'source' => $this->isAuthenticated() ? 'authenticated_user' : 'provided_user_id',
+            ];
+        } catch (\InvalidArgumentException $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'authenticated' => $this->isAuthenticated(),
+                'leagues' => [],
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'error' => 'Failed to retrieve user leagues: '.$e->getMessage(),
-                'user_id' => $userId,
-                'season' => $season,
-                'sport' => $sport,
+                'authenticated' => $this->isAuthenticated(),
                 'leagues' => [],
             ];
         }

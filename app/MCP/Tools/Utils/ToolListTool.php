@@ -44,6 +44,7 @@ class ToolListTool implements ToolInterface
                         'name' => $instance->name(),
                         'streaming' => method_exists($instance, 'isStreaming') ? (bool) $instance->isStreaming() : false,
                         'description' => $instance->description(),
+                        'input_schema' => $instance->inputSchema(),
                     ];
                 }
             }

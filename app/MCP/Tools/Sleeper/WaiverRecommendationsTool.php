@@ -50,6 +50,20 @@ class WaiverRecommendationsTool implements ToolInterface
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
 
+        // Validate required parameters
+        if (!isset($arguments['league_id'])) {
+            throw new \InvalidArgumentException("Missing required parameter: league_id");
+        }
+        if (!isset($arguments['roster_id'])) {
+            throw new \InvalidArgumentException("Missing required parameter: roster_id");
+        }
+        if (!isset($arguments['season'])) {
+            throw new \InvalidArgumentException("Missing required parameter: season");
+        }
+        if (!isset($arguments['week'])) {
+            throw new \InvalidArgumentException("Missing required parameter: week");
+        }
+
         $sport = $arguments['sport'] ?? 'nfl';
         $leagueId = (string) $arguments['league_id'];
         $rosterId = (int) $arguments['roster_id'];

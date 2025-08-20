@@ -1,13 +1,14 @@
 ## Fantasy Football MCP Server (Sleeper + ESPN)
 
-An HTTP Model Context Protocol (MCP) server built with Laravel that gives LLMs tool access to Sleeper (and optional ESPN) fantasy football data and workflows: league insights, lineup validation/optimization, waivers, drafting helpers, projections, and utilities.
+An HTTP Model Context Protocol (MCP) server built with Laravel that gives LLMs tool access to consolidated fantasy football data and workflows: unified data access, fantasy recommendations, lineup management, and core utilities.
 
 ### What this provides
-- Sleeper integration via tools for users, leagues, rosters, drafts, transactions, waivers, projections, ADP, and trending players
-- ESPN integration for core athletes and fantasy players with optional ADP blending in draft workflows
-- Strategy and planning helpers (draft board, pick recommendations, playoffs planning)
-- Roster analyses (needs, standings) and trade/waiver heuristics
-- Utility tools (context defaults, time/week resolution, health check, cache, tool listing/schema)
+- **Unified Data Access**: Single tool for leagues, rosters, drafts, players, and transactions
+- **Fantasy Recommendations**: Consolidated tool for draft picks, waiver acquisitions, trade analysis, and playoff planning
+- **Lineup Management**: Unified tool for optimization, validation, and player comparisons
+- **Core Utilities**: Time resolution, health checks, cache management, and tool discovery
+- **Sleeper Integration**: Primary data source with reliable API access
+- **Authentication Support**: Optional user authentication via Sanctum tokens for personalized data access
 
 
 ## Quick start
@@ -82,66 +83,169 @@ How to connect from an MCP-compatible client:
 Restart your client after saving. In Cursor, you can also manage servers in Settings → MCP.
 
 Try these prompts once connected:
-- “List available tools.”
-- “Look up Sleeper user by username ‘your_username’ and list their 2024 leagues.”
-- “Resolve the current NFL week, then get weekly projections.”
+- "List available tools."
+- "Look up Sleeper user by username 'your_username' and list their 2025 leagues."
+- "Resolve the current NFL week, then get weekly projections."
 
 Notes
 - This endpoint uses public Sleeper data; no account or token needed.
-- Don’t send secrets. Usage may be rate-limited by upstream APIs.
+- Don't send secrets. Usage may be rate-limited by upstream APIs.
+
+## Authentication & Personalization
+
+The MCP server supports optional authentication via Laravel Sanctum tokens. When authenticated, tools can automatically use your connected Sleeper account, providing a more personalized experience.
+
+### Authentication Modes
+
+1. **Unauthenticated (Default)**: Access public data with standard rate limiting
+   - Tools require explicit parameters (username, user_id, etc.)
+   - No personal data access
+   - Generic responses
+
+2. **Authenticated**: Enhanced functionality with automatic user detection
+   - Tools can auto-detect your Sleeper username and user ID
+   - Access to your personal leagues and data
+   - Personalized recommendations and analysis
+
+### Setting Up Authentication
+
+1. **Create an Account**: Register at [www.sleeperdraft.com](https://www.sleeperdraft.com)
+2. **Connect Your Sleeper Account**: Go to Settings → Sleeper and enter your Sleeper username
+3. **Generate a Token**: Go to Settings → API Tokens and create a new "MCP" token
+4. **Configure Your Client**: Include the token in your MCP client configuration
+
+#### Example Client Configuration with Authentication
+
+**Cursor (.cursor/mcp.json)**:
+```json
+{
+  "mcpServers": {
+    "fantasy-football-mcp": {
+      "transport": {
+        "type": "http",
+        "url": "https://www.sleeperdraft.com/mcp",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        }
+      }
+    }
+  }
+}
+```
+
+**Claude Desktop (via supergateway)**:
+```json
+{
+  "mcpServers": {
+    "sleeperdraft-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "supergateway",
+        "--streamableHttp",
+        "https://www.sleeperdraft.com/mcp",
+        "--headers",
+        "Authorization: Bearer YOUR_TOKEN_HERE"
+      ]
+    }
+  }
+}
+```
+
+### Authenticated vs Unauthenticated Usage
+
+**Unauthenticated** (requires explicit parameters):
+```bash
+# Need to specify username explicitly
+"Look up user with username 'john_doe' and list their leagues"
+```
+
+**Authenticated** (automatic user detection):
+```bash
+# Uses your connected Sleeper account automatically
+"List my leagues" or "Get my user information"
+```
+
+### Benefits of Authentication
+
+- **Automatic User Detection**: Tools like `user_lookup` and `user_leagues` use your connected Sleeper account
+- **Personalized Data**: Access your leagues, rosters, and drafts without specifying IDs
+- **Enhanced Recommendations**: Get personalized waiver, trade, and draft recommendations
+- **Streamlined Workflows**: Simplified prompts and faster access to your data
+
+### Security Notes
+
+- Tokens have the `mcp:access` ability and can only be used for MCP operations
+- Tokens don't provide access to your account credentials or other personal information
+- You can create multiple tokens and revoke them individually
+- All MCP requests are still subject to rate limiting
 
 
 ## MCP overview
 
-This MCP server exposes Sleeper fantasy football data (and selected ESPN data) and workflows as tools your assistant can call. High‑level capabilities:
+This MCP server exposes consolidated fantasy football data and workflows as tools your assistant can call. High‑level capabilities:
 
-- Users and leagues: lookups, list leagues for a season
-- League data: rosters, matchups, transactions, waivers, drafts, computed standings
-- Players and market: search, trending adds/drops, ADP (with optional ESPN ADP blending)
-- Projections: weekly projections; blend multiple sources
-- Lineups and decisions: validate lineups, optimize starters, start/sit comparisons
-- Waivers and trades: waiver recommendations, FAAB optimization, trade analysis
-- Draft helpers: draft board building, pick recommendations, live draft observe, draft picks
-- Roster analysis: roster needs vs. starting slots
-- Planning and preferences: playoff planning, strategy levers
-- Utilities: set context defaults, resolve current week, health check, cache invalidation, tool listing/schema
+- **Core Data Tools**: User lookups, league listings, matchups, standings, ADP, projections
+- **Unified Data Access**: Single tool for leagues, rosters, drafts, players, transactions
+- **Fantasy Recommendations**: Draft picks, waiver acquisitions, trade analysis, playoff planning
+- **Lineup Management**: Optimization, validation, and player comparisons
+- **Analysis & Strategy**: Roster needs, strategy configuration, FAAB optimization
+- **Utilities**: Time resolution, health checks, cache management, tool discovery
 
 
 ## Typical flows
 
+### Unauthenticated Usage
 - Find a user and their leagues
- 1) `user_lookup` with `username`
- 2) `user_leagues` with the returned `user_id`, optional `season` and `sport`
+  1) `user_lookup` with `username`
+  2) `user_leagues` with the returned `user_id`, optional `season` and `sport`
 
-- Explore a league
-  - `league_get`, `league_rosters`, `league_matchups`, `league_transactions`, `league_waivers`, `league_drafts`, `league_standings`
+### Authenticated Usage (Recommended)
+- Find your leagues and data automatically
+  1) `user_lookup` (uses your connected account automatically)
+  2) `user_leagues` (uses your connected account automatically)
+
+- Explore your leagues
+  - `fantasy_data` with `data_type=league`, `data_type=rosters`, `data_type=transactions`, `data_type=drafts`
+  - `league_matchups` for weekly matchups
+  - `league_standings` for computed standings
 
 - Weekly operations
   - `time_resolve_week` to auto-detect `season` and `week`
-  - `projections_week`, `lineup_validate`, `lineup_optimize`, `start_sit_compare`, `waiver_recommendations`
+  - `projections_week` for projections
+  - `lineup_management` with `mode=optimize`, `mode=validate`, `mode=compare`
+  - `fantasy_recommendations` with `mode=waiver`
 
 - Drafting
-  - `adp_get`, `projections_week`, `draft_board_build`, `draft_pick_recommend`, `draft_observe`, `draft_picks`
+  - `adp_get` for average draft position
+  - `fantasy_data` with `data_type=draft_picks` for draft information
+  - `fantasy_recommendations` with `mode=draft` for pick recommendations
+
+### Authentication Benefits
+- **Streamlined workflows**: No need to specify usernames or user IDs
+- **Personal data access**: Direct access to your leagues and rosters
+- **Simplified prompts**: Just ask "Show my leagues" instead of "Show user X's leagues"
+- **Enhanced context**: Tools automatically use your preferences and account data
 
 
 ## Tools reference
 
-All tools below are registered in `config/mcp-server.php`. Each entry lists name, description, and input schema. Outputs are summarized where helpful.
+The server now features a consolidated tool architecture with unified tools that combine multiple related functions. Tools are registered in `config/mcp-server.php`.
 
 ### Sleeper: Users and Leagues
 
 - user_lookup
-  - Description: Get Sleeper user by username and return user_id and profile info.
+  - Description: Get Sleeper user by username and return user_id and profile info. When authenticated, uses your connected Sleeper account if no username provided.
   - Input schema:
     ```json
-    {"type":"object","required":["username"],"properties":{"username":{"type":"string","minLength":1}},"additionalProperties":false}
+    {"type":"object","required":[],"properties":{"username":{"type":"string","minLength":1,"description":"Sleeper username to look up. If not provided and user is authenticated, uses the authenticated user's sleeper username."}},"additionalProperties":false}
     ```
 
 - user_leagues
-  - Description: List Sleeper leagues for a user in a season. Use user_lookup tool first to get user_id from username.
+  - Description: List Sleeper leagues for a user in a season. When authenticated, uses your connected Sleeper account if no user_id provided.
   - Input schema:
     ```json
-    {"type":"object","required":["user_id"],"properties":{"user_id":{"type":"string"},"season":{"type":"string","default":"YYYY"},"sport":{"type":"string","enum":["nfl","nba","mlb","nhl"],"default":"nfl"}},"additionalProperties":false}
+    {"type":"object","required":[],"properties":{"user_id":{"type":"string","description":"Sleeper user ID. If not provided and user is authenticated, uses the authenticated user's sleeper user ID."},"season":{"type":"string","default":"YYYY"},"sport":{"type":"string","enum":["nfl","nba","mlb","nhl"],"default":"nfl"}},"additionalProperties":false}
     ```
 
 ### Sleeper: League Data
@@ -405,7 +509,10 @@ All tools below are registered in `config/mcp-server.php`. Each entry lists name
 - Ensure the server is running: `php artisan serve` (default port 8000)
 - Verify reachability with `health_check` via `tools/call`
 - If you see cache-related issues, consider running `php artisan config:clear` and retry
-- For production, add auth/rate limiting middleware in `config/mcp-server.php`
+- For authentication issues, verify your token is valid and has the `mcp:access` ability
+- Check that your Sleeper username is connected in Settings → Sleeper
+- For production, authentication and rate limiting are configured in `config/mcp-server.php`
+- If tools don't auto-detect your user, try the unauthenticated approach with explicit parameters
 
 
 ## License

@@ -22,9 +22,13 @@ class UserLookupTool extends BaseTool
     {
         return [
             'type' => 'object',
-            'required' => ['username'],
+            'required' => [], // Username is now optional when authenticated
             'properties' => [
-                'username' => ['type' => 'string', 'minLength' => 1],
+                'username' => [
+                    'type' => 'string',
+                    'minLength' => 1,
+                    'description' => 'Sleeper username to look up. If not provided and user is authenticated, uses the authenticated user\'s sleeper username.'
+                ],
             ],
             'additionalProperties' => false,
         ];
@@ -37,15 +41,13 @@ class UserLookupTool extends BaseTool
 
     public function execute(array $arguments): mixed
     {
-        // Validate required parameters
-        $this->validateRequired($arguments, ['username']);
-
-        $username = $this->getParam($arguments, 'username', '', true);
-
-        /** @var SleeperSdk $sdk */
-        $sdk = LaravelApp::make(SleeperSdk::class);
-
         try {
+            // Get username - either from authenticated user or parameters
+            $username = $this->getSleeperUsername($arguments);
+
+            /** @var SleeperSdk $sdk */
+            $sdk = LaravelApp::make(SleeperSdk::class);
+
             $user = $sdk->getUserByUsername($username);
 
             if (empty($user)) {
@@ -54,18 +56,28 @@ class UserLookupTool extends BaseTool
                     'error' => 'User not found',
                     'username' => $username,
                     'user' => null,
+                    'authenticated' => $this->isAuthenticated(),
                 ];
             }
 
             return [
                 'success' => true,
                 'user' => $user,
+                'authenticated' => $this->isAuthenticated(),
+                'source' => $this->isAuthenticated() ? 'authenticated_user' : 'provided_username',
+            ];
+        } catch (\InvalidArgumentException $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'authenticated' => $this->isAuthenticated(),
+                'user' => null,
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'error' => 'Failed to retrieve user: '.$e->getMessage(),
-                'username' => $username,
+                'authenticated' => $this->isAuthenticated(),
                 'user' => null,
             ];
         }

@@ -141,6 +141,12 @@ class DraftPickRecommendTool implements ToolInterface
             ? ($round % 2 === 1 ? (2 * $roundSize - $pickInRound * 2 + 1) : (2 * $pickInRound - 1))
             : $roundSize;
 
+        // Build ADP index first
+        $adpIndex = [];
+        foreach ($adp as $row) {
+            $adpIndex[(string) ($row['player_id'] ?? '')] = (float) ($row['adp'] ?? 999.0);
+        }
+
         // Monte Carlo availability estimate by position
         $mcRuns = 500;
         $posRunRisk = ['QB' => 0.0, 'RB' => 0.0, 'WR' => 0.0, 'TE' => 0.0];
@@ -177,10 +183,6 @@ class DraftPickRecommendTool implements ToolInterface
             $posRunRisk[$posKey] = $exhausted / $mcRuns;
         }
 
-        $adpIndex = [];
-        foreach ($adp as $row) {
-            $adpIndex[(string) ($row['player_id'] ?? '')] = (float) ($row['adp'] ?? 999.0);
-        }
         // Optionally blend ESPN ADP (prefer ESPN ID mapping)
         $blendAdp = (bool) ($arguments['blend_adp'] ?? true);
         if ($blendAdp) {
