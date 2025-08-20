@@ -9,7 +9,25 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
+    $user = auth()->user();
+    $mcpTokens = $user->tokens()
+        ->where('name', 'LIKE', 'MCP%')
+        ->orderBy('created_at', 'asc')
+        ->get(['id', 'name', 'token', 'token_preview'])
+        ->map(fn($token) => [
+            'id' => $token->id,
+            'name' => $token->name,
+            'token' => $token->token,
+            'token_preview' => $token->token_preview
+        ]);
+
+    $firstToken = $mcpTokens->first();
+
+    return Inertia::render('Dashboard', [
+        'hasMcpTokens' => $mcpTokens->isNotEmpty(),
+        'mcpTokens' => $mcpTokens,
+        'firstToken' => $firstToken,
+    ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {

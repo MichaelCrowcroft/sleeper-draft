@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
 import LeagueLayout from '@/layouts/leagues/Layout.vue'
-import { Head, usePage, Link } from '@inertiajs/vue3'
+import { Head, usePage } from '@inertiajs/vue3'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Icon from '@/components/Icon.vue'

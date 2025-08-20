@@ -1,16 +1,7 @@
 <script setup lang="ts">
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import sleeperIcon from '../../images/sleeper-draft-icon.png';
-import type { AppPageProps } from '@/types';
-
-const page = usePage<AppPageProps>();
-const auth = page.props.auth;
-
-// Redirect authenticated users to dashboard
-if (auth.user) {
-    router.visit('/dashboard');
-}
 
 const claudeConfig = `{
   "mcpServers": {

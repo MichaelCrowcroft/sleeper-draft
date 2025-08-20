@@ -5,9 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import Icon from '@/components/Icon.vue'
-import { ref } from 'vue'
 
 type League = {
   id: number
@@ -24,8 +22,6 @@ const page = usePage()
 const leagues = page.props.leagues as League[]
 const hasSleeperAccount = page.props.hasSleeperAccount as boolean
 
-const isLoading = ref(false)
-
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/)
   const first = parts[0]?.[0] ?? ''
@@ -34,12 +30,7 @@ function initials(name: string): string {
 }
 
 function sync() {
-  isLoading.value = true
-  router.post('/leagues/sync', {}, {
-    onFinish: () => {
-      isLoading.value = false
-    }
-  })
+  router.post('/leagues/sync')
 }
 
 function formatRecord(league: League): string {
@@ -69,21 +60,20 @@ function getStatusBadge(league: League): { variant: 'default' | 'secondary' | 'd
   <AppLayout :breadcrumbs="[{ title: 'Leagues', href: '/leagues' }]">
     <Head title="Leagues" />
 
-    <div class="space-y-6">
+    <div class="flex h-full flex-1 flex-col gap-6 p-6">
+      <div class="space-y-6">
       <div class="flex items-center justify-between">
         <h1 class="text-2xl font-semibold">Leagues</h1>
         <Button
           v-if="hasSleeperAccount"
           @click="sync"
-          :disabled="isLoading"
           class="gap-2"
         >
           <Icon
             name="refresh-cw"
-            :class="{ 'animate-spin': isLoading }"
             class="h-4 w-4"
           />
-          {{ isLoading ? 'Updating...' : 'Update Leagues' }}
+          Sync Leagues
         </Button>
       </div>
 
@@ -113,77 +103,59 @@ function getStatusBadge(league: League): { variant: 'default' | 'secondary' | 'd
         <p class="text-muted-foreground mb-4 max-w-md mx-auto">
           We couldn't find any leagues for your Sleeper account. Try updating your leagues or check your Sleeper account.
         </p>
-        <Button @click="sync" :disabled="isLoading" class="gap-2">
+        <Button @click="sync" class="gap-2">
           <Icon
             name="refresh-cw"
-            :class="{ 'animate-spin': isLoading }"
             class="h-4 w-4"
           />
-          {{ isLoading ? 'Updating...' : 'Update Leagues' }}
+          Sync Leagues
         </Button>
       </div>
 
       <!-- Leagues grid -->
       <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <Link
+        <Card
           v-for="league in leagues"
           :key="league.id"
-          :href="`/leagues/${league.id}`"
-          class="group"
+          class="h-full"
         >
-          <Card class="h-full transition-all group-hover:shadow-md group-hover:border-primary/20">
-            <CardHeader class="flex flex-row items-start gap-4 space-y-0">
-              <Avatar class="h-12 w-12">
-                <AvatarImage
-                  v-if="league.avatar"
-                  :src="`https://sleepercdn.com/avatars/${league.avatar}`"
-                />
-                <AvatarFallback class="text-sm">{{ initials(league.name) }}</AvatarFallback>
-              </Avatar>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-start justify-between gap-2">
-                  <CardTitle class="text-base line-clamp-2 group-hover:text-primary transition-colors">
-                    {{ league.name }}
-                  </CardTitle>
-                  <Badge
-                    :variant="getStatusBadge(league).variant"
-                    class="shrink-0 text-xs"
-                  >
-                    {{ getStatusBadge(league).text }}
-                  </Badge>
-                </div>
-                <p class="text-sm text-muted-foreground mt-1">
-                  {{ league.sport.toUpperCase() }} • {{ league.season }}
-                </p>
+          <CardHeader class="flex flex-row items-start gap-4 space-y-0">
+            <Avatar class="h-12 w-12">
+              <AvatarImage
+                v-if="league.avatar"
+                :src="`https://sleepercdn.com/avatars/${league.avatar}`"
+              />
+              <AvatarFallback class="text-sm">{{ initials(league.name) }}</AvatarFallback>
+            </Avatar>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <CardTitle class="text-base line-clamp-2">
+                  {{ league.name }}
+                </CardTitle>
+                <Badge
+                  :variant="getStatusBadge(league).variant"
+                  class="shrink-0 text-xs"
+                >
+                  {{ getStatusBadge(league).text }}
+                </Badge>
               </div>
-            </CardHeader>
-            <CardContent class="pt-2">
-              <div class="flex items-center gap-4 text-sm text-muted-foreground">
-                <div class="flex items-center gap-1">
-                  <Icon name="users" class="h-4 w-4" />
-                  {{ formatRecord(league) }}
-                </div>
-                <div class="flex items-center gap-1">
-                  <Icon name="arrow-right" class="h-4 w-4 opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <span class="text-xs">View Details</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
-
-      <!-- Loading skeleton -->
-      <div v-if="isLoading" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <Card v-for="i in 3" :key="i" class="h-32">
-          <CardHeader class="flex flex-row items-center gap-4">
-            <Skeleton class="h-12 w-12 rounded-full" />
-            <div class="space-y-2 flex-1">
-              <Skeleton class="h-4 w-3/4" />
-              <Skeleton class="h-3 w-1/2" />
+              <p class="text-sm text-muted-foreground mt-1">
+                {{ league.sport.toUpperCase() }} • {{ league.season }}
+              </p>
             </div>
           </CardHeader>
+          <CardContent class="pt-2">
+            <div class="flex items-center gap-4 text-sm text-muted-foreground">
+              <div class="flex items-center gap-1">
+                <Icon name="users" class="h-4 w-4" />
+                {{ formatRecord(league) }}
+              </div>
+            </div>
+          </CardContent>
         </Card>
+      </div>
+
+
       </div>
     </div>
   </AppLayout>
