@@ -129,8 +129,11 @@ const claudeConfigAuth = `{
                             <div class="rounded-md border border-black/10 bg-[#FCFCFB] p-4 dark:border-white/10 dark:bg-[#0f0f0f]">
                                 <div class="mb-2 text-[12px] uppercase tracking-wide text-[#706f6c] dark:text-[#A1A09A]">Endpoint</div>
                                 <div class="select-all break-all rounded-md bg-white px-3 py-2 text-[13px] shadow-inner dark:bg-[#161615]">https://www.sleeperdraft.com/mcp</div>
-                                <div class="mt-2 text-[11px] text-[#706f6c] dark:text-[#A1A09A]">
+                                                                    <div class="mt-2 text-[11px] text-[#706f6c] dark:text-[#A1A09A]">
                                     Supports both authenticated and unauthenticated access. Authentication provides personalized features.
+                                </div>
+                                <div class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-[10px] text-yellow-800 dark:bg-yellow-950/20 dark:border-yellow-800 dark:text-yellow-200">
+                                    <strong>⚠️ Important:</strong> When using authentication, always use the complete token including the number prefix (e.g., "1|abc123...").
                                 </div>
                             </div>
                         </div>
@@ -180,7 +183,7 @@ const claudeConfigAuth = `{
                                         <ol class="mb-3 list-decimal space-y-1 pl-5 text-[11px] text-blue-800 dark:text-blue-200">
                                             <li>Create account and connect your Sleeper username in Settings → Sleeper</li>
                                             <li>Generate an API token in Settings → API Tokens</li>
-                                            <li>Copy the full token (starts with numbers like "1|abc123...")</li>
+                                            <li><strong>Copy the complete token with ID prefix</strong> (e.g., "1|abc123...") - this is crucial for authentication to work</li>
                                             <li>Use the configuration below, replacing YOUR_TOKEN_HERE with your full token</li>
                                             <li><strong>Important:</strong> Use <code>--oauth2Bearer</code> for Bearer tokens to avoid supergateway command-line parsing issues</li>
                                         </ol>
@@ -206,7 +209,7 @@ const claudeConfigAuth = `{
                                 <p class="text-[11px] font-medium text-yellow-800 dark:text-yellow-200 mb-1">⚠️ Important Notes:</p>
                                 <ul class="text-[10px] text-yellow-700 dark:text-yellow-300 space-y-1">
                                     <li>• Use the exact server name "fantasy-football-mcp" in your config</li>
-                                    <li>• Copy the complete API token including the number prefix (e.g., "1|abc123...")</li>
+                                    <li>• <strong>CRITICAL:</strong> Copy the complete API token with ID prefix (e.g., "1|abc123...") - authentication will fail without it</li>
                                     <li>• For Claude Desktop, use <code>--oauth2Bearer</code> instead of <code>--headers</code> to avoid command-line parsing issues</li>
                                     <li>• If authentication still fails, try creating a new token and updating your config</li>
                                 </ul>

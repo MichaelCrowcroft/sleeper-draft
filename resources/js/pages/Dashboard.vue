@@ -141,7 +141,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     API Token Available
                                 </h3>
                                 <p class="text-sm text-green-700 dark:text-green-300">
-                                    Great! You have an API token ready to use with the MCP server.
+                                    Great! You have an API token ready to use with the MCP server. Make sure to copy the complete token including the ID prefix (e.g., "1|abc123...").
                                 </p>
                                 <Link href="/settings/api-tokens" class="inline-flex">
                                     <Button variant="outline" size="sm" class="border-green-300 text-green-800 hover:bg-green-200 dark:border-green-700 dark:text-green-200 dark:hover:bg-green-800 cursor-pointer">
@@ -150,6 +150,18 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 </Link>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Token Format Warning -->
+                    <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-950/20 dark:border-yellow-800">
+                        <h4 class="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                            ⚠️ Important: Complete Token Format Required
+                        </h4>
+                        <p class="text-sm text-yellow-700 dark:text-yellow-300">
+                            When configuring your MCP client, make sure to use the complete token including the ID prefix.
+                            The token format should be: <code class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">id|token</code><br>
+                            Example: <code class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">1|abc123...</code>
+                        </p>
                     </div>
 
                     <!-- Connection Instructions -->

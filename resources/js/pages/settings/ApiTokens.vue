@@ -143,6 +143,18 @@ const hasTokens = computed(() => props.tokens.length > 0);
                     description="Generate and manage API tokens for MCP server authentication"
                 />
 
+                <!-- Token Format Warning -->
+                <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-950/20 dark:border-yellow-800">
+                    <h3 class="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                        ⚠️ Critical: Complete Token Format Required
+                    </h3>
+                    <p class="text-sm text-yellow-700 dark:text-yellow-300">
+                        Laravel Sanctum tokens must include both the token ID and the actual token in the format <code class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">id|token</code>.
+                        For example: <code class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">1|abc123...</code><br>
+                        <strong>Authentication will fail if you only use the token part without the ID prefix.</strong>
+                    </p>
+                </div>
+
                 <!-- New Token Success Display -->
                 <div v-if="showNewToken && newTokenData" class="p-4 border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 rounded-lg">
                     <h3 class="font-medium text-green-800 dark:text-green-200 mb-2">Token Created Successfully</h3>
@@ -165,8 +177,11 @@ const hasTokens = computed(() => props.tokens.length > 0);
                                 @click="copyToClipboard(newTokenData.token)"
                                 class="border-green-300 text-green-800 hover:bg-green-200 dark:border-green-700 dark:text-green-200 dark:hover:bg-green-800"
                             >
-                                Copy
+                                Copy Complete Token
                             </Button>
+                        </div>
+                        <div class="text-xs text-green-700 dark:text-green-300 mt-2">
+                            <strong>⚠️ Important:</strong> This complete token includes the ID prefix (e.g., "1|abc123...") which is required for authentication.
                         </div>
                         <Button
                             variant="outline"
@@ -261,8 +276,11 @@ const hasTokens = computed(() => props.tokens.length > 0);
                                     size="sm"
                                     @click="copyToClipboard(revealedTokens[token.id])"
                                 >
-                                    Copy
+                                    Copy Complete Token
                                 </Button>
+                            </div>
+                            <div v-if="revealedTokens[token.id]" class="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                                <strong>⚠️ Important:</strong> Use the complete token with ID prefix for authentication (e.g., "1|abc123...")
                             </div>
                         </div>
                     </div>
