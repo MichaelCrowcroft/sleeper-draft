@@ -27,7 +27,13 @@ interface Props {
 
 const props = defineProps<Props>();
 
-// Generate configs with actual token
+// Generate full token with ID for easy copying
+const fullToken = computed(() => {
+    if (!props.firstToken) return '';
+    return `${props.firstToken.id}|${props.firstToken.token}`;
+});
+
+// Generate configs with complete token format
 const claudeConfig = computed(() => {
     if (!props.firstToken) return '';
     return JSON.stringify({
@@ -40,7 +46,7 @@ const claudeConfig = computed(() => {
                     "--streamableHttp",
                     "https://www.sleeperdraft.com/mcp",
                     "--headers",
-                    `Authorization: Bearer ${props.firstToken.token}`
+                    `Authorization: Bearer ${fullToken.value}`
                 ]
             }
         }
@@ -56,7 +62,7 @@ const cursorConfig = computed(() => {
                     type: "http",
                     url: "https://www.sleeperdraft.com/mcp",
                     headers: {
-                        Authorization: `Bearer ${props.firstToken.token}`
+                        Authorization: `Bearer ${fullToken.value}`
                     }
                 }
             }
@@ -206,9 +212,29 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         <div class="mb-2 text-sm font-medium">MCP Client Setup (With Authentication)</div>
                                         <div class="space-y-2">
                                             <div>
-                                                <div class="flex items-center justify-between mb-2">
-                                                    <span class="text-xs text-muted-foreground">Claude Desktop</span>
-                                                </div>
+                                                <!-- Complete Token Display -->
+                        <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <div class="text-xs text-blue-800 dark:text-blue-200 mb-2 font-medium">Your Complete API Token:</div>
+                            <div class="flex items-center gap-2">
+                                <code class="bg-blue-100 dark:bg-blue-900 px-3 py-2 rounded text-sm font-mono break-all">{{ fullToken }}</code>
+                                <Button
+                                    v-if="fullToken"
+                                    variant="outline"
+                                    size="sm"
+                                    @click="copyToClipboard(fullToken)"
+                                    class="shrink-0 border-blue-300 text-blue-800 hover:bg-blue-200 dark:border-blue-700 dark:text-blue-200 dark:hover:bg-blue-800"
+                                >
+                                    Copy Token
+                                </Button>
+                            </div>
+                            <div class="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                                Use this complete token (with ID prefix) in your MCP client configuration.
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-muted-foreground">Claude Desktop</span>
+                        </div>
                                                 <div class="relative overflow-auto rounded-md bg-gray-900 p-3 text-xs">
                                                     <Button
                                                         v-if="claudeConfig"

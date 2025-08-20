@@ -116,6 +116,9 @@ The MCP server supports optional authentication via Laravel Sanctum tokens. When
 
 #### Example Client Configuration with Authentication
 
+**⚠️ CRITICAL: Token Format Requirement**
+Laravel Sanctum tokens must include both the token ID and the actual token in the format `{id}|{token}`. For example: `1|abc123...`. Authentication will fail if you only use the token part without the ID prefix.
+
 **Cursor (.cursor/mcp.json)**:
 ```json
 {
@@ -125,7 +128,7 @@ The MCP server supports optional authentication via Laravel Sanctum tokens. When
         "type": "http",
         "url": "https://www.sleeperdraft.com/mcp",
         "headers": {
-          "Authorization": "Bearer YOUR_TOKEN_HERE"
+          "Authorization": "Bearer 1|abc123..."  // Must include the full token with ID prefix
         }
       }
     }
@@ -145,7 +148,7 @@ The MCP server supports optional authentication via Laravel Sanctum tokens. When
         "--streamableHttp",
         "https://www.sleeperdraft.com/mcp",
         "--headers",
-        "Authorization: Bearer YOUR_TOKEN_HERE"
+        "Authorization: Bearer 1|abc123..."  // Must include the full token with ID prefix
       ]
     }
   }
