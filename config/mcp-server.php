@@ -163,7 +163,7 @@ return [
     |
     */
     'middlewares' => [
-        'auth:sanctum',     // Require Sanctum token authentication
+        // 'auth:sanctum',     // Require Sanctum token authentication
         'throttle:100,1',   // Rate limiting
         // 'cors',             // CORS support (requires fruitcake/laravel-cors package)
     ],
