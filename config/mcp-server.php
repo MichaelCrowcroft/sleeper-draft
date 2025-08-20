@@ -163,8 +163,7 @@ return [
     |
     */
     'middlewares' => [
-        // Authentication is now optional - tools can check for authenticated users
-        // and provide enhanced functionality when tokens are present
+        'auth:sanctum',     // Require Sanctum token authentication
         'throttle:100,1',   // Rate limiting
         // 'cors',             // CORS support (requires fruitcake/laravel-cors package)
     ],
