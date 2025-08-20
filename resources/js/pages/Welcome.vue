@@ -44,15 +44,15 @@ const cursorConfigAuth = `{
 
 const claudeConfigAuth = `{
   "mcpServers": {
-    "sleeperdraft-mcp": {
+    "fantasy-football-mcp": {
       "command": "npx",
       "args": [
         "-y",
         "supergateway",
         "--streamableHttp",
         "https://www.sleeperdraft.com/mcp",
-        "--headers",
-        "Authorization: Bearer YOUR_TOKEN_HERE"
+        "--oauth2Bearer",
+        "YOUR_TOKEN_HERE"
       ]
     }
   }
@@ -178,9 +178,11 @@ const claudeConfigAuth = `{
                                             For personalized features, create an account and add authentication:
                                         </div>
                                         <ol class="mb-3 list-decimal space-y-1 pl-5 text-[11px] text-blue-800 dark:text-blue-200">
-                                            <li>Create account and connect your Sleeper username</li>
+                                            <li>Create account and connect your Sleeper username in Settings → Sleeper</li>
                                             <li>Generate an API token in Settings → API Tokens</li>
-                                            <li>Use the configuration below with your token</li>
+                                            <li>Copy the full token (starts with numbers like "1|abc123...")</li>
+                                            <li>Use the configuration below, replacing YOUR_TOKEN_HERE with your full token</li>
+                                            <li><strong>Important:</strong> Use <code>--oauth2Bearer</code> for Bearer tokens to avoid supergateway command-line parsing issues</li>
                                         </ol>
                                     </div>
                                     <div class="space-y-3">
@@ -200,6 +202,15 @@ const claudeConfigAuth = `{
                                 </div>
                             </div>
                             <p class="mt-2 text-[12px] leading-6 text-[#706f6c] dark:text-[#A1A09A]">Restart your client. In Cursor, manage servers in Settings → MCP; in Claude, the server appears under MCP servers.</p>
+                            <div class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md dark:bg-yellow-950/20 dark:border-yellow-800">
+                                <p class="text-[11px] font-medium text-yellow-800 dark:text-yellow-200 mb-1">⚠️ Important Notes:</p>
+                                <ul class="text-[10px] text-yellow-700 dark:text-yellow-300 space-y-1">
+                                    <li>• Use the exact server name "fantasy-football-mcp" in your config</li>
+                                    <li>• Copy the complete API token including the number prefix (e.g., "1|abc123...")</li>
+                                    <li>• For Claude Desktop, use <code>--oauth2Bearer</code> instead of <code>--headers</code> to avoid command-line parsing issues</li>
+                                    <li>• If authentication still fails, try creating a new token and updating your config</li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
