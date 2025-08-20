@@ -34,62 +34,100 @@ php artisan serve
 ```
 
 
-## Non-technical quick start (hosted MCP)
+## Connecting to Claude Desktop and Cursor
 
-If you don’t want to run anything locally, you can use the hosted MCP server.
+### Prerequisites
+1. Start your local server: `php artisan serve` (runs on http://localhost:8000)
+2. Create an account at http://localhost:8000 and generate an API token in Settings → API Tokens
 
-- Host: [www.sleeperdraft.com](https://www.sleeperdraft.com)
-- Endpoint (HTTP JSON-RPC): [https://www.sleeperdraft.com/mcp](https://www.sleeperdraft.com/mcp)
+### Claude Desktop Setup
 
-How to connect from an MCP-compatible client:
+Create or edit: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-- Claude Desktop (remote HTTP not supported directly):
-
-  Add a command-based server entry that bridges to the hosted HTTP endpoint via `supergateway`.
-
-  ```json
-  {
-    "mcpServers": {
-      "sleeperdraft-mcp": {
-        "command": "npx",
-        "args": [
-          "-y",
-          "supergateway",
-          "--streamableHttp",
-          "https://www.sleeperdraft.com/mcp"
-        ]
-      }
+**With Authentication (Recommended):**
+```json
+{
+  "mcpServers": {
+    "fantasy-football-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "supergateway",
+        "--streamableHttp",
+        "http://localhost:8000/mcp",
+        "--oauth2Bearer",
+        "YOUR_TOKEN_HERE"
+      ]
     }
   }
-  ```
+}
+```
 
-- Cursor (supports HTTP):
+**Without Authentication:**
+```json
+{
+  "mcpServers": {
+    "fantasy-football-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "supergateway",
+        "--streamableHttp",
+        "http://localhost:8000/mcp"
+      ]
+    }
+  }
+}
+```
 
-  Add a new HTTP/JSON-RPC server with the endpoint above, or include this in `~/.cursor/mcp.json`:
+### Cursor Setup
 
-  ```json
-  {
-    "mcpServers": {
-      "fantasy-football-mcp": {
-        "transport": {
-          "type": "http",
-          "url": "https://www.sleeperdraft.com/mcp"
+Create or edit: `~/.cursor/mcp.json`
+
+**With Authentication (Recommended):**
+```json
+{
+  "mcpServers": {
+    "fantasy-football-mcp": {
+      "transport": {
+        "type": "http",
+        "url": "http://localhost:8000/mcp",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
         }
       }
     }
   }
-  ```
+}
+```
 
-Restart your client after saving. In Cursor, you can also manage servers in Settings → MCP.
+**Without Authentication:**
+```json
+{
+  "mcpServers": {
+    "fantasy-football-mcp": {
+      "transport": {
+        "type": "http",
+        "url": "http://localhost:8000/mcp"
+      }
+    }
+  }
+}
+```
 
-Try these prompts once connected:
+### Getting Your Token
+1. Visit http://localhost:8000 and create an account
+2. Go to Settings → API Tokens
+3. Create a new token (e.g., "Claude Desktop")
+4. Copy the full token (starts with a number like "1|abc123...")
+5. Replace `YOUR_TOKEN_HERE` in the config above
+
+### Testing the Connection
+Restart Claude Desktop or Cursor after saving the config. Try these prompts:
 - "List available tools."
-- "Look up Sleeper user by username 'your_username' and list their 2025 leagues."
-- "Resolve the current NFL week, then get weekly projections."
-
-Notes
-- This endpoint uses public Sleeper data; no account or token needed.
-- Don't send secrets. Usage may be rate-limited by upstream APIs.
+- "Check the health of the MCP server."
+- With authentication: "Show my Sleeper leagues."
+- Without authentication: "Look up Sleeper user 'username' and show their leagues."
 
 ## Authentication & Personalization
 
@@ -116,9 +154,6 @@ The MCP server supports optional authentication via Laravel Sanctum tokens. When
 
 #### Example Client Configuration with Authentication
 
-**⚠️ CRITICAL: Token Format Requirement**
-Laravel Sanctum tokens must include both the token ID and the actual token in the format `{id}|{token}`. For example: `1|abc123...`. Authentication will fail if you only use the token part without the ID prefix.
-
 **Cursor (.cursor/mcp.json)**:
 ```json
 {
@@ -126,9 +161,9 @@ Laravel Sanctum tokens must include both the token ID and the actual token in th
     "fantasy-football-mcp": {
       "transport": {
         "type": "http",
-        "url": "https://www.sleeperdraft.com/mcp",
+        "url": "http://localhost:8000/mcp",
         "headers": {
-          "Authorization": "Bearer 1|abc123..."  // Must include the full token with ID prefix
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
         }
       }
     }
@@ -136,19 +171,19 @@ Laravel Sanctum tokens must include both the token ID and the actual token in th
 }
 ```
 
-**Claude Desktop (via supergateway)**:
+**Claude Desktop**:
 ```json
 {
   "mcpServers": {
-    "sleeperdraft-mcp": {
+    "fantasy-football-mcp": {
       "command": "npx",
       "args": [
         "-y",
         "supergateway",
         "--streamableHttp",
-        "https://www.sleeperdraft.com/mcp",
-        "--headers",
-        "Authorization: Bearer 1|abc123..."  // Must include the full token with ID prefix
+        "http://localhost:8000/mcp",
+        "--oauth2Bearer",
+        "YOUR_TOKEN_HERE"
       ]
     }
   }

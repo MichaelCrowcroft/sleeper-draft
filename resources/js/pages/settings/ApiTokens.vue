@@ -119,11 +119,6 @@ const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
 };
 
-// Generate complete token format for copying
-const getCompleteToken = (tokenId: string, token: string) => {
-    return `${tokenId}|${token}`;
-};
-
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -148,18 +143,6 @@ const hasTokens = computed(() => props.tokens.length > 0);
                     description="Generate and manage API tokens for MCP server authentication"
                 />
 
-                <!-- Token Format Warning -->
-                <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-950/20 dark:border-yellow-800">
-                    <h3 class="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-                        ⚠️ Critical: Complete Token Format Required
-                    </h3>
-                    <p class="text-sm text-yellow-700 dark:text-yellow-300">
-                        Laravel Sanctum tokens must include both the token ID and the actual token in the format <code class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">id|token</code>.
-                        For example: <code class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">1|abc123...</code><br>
-                        <strong>Authentication will fail if you only use the token part without the ID prefix.</strong>
-                    </p>
-                </div>
-
                 <!-- New Token Success Display -->
                 <div v-if="showNewToken && newTokenData" class="p-4 border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 rounded-lg">
                     <h3 class="font-medium text-green-800 dark:text-green-200 mb-2">Token Created Successfully</h3>
@@ -170,32 +153,20 @@ const hasTokens = computed(() => props.tokens.length > 0);
                         <div>
                             <Label class="text-green-800 dark:text-green-200">{{ newTokenData.name }}</Label>
                         </div>
-                        <div class="space-y-2">
-                            <div>
-                                <div class="text-xs text-green-700 dark:text-green-300 mb-1">Complete Token (ready to use):</div>
-                                <div class="flex items-center space-x-2">
-                                    <Input
-                                        :value="getCompleteToken(newTokenData.id, newTokenData.token)"
-                                        readonly
-                                        class="font-mono text-sm bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700"
-                                    />
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        @click="copyToClipboard(getCompleteToken(newTokenData.id, newTokenData.token))"
-                                        class="border-green-300 text-green-800 hover:bg-green-200 dark:border-green-700 dark:text-green-200 dark:hover:bg-green-800"
-                                    >
-                                        Copy Token
-                                    </Button>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="text-xs text-green-700 dark:text-green-300 mb-1">Token ID: <span class="font-mono">{{ newTokenData.id }}</span></div>
-                                <div class="text-xs text-green-700 dark:text-green-300 mb-1">Raw Token: <span class="font-mono">{{ newTokenData.token.substring(0, 20) }}...</span></div>
-                            </div>
-                        </div>
-                        <div class="text-xs text-green-700 dark:text-green-300 mt-2">
-                            <strong>✅ Ready to use:</strong> The complete token format (ID|token) is automatically included for easy copying.
+                        <div class="flex items-center space-x-2">
+                            <Input
+                                :value="newTokenData.token"
+                                readonly
+                                class="font-mono text-sm bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700"
+                            />
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                @click="copyToClipboard(newTokenData.token)"
+                                class="border-green-300 text-green-800 hover:bg-green-200 dark:border-green-700 dark:text-green-200 dark:hover:bg-green-800"
+                            >
+                                Copy
+                            </Button>
                         </div>
                         <Button
                             variant="outline"
@@ -271,57 +242,27 @@ const hasTokens = computed(() => props.tokens.length > 0);
                                 </Button>
                             </div>
 
-                            <div class="space-y-2">
-                                <div v-if="!revealedTokens[token.id]">
-                                    <div class="flex items-center space-x-2">
-                                        <Input
-                                            :value="token.token_preview"
-                                            readonly
-                                            class="font-mono text-sm"
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            @click="showFullToken(token.id)"
-                                        >
-                                            Show Full Token
-                                        </Button>
-                                    </div>
-                                </div>
-                                <div v-else>
-                                    <div>
-                                        <div class="text-xs text-amber-700 dark:text-amber-300 mb-1">Complete Token (ready to use):</div>
-                                        <div class="flex items-center space-x-2">
-                                            <Input
-                                                :value="getCompleteToken(token.id, revealedTokens[token.id])"
-                                                readonly
-                                                class="font-mono text-sm"
-                                            />
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                @click="copyToClipboard(getCompleteToken(token.id, revealedTokens[token.id]))"
-                                            >
-                                                Copy Token
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="text-xs text-amber-700 dark:text-amber-300 mb-1">Raw Token: <span class="font-mono">{{ revealedTokens[token.id].substring(0, 20) }}...</span></div>
-                                    </div>
-                                    <div class="flex items-center space-x-2 mt-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            @click="showFullToken(token.id)"
-                                        >
-                                            Hide Token
-                                        </Button>
-                                    </div>
-                                    <div class="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                                        <strong>✅ Ready to copy:</strong> The complete token format is automatically included.
-                                    </div>
-                                </div>
+                            <div class="flex items-center space-x-2">
+                                <Input
+                                    :value="revealedTokens[token.id] || token.token_preview"
+                                    readonly
+                                    class="font-mono text-sm"
+                                />
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    @click="showFullToken(token.id)"
+                                >
+                                    {{ revealedTokens[token.id] ? 'Hide' : 'Show' }}
+                                </Button>
+                                <Button
+                                    v-if="revealedTokens[token.id]"
+                                    variant="outline"
+                                    size="sm"
+                                    @click="copyToClipboard(revealedTokens[token.id])"
+                                >
+                                    Copy
+                                </Button>
                             </div>
                         </div>
                     </div>

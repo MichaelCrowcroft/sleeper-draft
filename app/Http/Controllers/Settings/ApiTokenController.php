@@ -77,14 +77,10 @@ class ApiTokenController extends Controller
 
         $token = $user->createToken($tokenName, ['mcp:access']);
 
-        // Extract ID and token from plain text token (format: "id|token")
-        [$tokenId, $rawToken] = explode('|', $token->plainTextToken, 2);
-
         // Store the token in session to display once
         session()->flash('new_token', [
-            'id' => $tokenId,
             'name' => $tokenName,
-            'token' => $rawToken,
+            'token' => $token->plainTextToken,
         ]);
 
         return redirect()->back()->with('success', 'API token created successfully!');

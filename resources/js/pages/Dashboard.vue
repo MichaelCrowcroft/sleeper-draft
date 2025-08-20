@@ -27,26 +27,20 @@ interface Props {
 
 const props = defineProps<Props>();
 
-// Generate full token with ID for easy copying
-const fullToken = computed(() => {
-    if (!props.firstToken) return '';
-    return `${props.firstToken.id}|${props.firstToken.token}`;
-});
-
-// Generate configs with complete token format
+// Generate configs with actual token
 const claudeConfig = computed(() => {
     if (!props.firstToken) return '';
     return JSON.stringify({
         mcpServers: {
-            "sleeperdraft-mcp": {
+            "fantasy-football-mcp": {
                 command: "npx",
                 args: [
                     "-y",
                     "supergateway",
                     "--streamableHttp",
-                    "https://www.sleeperdraft.com/mcp",
-                    "--headers",
-                    `Authorization: Bearer ${fullToken.value}`
+                    "http://localhost:8000/mcp",
+                    "--oauth2Bearer",
+                    props.firstToken.token
                 ]
             }
         }
@@ -60,9 +54,9 @@ const cursorConfig = computed(() => {
             "fantasy-football-mcp": {
                 transport: {
                     type: "http",
-                    url: "https://www.sleeperdraft.com/mcp",
+                    url: "http://localhost:8000/mcp",
                     headers: {
-                        Authorization: `Bearer ${fullToken.value}`
+                        Authorization: `Bearer ${props.firstToken.token}`
                     }
                 }
             }
@@ -142,13 +136,44 @@ const breadcrumbs: BreadcrumbItem[] = [
                     <div v-else class="p-4 border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 rounded-lg">
                         <div class="flex items-start gap-3">
                             <div class="w-5 h-5 rounded-full bg-green-500 flex-shrink-0 mt-0.5"></div>
-                            <div class="space-y-2">
-                                <h3 class="font-medium text-green-800 dark:text-green-200">
-                                    API Token Available
-                                </h3>
-                                <p class="text-sm text-green-700 dark:text-green-300">
-                                    Great! You have an API token ready to use with the MCP server. Make sure to copy the complete token including the ID prefix (e.g., "1|abc123...").
-                                </p>
+                            <div class="space-y-3">
+                                <div>
+                                    <h3 class="font-medium text-green-800 dark:text-green-200">
+                                        API Token Available
+                                    </h3>
+                                    <p class="text-sm text-green-700 dark:text-green-300">
+                                        Great! You have an API token ready to use with the MCP server.
+                                    </p>
+                                </div>
+
+                                <!-- Token Details -->
+                                <div v-if="props.firstToken" class="space-y-2 p-3 bg-white/50 dark:bg-black/20 rounded border">
+                                    <div class="text-xs text-green-700 dark:text-green-300 space-y-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-medium">Token Name:</span>
+                                            <code class="bg-green-100 dark:bg-green-900 px-2 py-1 rounded text-xs">{{ props.firstToken.name }}</code>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-medium">Token ID:</span>
+                                            <code class="bg-green-100 dark:bg-green-900 px-2 py-1 rounded text-xs">{{ props.firstToken.id }}</code>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-medium">Full Token:</span>
+                                            <div class="flex items-center gap-2">
+                                                <code class="bg-green-100 dark:bg-green-900 px-2 py-1 rounded text-xs max-w-48 truncate">{{ props.firstToken.token }}</code>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    @click="copyToClipboard(props.firstToken.token)"
+                                                    class="h-6 text-xs border-green-300 text-green-800 hover:bg-green-200 dark:border-green-700 dark:text-green-200 dark:hover:bg-green-800 cursor-pointer"
+                                                >
+                                                    Copy
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <Link href="/settings/api-tokens" class="inline-flex">
                                     <Button variant="outline" size="sm" class="border-green-300 text-green-800 hover:bg-green-200 dark:border-green-700 dark:text-green-200 dark:hover:bg-green-800 cursor-pointer">
                                         Manage Tokens
@@ -156,18 +181,6 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 </Link>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Token Format Warning -->
-                    <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-950/20 dark:border-yellow-800">
-                        <h4 class="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-                            ⚠️ Important: Complete Token Format Required
-                        </h4>
-                        <p class="text-sm text-yellow-700 dark:text-yellow-300">
-                            When configuring your MCP client, make sure to use the complete token including the ID prefix.
-                            The token format should be: <code class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">id|token</code><br>
-                            Example: <code class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">1|abc123...</code>
-                        </p>
                     </div>
 
                     <!-- Connection Instructions -->
@@ -197,6 +210,11 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     <div><strong>Claude Desktop:</strong> <code class="bg-muted px-2 py-1 rounded text-xs">~/Library/Application Support/Claude/claude_desktop_config.json</code></div>
                                     <div><strong>Cursor:</strong> <code class="bg-muted px-2 py-1 rounded text-xs">~/.cursor/mcp.json</code></div>
                                 </div>
+                                <div class="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded">
+                                    <p class="text-xs text-blue-800 dark:text-blue-200">
+                                        💡 <strong>Make sure your server is running:</strong> <code class="bg-blue-100 dark:bg-blue-900 px-1 rounded">php artisan serve</code>
+                                    </p>
+                                </div>
                             </div>
 
                             <div class="space-y-2">
@@ -212,29 +230,9 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         <div class="mb-2 text-sm font-medium">MCP Client Setup (With Authentication)</div>
                                         <div class="space-y-2">
                                             <div>
-                                                <!-- Complete Token Display -->
-                        <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                            <div class="text-xs text-blue-800 dark:text-blue-200 mb-2 font-medium">Your Complete API Token:</div>
-                            <div class="flex items-center gap-2">
-                                <code class="bg-blue-100 dark:bg-blue-900 px-3 py-2 rounded text-sm font-mono break-all">{{ fullToken }}</code>
-                                <Button
-                                    v-if="fullToken"
-                                    variant="outline"
-                                    size="sm"
-                                    @click="copyToClipboard(fullToken)"
-                                    class="shrink-0 border-blue-300 text-blue-800 hover:bg-blue-200 dark:border-blue-700 dark:text-blue-200 dark:hover:bg-blue-800"
-                                >
-                                    Copy Token
-                                </Button>
-                            </div>
-                            <div class="text-xs text-blue-700 dark:text-blue-300 mt-2">
-                                Use this complete token (with ID prefix) in your MCP client configuration.
-                            </div>
-                        </div>
-
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs text-muted-foreground">Claude Desktop</span>
-                        </div>
+                                                <div class="flex items-center justify-between mb-2">
+                                                    <span class="text-xs text-muted-foreground">Claude Desktop</span>
+                                                </div>
                                                 <div class="relative overflow-auto rounded-md bg-gray-900 p-3 text-xs">
                                                     <Button
                                                         v-if="claudeConfig"
