@@ -51,7 +51,7 @@ return [
     |
     */
     'server' => [
-        'name' => 'OP.GG MCP Server',
+        'name' => 'Fantasy Football MCP Server',
         'version' => '0.1.0',
     ],
 
