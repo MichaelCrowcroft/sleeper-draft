@@ -163,7 +163,7 @@ return [
     |
     */
     'middlewares' => [
-        'auth:api',         // Require API token authentication (stateless)
+        // 'auth:api',         // Require API token authentication (stateless)
         'throttle:100,1',   // Rate limiting
         // 'cors',             // CORS support (requires fruitcake/laravel-cors package)
     ],
