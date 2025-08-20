@@ -13,12 +13,12 @@ Route::get('dashboard', function () {
     $mcpTokens = $user->tokens()
         ->where('name', 'LIKE', 'MCP%')
         ->orderBy('created_at', 'asc')
-        ->get(['id', 'name', 'token', 'token_preview'])
+        ->get(['id', 'name', 'token'])
         ->map(fn($token) => [
             'id' => $token->id,
             'name' => $token->name,
             'token' => $token->token,
-            'token_preview' => $token->token_preview
+            'token_preview' => substr($token->token, 0, 8).'...'.substr($token->token, -8)
         ]);
 
     $firstToken = $mcpTokens->first();
