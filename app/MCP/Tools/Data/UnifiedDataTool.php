@@ -163,7 +163,8 @@ class UnifiedDataTool implements ToolInterface
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
         $sport = $arguments['sport'] ?? 'nfl';
-        $query = (string) $arguments['query'];
+        // Trim the query to avoid mismatches caused by leading/trailing spaces
+        $query = trim((string) $arguments['query']);
         $position = $arguments['position'] ?? null;
         $team = $arguments['team'] ?? null;
 
