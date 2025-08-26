@@ -4,6 +4,7 @@ namespace App\MCP\Tools\Sleeper;
 
 use App\Services\EspnSdk;
 use App\Services\SleeperSdk;
+use App\Support\PlayerInfo;
 use Illuminate\Support\Facades\App as LaravelApp;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
@@ -126,6 +127,17 @@ class AdpGetTool implements ToolInterface
 
             $adp = $list;
         }
+
+        // Enrich with player information
+        $players = PlayerInfo::fetch(array_column($adp, 'player_id'), $sport);
+        foreach ($adp as &$row) {
+            $pid = (string) ($row['player_id'] ?? '');
+            $info = $players[$pid] ?? ['name' => null, 'position' => null, 'team' => null];
+            $row['name'] = $info['name'];
+            $row['position'] = $info['position'];
+            $row['team'] = $info['team'];
+        }
+        unset($row);
 
         return ['season' => $season, 'format' => $format, 'adp' => $adp];
     }

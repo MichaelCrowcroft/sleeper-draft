@@ -444,6 +444,7 @@ class UnifiedRecommendationsTool implements ToolInterface
 
             $candidates[] = [
                 'player_id' => $pid,
+                'name' => $meta['full_name'] ?? trim(($meta['first_name'] ?? '') . ' ' . ($meta['last_name'] ?? '')),
                 'projected_points' => $proj,
                 'trend_count' => (int) ($entry['count'] ?? 0),
                 'score' => $score,
@@ -496,16 +497,34 @@ class UnifiedRecommendationsTool implements ToolInterface
         $sendingValue = 0;
         $receivingValue = 0;
 
+        $sending = [];
         foreach ($offer['sending'] as $pid) {
+            $pid = (string) $pid;
             $proj = (float) (($projections[$pid]['pts_half_ppr'] ?? $projections[$pid]['pts_ppr'] ?? $projections[$pid]['pts_std'] ?? 0));
             $adpVal = $adpIndex[$pid] ?? 999.0;
             $sendingValue += ($proj * 0.7) + (1000 - $adpVal) * 0.3; // Weighted combination
+            $meta = $catalog[$pid] ?? [];
+            $sending[] = [
+                'player_id' => $pid,
+                'name' => $meta['full_name'] ?? trim(($meta['first_name'] ?? '') . ' ' . ($meta['last_name'] ?? '')),
+                'position' => $meta['position'] ?? null,
+                'team' => $meta['team'] ?? null,
+            ];
         }
 
+        $receiving = [];
         foreach ($offer['receiving'] as $pid) {
+            $pid = (string) $pid;
             $proj = (float) (($projections[$pid]['pts_half_ppr'] ?? $projections[$pid]['pts_ppr'] ?? $projections[$pid]['pts_std'] ?? 0));
             $adpVal = $adpIndex[$pid] ?? 999.0;
             $receivingValue += ($proj * 0.7) + (1000 - $adpVal) * 0.3;
+            $meta = $catalog[$pid] ?? [];
+            $receiving[] = [
+                'player_id' => $pid,
+                'name' => $meta['full_name'] ?? trim(($meta['first_name'] ?? '') . ' ' . ($meta['last_name'] ?? '')),
+                'position' => $meta['position'] ?? null,
+                'team' => $meta['team'] ?? null,
+            ];
         }
 
         $tradeValue = $receivingValue - $sendingValue;
@@ -518,8 +537,8 @@ class UnifiedRecommendationsTool implements ToolInterface
                 'recommendation' => $recommendation,
                 'sending_value' => $sendingValue,
                 'receiving_value' => $receivingValue,
-                'sending_players' => $offer['sending'],
-                'receiving_players' => $offer['receiving'],
+                'sending_players' => $sending,
+                'receiving_players' => $receiving,
             ],
             'league_id' => $leagueId,
             'season' => $season,

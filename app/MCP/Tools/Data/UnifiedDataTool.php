@@ -3,6 +3,7 @@
 namespace App\MCP\Tools\Data;
 
 use App\Services\SleeperSdk;
+use App\Support\PlayerInfo;
 use Illuminate\Support\Facades\App as LaravelApp;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
@@ -100,14 +101,23 @@ class UnifiedDataTool implements ToolInterface
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
         $leagueId = (string) $arguments['league_id'];
+        $sport = $arguments['sport'] ?? 'nfl';
 
         $rosters = $sdk->getLeagueRosters($leagueId);
+        $ids = [];
+        foreach ($rosters as $roster) {
+            foreach ((array) ($roster['players'] ?? []) as $pid) {
+                $ids[] = (string) $pid;
+            }
+        }
+        $players = PlayerInfo::fetch($ids, $sport);
 
         return [
             'data_type' => 'rosters',
             'rosters' => $rosters,
             'league_id' => $leagueId,
             'count' => count($rosters),
+            'players' => $players,
         ];
     }
 
@@ -141,9 +151,17 @@ class UnifiedDataTool implements ToolInterface
         $sdk = LaravelApp::make(SleeperSdk::class);
         $draftId = (string) $arguments['draft_id'];
         $limit = (int) ($arguments['limit'] ?? 1000);
+        $sport = $arguments['sport'] ?? 'nfl';
 
         $picks = $sdk->getDraftPicks($draftId);
         $limitedPicks = array_slice($picks, 0, $limit);
+        $ids = [];
+        foreach ($limitedPicks as $pick) {
+            if (! empty($pick['player_id'])) {
+                $ids[] = (string) $pick['player_id'];
+            }
+        }
+        $players = PlayerInfo::fetch($ids, $sport);
 
         return [
             'data_type' => 'draft_picks',
@@ -151,6 +169,7 @@ class UnifiedDataTool implements ToolInterface
             'draft_id' => $draftId,
             'count' => count($limitedPicks),
             'limit' => $limit,
+            'players' => $players,
         ];
     }
 
@@ -226,8 +245,19 @@ class UnifiedDataTool implements ToolInterface
         $sdk = LaravelApp::make(SleeperSdk::class);
         $leagueId = (string) $arguments['league_id'];
         $week = $arguments['week'] ?? null;
+        $sport = $arguments['sport'] ?? 'nfl';
 
         $transactions = $sdk->getLeagueTransactions($leagueId, $week);
+        $ids = [];
+        foreach ($transactions as $tx) {
+            if (isset($tx['adds']) && is_array($tx['adds'])) {
+                $ids = array_merge($ids, array_keys($tx['adds']));
+            }
+            if (isset($tx['drops']) && is_array($tx['drops'])) {
+                $ids = array_merge($ids, array_keys($tx['drops']));
+            }
+        }
+        $players = PlayerInfo::fetch($ids, $sport);
 
         return [
             'data_type' => 'transactions',
@@ -235,6 +265,7 @@ class UnifiedDataTool implements ToolInterface
             'league_id' => $leagueId,
             'week' => $week,
             'count' => count($transactions),
+            'players' => $players,
         ];
     }
 }

@@ -104,6 +104,7 @@ class UnifiedLineupTool implements ToolInterface
             $playersByPosition[$pos][] = [
                 'player_id' => $pid,
                 'name' => $meta['full_name'] ?? trim(($meta['first_name'] ?? '').' '.($meta['last_name'] ?? '')),
+                'position' => $pos,
                 'team' => $meta['team'] ?? null,
                 'projected_points' => (float) (($projections[$pid]['pts_half_ppr'] ?? $projections[$pid]['pts_ppr'] ?? $projections[$pid]['pts_std'] ?? 0)),
             ];
