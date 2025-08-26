@@ -239,7 +239,7 @@ return [
     |
     */
     'tools' => [
-        // Core tools (retained)
+        // Sleeper data and utilities
         App\MCP\Tools\Sleeper\UserLookupTool::class,
         App\MCP\Tools\Sleeper\UserLeaguesTool::class,
         App\MCP\Tools\Sleeper\LeagueMatchupsTool::class,
@@ -248,61 +248,19 @@ return [
         App\MCP\Tools\Sleeper\PlayersTrendingTool::class,
         App\MCP\Tools\Sleeper\ProjectionsWeekTool::class,
 
-        // Legacy tools (CONSOLIDATED - commented out)
-        // App\MCP\Tools\Sleeper\LeagueGetTool::class, // Use fantasy_data with data_type=league
-        // App\MCP\Tools\Sleeper\LeagueRostersTool::class, // Use fantasy_data with data_type=rosters
-        // App\MCP\Tools\Sleeper\LeagueTransactionsTool::class, // Use fantasy_data with data_type=transactions
-        // App\MCP\Tools\Sleeper\LeagueWaiversTool::class, // Use fantasy_recommendations with mode=waiver
-        // App\MCP\Tools\Sleeper\LeagueDraftsTool::class, // Use fantasy_data with data_type=drafts
-        // App\MCP\Tools\Sleeper\DraftPicksTool::class, // Use fantasy_data with data_type=draft_picks
-        // App\MCP\Tools\Sleeper\PlayerSearchTool::class, // Use fantasy_data with data_type=players
-        // App\MCP\Tools\Sleeper\LineupValidateTool::class, // Use lineup_management with mode=validate
-        // App\MCP\Tools\Sleeper\LineupOptimizeTool::class, // Use lineup_management with mode=optimize
-        // App\MCP\Tools\Sleeper\StartSitCompareTool::class, // Use lineup_management with mode=compare
-        // App\MCP\Tools\Sleeper\WaiverRecommendationsTool::class, // Use fantasy_recommendations with mode=waiver
-        // App\MCP\Tools\Sleeper\TradeAnalyzeTool::class, // Use fantasy_recommendations with mode=trade
-
-        // Phase 4/5 Utilities
-        // App\MCP\Tools\Utils\ContextSetDefaultsTool::class, // CONSOLIDATED: Use explicit parameters instead
+        // System utilities
         App\MCP\Tools\Utils\TimeResolveWeekTool::class,
         App\MCP\Tools\Utils\HealthCheckTool::class,
         App\MCP\Tools\Utils\CacheInvalidateTool::class,
         App\MCP\Tools\Utils\ToolListTool::class,
-        // App\MCP\Tools\Utils\ToolSchemaTool::class, // CONSOLIDATED: Schema info now in tool_list
 
-        // UNIFIED TOOLS - Phase 3 Consolidation
-        App\MCP\Tools\Recommendations\UnifiedRecommendationsTool::class, // Replaces: waiver_recommendations, trade_analyze
-        App\MCP\Tools\Lineup\UnifiedLineupTool::class, // Replaces: lineup_validate, lineup_optimize, start_sit_compare
-        App\MCP\Tools\Data\UnifiedDataTool::class, // Replaces: league_get, league_rosters, league_drafts, draft_picks, players_search
+        // Unified tools
+        App\MCP\Tools\Recommendations\UnifiedRecommendationsTool::class,
+        App\MCP\Tools\Lineup\UnifiedLineupTool::class,
+        App\MCP\Tools\Data\UnifiedDataTool::class,
 
-        // Legacy tools (DEPRECATED - will be removed in Phase 4)
-        // App\MCP\Tools\Draft\DraftBoardBuildTool::class, // CONSOLIDATED: Use fantasy_recommendations with mode=draft
-        // App\MCP\Tools\Draft\DraftPickRecommendTool::class, // CONSOLIDATED: Use fantasy_recommendations with mode=draft
-        // App\MCP\Tools\Roster\RosterNeedsTool::class, // CONSOLIDATED: Use lineup_management with mode=validate
-        // App\MCP\Tools\Waiver\WaiverOptimizeFaabTool::class, // CONSOLIDATED: Use fantasy_recommendations with mode=waiver
-        // App\MCP\Tools\Sleeper\LeagueGetTool::class, // CONSOLIDATED: Use fantasy_data with data_type=league
-        // App\MCP\Tools\Sleeper\LeagueRostersTool::class, // CONSOLIDATED: Use fantasy_data with data_type=rosters
-        // App\MCP\Tools\Sleeper\LeagueDraftsTool::class, // CONSOLIDATED: Use fantasy_data with data_type=drafts
-        // App\MCP\Tools\Sleeper\DraftPicksTool::class, // CONSOLIDATED: Use fantasy_data with data_type=draft_picks
-        // App\MCP\Tools\Sleeper\PlayerSearchTool::class, // CONSOLIDATED: Use fantasy_data with data_type=players
-        // App\MCP\Tools\Sleeper\WaiverRecommendationsTool::class, // CONSOLIDATED: Use fantasy_recommendations with mode=waiver
-        // App\MCP\Tools\Sleeper\TradeAnalyzeTool::class, // CONSOLIDATED: Use fantasy_recommendations with mode=trade
-        // App\MCP\Tools\Sleeper\LineupValidateTool::class, // CONSOLIDATED: Use lineup_management with mode=validate
-        // App\MCP\Tools\Sleeper\LineupOptimizeTool::class, // CONSOLIDATED: Use lineup_management with mode=optimize
-        // App\MCP\Tools\Sleeper\StartSitCompareTool::class, // CONSOLIDATED: Use lineup_management with mode=compare
-        // Projection tools (DEPRECATED - placeholder functionality or broken ESPN dependency)
-        // App\MCP\Tools\Projections\ProjectionsBlendTool::class, // Placeholder - just reformats data
-        // App\MCP\Tools\Projections\ProjectionsEspnSleeperBlendTool::class, // Depends on broken ESPN API
-        // App\MCP\Tools\Projections\AdpConsensusGetTool::class, // Redundant with adp_get tool
-
-        // Planning tools (CONSOLIDATED)
-        // App\MCP\Tools\Planning\PlayoffsPlanTool::class, // Use fantasy_recommendations with mode=playoffs
+        // Strategy configuration
         App\MCP\Tools\Preferences\StrategySetTool::class,
-
-        // ESPN tools (DEPRECATED - API returning placeholder/invalid data)
-        // App\MCP\Tools\Espn\CoreAthletesGetTool::class, // Returns placeholder data like "[35]"
-        // App\MCP\Tools\Espn\FantasyPlayersGetTool::class, // Returns empty arrays
-        // App\MCP\Tools\Espn\AdpProxyGetTool::class, // Dependent on broken Fantasy API
     ],
 
     /*
