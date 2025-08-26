@@ -299,7 +299,7 @@ const claudeConfigAuth = `{
                             <div class="font-semibold">Draft Helpers</div>
                             <ul class="mt-2 list-disc space-y-1 pl-5">
                                 <li><span class="font-medium">draft_board_build</span> — Build a draft board with positional tiers. Supports blending ESPN ADP with Sleeper.</li>
-                                <li><span class="font-medium">draft_pick_recommend</span> — Recommend best picks given needs and board.</li>
+                                <li><span class="font-medium">fantasy_recommendations (mode=draft)</span> — Consensus pick recommendations blending Sleeper and NFL data.</li>
                                 <li><span class="font-medium">draft_observe</span> — Fetch current draft picks for a live board.</li>
                             </ul>
                         </div>
