@@ -3,7 +3,9 @@
 namespace App\MCP\Tools\Recommendations;
 
 use App\Services\SleeperSdk;
+use App\Services\EspnSdk;
 use Illuminate\Support\Facades\App as LaravelApp;
+use Illuminate\Support\Facades\Cache;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
 class UnifiedRecommendationsTool implements ToolInterface
@@ -46,6 +48,8 @@ class UnifiedRecommendationsTool implements ToolInterface
                 'round_size' => ['type' => 'integer', 'minimum' => 2, 'description' => 'Draft mode only'],
                 'snake' => ['type' => 'boolean', 'default' => true, 'description' => 'Draft mode only'],
                 'strategy' => ['type' => 'string', 'enum' => ['balanced', 'hero_rb', 'zero_rb', 'wr_heavy', 'risk_on', 'bestball_stack'], 'default' => 'balanced', 'description' => 'Draft mode only'],
+                'blend_adp' => ['type' => 'boolean', 'default' => true, 'description' => 'Blend Sleeper and ESPN ADP'],
+                'espn_view' => ['type' => 'string', 'default' => 'mDraftDetail', 'description' => 'ESPN view for ADP blending'],
 
                 // Trade-specific parameters
                 'offer' => [
@@ -92,13 +96,14 @@ class UnifiedRecommendationsTool implements ToolInterface
 
     private function getDraftRecommendations(array $arguments): array
     {
-        // Validate required parameters
         if (! isset($arguments['league_id']) || ! isset($arguments['roster_id'])) {
             throw new \InvalidArgumentException('Missing required parameters: league_id and roster_id');
         }
 
         /** @var SleeperSdk $sdk */
         $sdk = LaravelApp::make(SleeperSdk::class);
+        /** @var EspnSdk $espn */
+        $espn = LaravelApp::make(EspnSdk::class);
         $sport = $arguments['sport'] ?? 'nfl';
         $leagueId = (string) $arguments['league_id'];
         $rosterId = (int) $arguments['roster_id'];
@@ -117,31 +122,244 @@ class UnifiedRecommendationsTool implements ToolInterface
 
         $myRoster = collect($rosters)->firstWhere('sleeper_roster_id', (string) $rosterId) ?? [];
         $currentPlayers = array_map('strval', (array) ($myRoster['players'] ?? []));
+        $needCounts = ['QB' => 0, 'RB' => 0, 'WR' => 0, 'TE' => 0];
+        $myTeamsByPos = ['QB' => [], 'RB' => [], 'WR' => [], 'TE' => []];
+        $myByesByPos = ['QB' => [], 'RB' => [], 'WR' => [], 'TE' => []];
+        foreach ($currentPlayers as $pid) {
+            $pos = strtoupper((string) (($catalog[$pid]['position'] ?? '') ?: ''));
+            if (isset($needCounts[$pos])) {
+                $needCounts[$pos]++;
+            }
+            $team = strtoupper((string) ($catalog[$pid]['team'] ?? ''));
+            if (isset($myTeamsByPos[$pos]) && $team !== '') {
+                $myTeamsByPos[$pos][$team] = true;
+            }
+            $bye = $catalog[$pid]['bye_week'] ?? ($catalog[$pid]['bye'] ?? null);
+            if (isset($myByesByPos[$pos]) && is_numeric($bye)) {
+                $myByesByPos[$pos][(int) $bye] = true;
+            }
+        }
 
-        // Build ADP index
+        $rosterPositions = array_values(array_filter((array) ($league['roster_positions'] ?? []), fn ($p) => ! in_array(strtoupper((string) $p), ['BN', 'IR', 'TAXI'], true)));
+        $posCounts = ['QB' => 0, 'RB' => 0, 'WR' => 0, 'TE' => 0];
+        foreach ($rosterPositions as $slot) {
+            $slot = strtoupper((string) $slot);
+            if (in_array($slot, ['QB', 'RB', 'WR', 'TE'], true)) {
+                $posCounts[$slot] = ($posCounts[$slot] ?? 0) + 1;
+            } elseif (in_array($slot, ['FLEX', 'WR_RB', 'WR_TE', 'RB_TE', 'REC_FLEX'], true)) {
+                $posCounts['RB'] += 0.34;
+                $posCounts['WR'] += 0.34;
+                $posCounts['TE'] += 0.32;
+            } elseif (in_array($slot, ['SUPER_FLEX', 'SUPERFLEX', 'SFLEX'], true)) {
+                $posCounts['QB'] += 0.5;
+                $posCounts['RB'] += 0.2;
+                $posCounts['WR'] += 0.2;
+                $posCounts['TE'] += 0.1;
+            }
+        }
+
+        $replacement = [];
+        foreach (['QB', 'RB', 'WR', 'TE'] as $pos) {
+            $pool = [];
+            foreach ($catalog as $pidX => $metaX) {
+                $p = strtoupper((string) ($metaX['position'] ?? ''));
+                if ($p !== $pos) {
+                    continue;
+                }
+                $pidX = (string) ($metaX['player_id'] ?? $pidX);
+                $pool[] = (float) (($projections[$pidX]['pts_half_ppr'] ?? $projections[$pidX]['pts_ppr'] ?? $projections[$pidX]['pts_std'] ?? 0));
+            }
+            rsort($pool);
+            $index = max(0, (int) round(($posCounts[$pos] ?? 0) * 12));
+            $replacement[$pos] = $pool[$index] ?? 0.0;
+        }
+
+        $round = (int) ($arguments['round'] ?? 1);
+        $pickInRound = (int) ($arguments['pick_in_round'] ?? 1);
+        $roundSize = (int) ($arguments['round_size'] ?? 12);
+        $snake = (bool) ($arguments['snake'] ?? true);
+        $currentPickOverall = ($round - 1) * $roundSize + $pickInRound;
+        $picksUntilNext = $snake
+            ? ($round % 2 === 1 ? (2 * $roundSize - $pickInRound * 2 + 1) : (2 * $pickInRound - 1))
+            : $roundSize;
+
         $adpIndex = [];
         foreach ($adp as $row) {
             $adpIndex[(string) ($row['player_id'] ?? '')] = (float) ($row['adp'] ?? 999.0);
         }
 
-        // Calculate needs and generate recommendations (simplified version)
+        $mcRuns = 500;
+        $posRunRisk = ['QB' => 0.0, 'RB' => 0.0, 'WR' => 0.0, 'TE' => 0.0];
+        foreach (array_keys($posRunRisk) as $posKey) {
+            $posPool = [];
+            foreach ($catalog as $pidX => $metaX) {
+                $p = strtoupper((string) ($metaX['position'] ?? ''));
+                if ($p !== $posKey) {
+                    continue;
+                }
+                $pidX = (string) ($metaX['player_id'] ?? $pidX);
+                $posPool[] = [
+                    'player_id' => $pidX,
+                    'adp' => $adpIndex[$pidX] ?? 999.0,
+                ];
+            }
+            if (empty($posPool)) {
+                continue;
+            }
+            $exhausted = 0;
+            for ($i = 0; $i < $mcRuns; $i++) {
+                $countGone = 0;
+                foreach ($posPool as $rowX) {
+                    $d = ($rowX['adp'] - $currentPickOverall);
+                    $pGone = 1.0 / (1.0 + exp(0.12 * ($d - $picksUntilNext)));
+                    if (mt_rand() / mt_getrandmax() < $pGone) {
+                        $countGone++;
+                    }
+                }
+                if ($countGone > max(1, (int) round(($posCounts[$posKey] ?? 0) * 0.8))) {
+                    $exhausted++;
+                }
+            }
+            $posRunRisk[$posKey] = $exhausted / $mcRuns;
+        }
+
+        $blendAdp = (bool) ($arguments['blend_adp'] ?? true);
+        if ($blendAdp) {
+            $espnView = (string) ($arguments['espn_view'] ?? 'mDraftDetail');
+            $espnPlayers = $espn->getFantasyPlayers((int) $season, $espnView, 2000);
+            $nameToPid = [];
+            $espnIdToPid = [];
+            foreach ($catalog as $pidKey => $meta) {
+                $pid = (string) ($meta['player_id'] ?? $pidKey);
+                $fullName = (string) ($meta['full_name'] ?? trim(($meta['first_name'] ?? '').' '.($meta['last_name'] ?? '')));
+                $nameToPid[self::normalizeName($fullName)] = $pid;
+                if (isset($meta['espn_id']) && $meta['espn_id'] !== null && $meta['espn_id'] !== '') {
+                    $espnIdToPid[(string) $meta['espn_id']] = $pid;
+                }
+            }
+            foreach ($espnPlayers as $item) {
+                $adpCandidate = null;
+                if (isset($item['averageDraftPosition']) && is_numeric($item['averageDraftPosition'])) {
+                    $adpCandidate = (float) $item['averageDraftPosition'];
+                } elseif (isset($item['draftRanksByRankType']) && is_array($item['draftRanksByRankType'])) {
+                    $rankType = $item['draftRanksByRankType']['STANDARD'] ?? ($item['draftRanksByRankType']['PPR'] ?? null);
+                    if (is_array($rankType) && isset($rankType['rank']) && is_numeric($rankType['rank'])) {
+                        $adpCandidate = (float) $rankType['rank'];
+                    }
+                }
+                if ($adpCandidate === null) {
+                    continue;
+                }
+                $pid = null;
+                $espnId = null;
+                if (isset($item['id']) && is_numeric($item['id'])) {
+                    $espnId = (string) $item['id'];
+                } elseif (isset($item['player']['id']) && is_numeric($item['player']['id'])) {
+                    $espnId = (string) $item['player']['id'];
+                } elseif (isset($item['playerId']) && is_numeric($item['playerId'])) {
+                    $espnId = (string) $item['playerId'];
+                }
+                if ($espnId !== null && isset($espnIdToPid[$espnId])) {
+                    $pid = $espnIdToPid[$espnId];
+                } else {
+                    $espnName = (string) ($item['fullName'] ?? ($item['player']['fullName'] ?? (($item['firstName'] ?? '').' '.($item['lastName'] ?? ''))));
+                    $norm = self::normalizeName($espnName);
+                    $pid = $nameToPid[$norm] ?? null;
+                }
+                if ($pid === null) {
+                    continue;
+                }
+                if (isset($adpIndex[$pid])) {
+                    $adpIndex[$pid] = ($adpIndex[$pid] + $adpCandidate) / 2.0;
+                } else {
+                    $adpIndex[$pid] = $adpCandidate;
+                }
+            }
+        }
+
         $candidates = [];
         foreach ($catalog as $pid => $meta) {
             $pid = (string) ($meta['player_id'] ?? $pid);
             if (in_array($pid, $alreadyDrafted, true)) {
                 continue;
             }
-
             $pos = strtoupper((string) ($meta['position'] ?? ''));
             if (! in_array($pos, ['QB', 'RB', 'WR', 'TE'], true)) {
                 continue;
             }
-
             $proj = (float) (($projections[$pid]['pts_half_ppr'] ?? $projections[$pid]['pts_ppr'] ?? $projections[$pid]['pts_std'] ?? 0));
             $adpVal = $adpIndex[$pid] ?? 999.0;
+            $needWeight = match ($pos) {
+                'RB' => max(0, 3 - ($needCounts['RB'] ?? 0)),
+                'WR' => max(0, 4 - ($needCounts['WR'] ?? 0)),
+                'QB' => max(0, 1 - ($needCounts['QB'] ?? 0)),
+                'TE' => max(0, 1 - ($needCounts['TE'] ?? 0)),
+                default => 0,
+            };
+            $vorp = max(0.0, $proj - ($replacement[$pos] ?? 0.0));
+            $adpLeverage = ($adpVal - $currentPickOverall) / max(1.0, $roundSize);
+            $willBeGone = $adpVal < ($currentPickOverall + $picksUntilNext - 2) ? 1.0 : 0.0;
+            $oppCost = ($willBeGone ? max(0.0, $vorp) : 0.0) * (1.0 + 0.5 * ($posRunRisk[$pos] ?? 0.0));
+            $construction = match ($pos) {
+                'RB' => max(0.0, 3 - ($needCounts['RB'] ?? 0)),
+                'WR' => max(0.0, 4 - ($needCounts['WR'] ?? 0)),
+                'QB' => max(0.0, 1 - ($needCounts['QB'] ?? 0)),
+                'TE' => max(0.0, 1 - ($needCounts['TE'] ?? 0)),
+                default => 0.0,
+            };
+            $strategy = Cache::get('mcp:strategy', []);
+            $byePenalty = 0.0;
+            $bye = $meta['bye_week'] ?? ($meta['bye'] ?? null);
+            if (is_numeric($bye) && isset($myByesByPos[$pos][(int) $bye])) {
+                $byePenalty = 1.0;
+            }
+            $injuryPenalty = 0.0;
+            $injury = strtolower((string) ($meta['injury_status'] ?? ($meta['status'] ?? '')));
+            if ($injury !== '') {
+                $injuryPenalty = match ($injury) {
+                    'out' => 1.0,
+                    'doubtful' => 0.8,
+                    'suspended' => 0.7,
+                    'questionable' => 0.5,
+                    default => 0.2,
+                };
+            }
+            $team = strtoupper((string) ($meta['team'] ?? ''));
+            $stackBonus = 0.0;
+            if ($team !== '') {
+                if ($pos === 'QB' && (isset($myTeamsByPos['WR'][$team]) || isset($myTeamsByPos['TE'][$team]))) {
+                    $stackBonus = 1.0;
+                } elseif (in_array($pos, ['WR', 'TE'], true) && isset($myTeamsByPos['QB'][$team])) {
+                    $stackBonus = 1.0;
+                }
+            }
+            $wV = 1.5;
+            $wOpp = 1.0;
+            $wADP = max(0.2, 1.0 - 0.05 * ($round - 1));
+            $wCons = 0.7;
+            $wBye = 0.1;
+            $wInj = 0.5;
+            $wStack = 0.3;
+            $risk = strtolower((string) ($strategy['risk'] ?? ''));
+            if ($risk === 'high') {
+                $wV += 0.3;
+                $wADP *= 0.8;
+            }
+            if ($risk === 'low') {
+                $wV -= 0.2;
+                $wADP *= 1.2;
+            }
+            if (! empty($strategy['stack_qb'])) {
+                $wStack = 0.6;
+            }
+            if (! empty($strategy['hero_rb']) && $pos === 'RB' && $round <= 4) {
+                $construction += 0.5;
+            }
+            if (! empty($strategy['zero_rb']) && $pos === 'RB' && $round <= 6) {
+                $construction = max(0.0, $construction - 0.7);
+            }
 
-            $score = $proj - ($adpVal / 100); // Simple score combining projection and ADP
-
+            $score = $wV * $vorp + $wOpp * $oppCost + $wCons * $construction + $wADP * $adpLeverage - $wBye * $byePenalty - $wInj * $injuryPenalty + $wStack * $stackBonus;
             $candidates[] = [
                 'player_id' => $pid,
                 'name' => $meta['full_name'] ?? trim(($meta['first_name'] ?? '').' '.($meta['last_name'] ?? '')),
@@ -149,7 +367,15 @@ class UnifiedRecommendationsTool implements ToolInterface
                 'team' => $meta['team'] ?? null,
                 'adp' => $adpVal,
                 'projected_points' => $proj,
+                'vorp' => $vorp,
                 'score' => $score,
+                'need_weight' => $needWeight,
+                'adp_leverage' => $adpLeverage,
+                'opp_cost' => $oppCost,
+                'construction' => $construction,
+                'bye_penalty' => $byePenalty,
+                'injury_penalty' => $injuryPenalty,
+                'stack_bonus' => $stackBonus,
             ];
         }
 
@@ -159,10 +385,20 @@ class UnifiedRecommendationsTool implements ToolInterface
         return [
             'mode' => 'draft',
             'recommendations' => $top,
-            'league_id' => $leagueId,
-            'roster_id' => $rosterId,
-            'season' => $season,
-            'week' => $week,
+            'pos_run_risk' => $posRunRisk,
+            'meta' => [
+                'league_id' => $leagueId,
+                'roster_id' => $rosterId,
+                'season' => $season,
+                'week' => $week,
+                'current_pick_overall' => $currentPickOverall,
+                'picks_until_next' => $picksUntilNext,
+                'round' => $round,
+                'pick_in_round' => $pickInRound,
+                'round_size' => $roundSize,
+                'snake' => $snake,
+                'blend_adp' => $blendAdp,
+            ],
         ];
     }
 

@@ -271,7 +271,7 @@ return [
         // App\MCP\Tools\Utils\ToolSchemaTool::class, // CONSOLIDATED: Schema info now in tool_list
 
         // UNIFIED TOOLS - Phase 3 Consolidation
-        App\MCP\Tools\Recommendations\UnifiedRecommendationsTool::class, // Replaces: draft_pick_recommend, waiver_recommendations, trade_analyze
+        App\MCP\Tools\Recommendations\UnifiedRecommendationsTool::class, // Replaces: waiver_recommendations, trade_analyze
         App\MCP\Tools\Lineup\UnifiedLineupTool::class, // Replaces: lineup_validate, lineup_optimize, start_sit_compare
         App\MCP\Tools\Data\UnifiedDataTool::class, // Replaces: league_get, league_rosters, league_drafts, draft_picks, players_search
 

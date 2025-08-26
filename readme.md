@@ -427,18 +427,18 @@ The server now features a consolidated tool architecture with unified tools that
     {"type":"object","required":["season","week"],"properties":{"sport":{"type":"string","default":"nfl"},"season":{"type":"string"},"week":{"type":"integer","minimum":1},"format":{"type":"string","enum":["redraft","dynasty","bestball"],"default":"redraft"},"tier_gaps":{"type":"number","default":10.0},"limit":{"type":"integer","minimum":1,"default":300},"blend_adp":{"type":"boolean","default":true},"espn_view":{"type":"string","default":"mDraftDetail"}},"additionalProperties":false}
     ```
 
-- draft_pick_recommend
-  - Description: Recommend best available picks given current pick, roster needs, and board.
-  - Input schema:
-    ```json
-    {"type":"object","required":["league_id","roster_id","season","week"],"properties":{"league_id":{"type":"string"},"roster_id":{"type":"integer"},"season":{"type":"string"},"week":{"type":"integer","minimum":1},"sport":{"type":"string","default":"nfl"},"format":{"type":"string","enum":["redraft","dynasty","bestball"],"default":"redraft"},"limit":{"type":"integer","default":10},"already_drafted":{"type":"array","items":{"type":"string"}}},"additionalProperties":false}
-    ```
-
 - draft_observe
   - Description: Fetch current draft picks to update a live draft board.
   - Input schema:
     ```json
     {"type":"object","required":["draft_id"],"properties":{"draft_id":{"type":"string"},"limit":{"type":"integer","minimum":1,"default":1000}},"additionalProperties":false}
+    ```
+
+- fantasy_recommendations (mode=draft)
+  - Description: Consensus pick recommendations blending Sleeper and NFL (ESPN) data with live projections.
+  - Input schema:
+    ```json
+    {"type":"object","required":["league_id","roster_id"],"properties":{"league_id":{"type":"string"},"roster_id":{"type":"integer"},"season":{"type":"string"},"week":{"type":"integer","minimum":1},"sport":{"type":"string","default":"nfl"},"format":{"type":"string","enum":["redraft","dynasty","bestball"],"default":"redraft"},"limit":{"type":"integer","default":10},"already_drafted":{"type":"array","items":{"type":"string"}},"blend_adp":{"type":"boolean","default":true},"espn_view":{"type":"string","default":"mDraftDetail"},"round":{"type":"integer","minimum":1},"pick_in_round":{"type":"integer","minimum":1},"round_size":{"type":"integer","minimum":2},"snake":{"type":"boolean","default":true},"strategy":{"type":"string","enum":["balanced","hero_rb","zero_rb","wr_heavy","risk_on","bestball_stack"],"default":"balanced"}},"additionalProperties":false}
     ```
 
 ### Roster Analysis
