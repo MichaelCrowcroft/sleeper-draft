@@ -40,8 +40,8 @@ const cursorConfig = `{
                             <h1 class="text-3xl leading-snug font-semibold sm:text-4xl">MCP Tools for Fantasy Football</h1>
                         </div>
                         <p class="mt-3 text-[15px] leading-7 text-[#575654] dark:text-[#A1A09A]">
-                            This Laravel server exposes a Model Context Protocol (MCP) endpoint with tools for Sleeper and ESPN: users, leagues,
-                            rosters, drafts, transactions, waivers, projections, ADP, and more.
+                            This Laravel server exposes a Model Context Protocol (MCP) endpoint with tools for Sleeper: unified data access,
+                            fantasy recommendations, lineup management, and core utilities.
                         </p>
 
                         <div class="mt-6 flex flex-wrap items-center gap-3">
@@ -141,134 +141,64 @@ const cursorConfig = `{
                     <ul class="list-disc space-y-1 pl-5 text-[13px] text-[#575654] dark:text-[#A1A09A]">
                         <li><span class="font-medium">Users and leagues</span>: lookups; list leagues by season</li>
                         <li><span class="font-medium">Data access</span>: unified tool for leagues, rosters, drafts, players, transactions</li>
-                        <li><span class="font-medium">Players and market</span>: search; trending adds/drops; ADP</li>
-                        <li>
-                            <span class="font-medium">Fantasy recommendations</span>: draft picks, waiver acquisitions, trade analysis, playoff
-                            planning
-                        </li>
-                        <li><span class="font-medium">Lineup management</span>: optimization, validation, and player comparisons</li>
-                        <li><span class="font-medium">Projections and ADP</span>: weekly projections and average draft position</li>
-                        <li><span class="font-medium">Matchups and standings</span>: league matchups and computed standings</li>
-                        <li><span class="font-medium">Player insights</span>: search, trending data, roster needs analysis</li>
-                        <li><span class="font-medium">Strategy tools</span>: strategy configuration and FAAB optimization</li>
+                        <li><span class="font-medium">Players and market</span>: projections, ADP, trending data</li>
+                        <li><span class="font-medium">Fantasy recommendations</span>: draft picks, waiver acquisitions, trade analysis, playoff planning</li>
+                        <li><span class="font-medium">Lineup management</span>: optimization, validation, player comparisons</li>
+                        <li><span class="font-medium">Strategy tools</span>: configure draft approach</li>
                         <li><span class="font-medium">Utilities</span>: resolve current week, health check, cache management, tool discovery</li>
                     </ul>
                 </div>
 
-                <div class="mt-6 rounded-xl border border-black/10 bg-[#FCFCFB] p-5 shadow-sm dark:border-white/10 dark:bg-[#0f0f0f]">
-                    <div class="mb-3 text-[12px] font-semibold tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">Tools Reference</div>
-                    <div class="space-y-5 text-[13px] text-[#575654] dark:text-[#A1A09A]">
-                        <div>
-                            <div class="font-semibold">Sleeper: Users and Leagues</div>
-                            <ul class="mt-2 list-disc space-y-1 pl-5">
-                                <li>
-                                    <span class="font-medium">user_lookup</span> — Get Sleeper user by username. When authenticated, uses your
-                                    connected account if no username provided.
-                                </li>
-                                <li>
-                                    <span class="font-medium">user_leagues</span> — List Sleeper leagues for a user in a season. When authenticated,
-                                    uses your connected account if no user_id provided.
-                                </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <div class="font-semibold">Sleeper: League Data</div>
-                            <ul class="mt-2 list-disc space-y-1 pl-5">
-                                <li><span class="font-medium">league_get</span> — League metadata and settings.</li>
-                                <li><span class="font-medium">league_rosters</span> — All rosters for a league.</li>
-                                <li><span class="font-medium">league_matchups</span> — Weekly matchups for a league.</li>
-                                <li><span class="font-medium">league_transactions</span> — Transactions for a given week.</li>
-                                <li><span class="font-medium">league_waivers</span> — Waiver transactions for a given week.</li>
-                                <li><span class="font-medium">league_drafts</span> — Drafts for a league.</li>
-                                <li><span class="font-medium">draft_picks</span> — Picks for a draft.</li>
-                                <li><span class="font-medium">league_standings</span> — Computed standings from records and points.</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <div class="font-semibold">Players, Projections, ADP</div>
-                            <ul class="mt-2 list-disc space-y-1 pl-5">
-                                <li><span class="font-medium">players_search</span> — Search players by name, team, or position.</li>
-                                <li><span class="font-medium">players_trending</span> — Trending adds/drops over a window.</li>
-                                <li><span class="font-medium">projections_week</span> — Weekly projections for a season/week.</li>
-                                <li>
-                                    <span class="font-medium">adp_get</span> — Current ADP/market values (Sleeper). Draft board can blend ESPN ADP.
-                                </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <div class="font-semibold">Lineups, Start/Sit, Waivers, Trades</div>
-                            <ul class="mt-2 list-disc space-y-1 pl-5">
-                                <li><span class="font-medium">lineup_validate</span> — Validate a proposed starting lineup.</li>
-                                <li><span class="font-medium">lineup_optimize</span> — Recommend optimal starters using projections.</li>
-                                <li><span class="font-medium">start_sit_compare</span> — Compare two players for a week.</li>
-                                <li><span class="font-medium">waiver_recommendations</span> — Recommend waiver pickups for a roster.</li>
-                                <li><span class="font-medium">waiver_optimize_faab</span> — Suggest FAAB bids for candidates.</li>
-                                <li><span class="font-medium">trade_analyze</span> — Evaluate a proposed trade.</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <div class="font-semibold">Draft Helpers</div>
-                            <ul class="mt-2 list-disc space-y-1 pl-5">
-                                <li>
-                                    <span class="font-medium">draft_board_build</span> — Build a draft board with positional tiers. Supports blending
-                                    ESPN ADP with Sleeper.
-                                </li>
-                                <li>
-                                    <span class="font-medium">fantasy_recommendations (mode=draft)</span> — Consensus pick recommendations blending
-                                    Sleeper and NFL data.
-                                </li>
-                                <li><span class="font-medium">draft_observe</span> — Fetch current draft picks for a live board.</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <div class="font-semibold">Roster Analysis</div>
-                            <ul class="mt-2 list-disc space-y-1 pl-5">
-                                <li><span class="font-medium">roster_needs</span> — Compute roster needs vs. starting slots.</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <div class="font-semibold">Projections Blending</div>
-                            <ul class="mt-2 list-disc space-y-1 pl-5">
-                                <li><span class="font-medium">projections_blend</span> — Blend multiple projection sources.</li>
-                                <li>
-                                    <span class="font-medium">projections_blend_espn_sleeper</span> — Blend ESPN fantasy dataset with Sleeper
-                                    projections and trending.
-                                </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <div class="font-semibold">ESPN: Data</div>
-                            <ul class="mt-2 list-disc space-y-1 pl-5">
-                                <li><span class="font-medium">espn_core_athletes_get</span> — Get athletes from ESPN Core API.</li>
-                                <li>
-                                    <span class="font-medium">espn_fantasy_players_get</span> — Get fantasy players from ESPN Fantasy API (supports
-                                    views and X‑Fantasy‑Filter).
-                                </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <div class="font-semibold">Planning and Preferences</div>
-                            <ul class="mt-2 list-disc space-y-1 pl-5">
-                                <li><span class="font-medium">playoffs_plan</span> — Highlight playoff weeks schedule and targets.</li>
-                                <li><span class="font-medium">strategy_set</span> — Configure draft/season strategy levers.</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <div class="font-semibold">Utility</div>
-                            <ul class="mt-2 list-disc space-y-1 pl-5">
-                                <li>
-                                    <span class="font-medium">context_set_defaults</span> — Set default username/user_id, league_id, sport, season,
-                                    week.
-                                </li>
-                                <li><span class="font-medium">time_resolve_week</span> — Resolve current season/week from Sleeper state.</li>
-                                <li><span class="font-medium">health_check</span> — Verify MCP server and Sleeper reachability.</li>
-                                <li><span class="font-medium">cache_invalidate</span> — Invalidate cached keys by scope.</li>
-                                <li><span class="font-medium">tool_list</span> — Return available tools and short descriptions.</li>
-                                <li><span class="font-medium">tool_schema</span> — Return the JSON schema of a tool.</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+<div class="mt-6 rounded-xl border border-black/10 bg-[#FCFCFB] p-5 shadow-sm dark:border-white/10 dark:bg-[#0f0f0f]">
+    <div class="mb-3 text-[12px] font-semibold tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">Tools Reference</div>
+    <div class="space-y-5 text-[13px] text-[#575654] dark:text-[#A1A09A]">
+        <div>
+            <div class="font-semibold">Sleeper: Users and Leagues</div>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+                <li><span class="font-medium">user_lookup</span> — Get Sleeper user by username.</li>
+                <li><span class="font-medium">user_leagues</span> — List Sleeper leagues for a user in a season.</li>
+            </ul>
+        </div>
+        <div>
+            <div class="font-semibold">Unified Data</div>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+                <li><span class="font-medium">unified_data</span> — Leagues, rosters, drafts, players, transactions.</li>
+                <li><span class="font-medium">league_matchups</span> — Weekly matchups for a league.</li>
+                <li><span class="font-medium">league_standings</span> — Computed standings from records and points.</li>
+            </ul>
+        </div>
+        <div>
+            <div class="font-semibold">Players & Market</div>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+                <li><span class="font-medium">players_trending</span> — Trending adds/drops.</li>
+                <li><span class="font-medium">projections_week</span> — Weekly projections.</li>
+                <li><span class="font-medium">adp_get</span> — Current ADP values.</li>
+            </ul>
+        </div>
+        <div>
+            <div class="font-semibold">Fantasy Recommendations</div>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+                <li><span class="font-medium">fantasy_recommendations</span> — Draft, waiver, trade, playoff guidance.</li>
+            </ul>
+        </div>
+        <div>
+            <div class="font-semibold">Lineup Management</div>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+                <li><span class="font-medium">unified_lineup</span> — Optimize or validate lineups, compare players.</li>
+            </ul>
+        </div>
+        <div>
+            <div class="font-semibold">Strategy & Utilities</div>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+                <li><span class="font-medium">strategy_set</span> — Configure draft/season strategy levers.</li>
+                <li><span class="font-medium">time_resolve_week</span> — Resolve current season/week.</li>
+                <li><span class="font-medium">health_check</span> — Verify server and Sleeper reachability.</li>
+                <li><span class="font-medium">cache_invalidate</span> — Invalidate cached keys by scope.</li>
+                <li><span class="font-medium">tool_list</span> — List available tools.</li>
+            </ul>
+        </div>
+    </div>
+</div>
             </div>
         </div>
     </div>
