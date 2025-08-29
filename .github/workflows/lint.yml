@@ -16,6 +16,7 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    environment: Testing
     steps:
       - uses: actions/checkout@v4
 
@@ -23,6 +24,9 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
+
+      - name: Add Flux Credentials Loaded From ENV
+        run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
 
       - name: Install Dependencies
         run: |
@@ -32,14 +36,11 @@ jobs:
       - name: Run Pint
         run: vendor/bin/pint
 
-      - name: Format Frontend
-        run: npm run format
-
-      - name: Lint Frontend
-        run: npm run lint
-
       # - name: Commit Changes
       #   uses: stefanzweifel/git-auto-commit-action@v5
       #   with:
       #     commit_message: fix code style
       #     commit_options: '--no-verify'
+      #     file_pattern: |
+      #       **/*
+      #       !.github/workflows/*

@@ -1,40 +1,22 @@
 <?php
 
-use App\Http\Controllers\LeagueController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
+use Livewire\Volt\Volt;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome');
+    return view('welcome');
 })->name('home');
 
-Route::get('dashboard', function () {
-    $user = auth()->user();
-    $mcpTokens = $user->tokens()
-        ->where('name', 'LIKE', 'MCP%')
-        ->orderBy('created_at', 'asc')
-        ->get(['id', 'name', 'token'])
-        ->map(fn($token) => [
-            'id' => $token->id,
-            'name' => $token->name,
-            'token' => $token->token,
-            'token_preview' => substr($token->token, 0, 8).'...'.substr($token->token, -8)
-        ]);
+Route::view('dashboard', 'dashboard')
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
-    $firstToken = $mcpTokens->first();
+Route::middleware(['auth'])->group(function () {
+    Route::redirect('settings', 'settings/profile');
 
-    return Inertia::render('Dashboard', [
-        'hasMcpTokens' => $mcpTokens->isNotEmpty(),
-        'mcpTokens' => $mcpTokens,
-        'firstToken' => $firstToken,
-    ]);
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::middleware('auth')->group(function () {
-    Route::get('/leagues', [LeagueController::class, 'index'])->name('leagues.index');
-    Route::post('/leagues/sync', [LeagueController::class, 'sync'])->name('leagues.sync');
-    Route::get('/leagues/{league}', [LeagueController::class, 'show'])->name('leagues.show');
+    Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
+    Volt::route('settings/password', 'settings.password')->name('settings.password');
+    Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
-require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

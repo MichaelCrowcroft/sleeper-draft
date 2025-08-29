@@ -2,5 +2,5 @@
 
 return [
     App\Providers\AppServiceProvider::class,
-    OPGG\LaravelMcpServer\LaravelMcpServerServiceProvider::class,
+    App\Providers\VoltServiceProvider::class,
 ];
