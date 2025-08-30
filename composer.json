@@ -15,7 +15,8 @@
         "livewire/flux": "^2.1.1",
         "livewire/volt": "^1.7.0",
         "michaelcrowcroft/sleeper-laravel": "dev-main",
-        "opgginc/laravel-mcp-server": "^1.4"
+        "opgginc/laravel-mcp-server": "^1.4",
+        "tempest/highlight": "^2.13"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
