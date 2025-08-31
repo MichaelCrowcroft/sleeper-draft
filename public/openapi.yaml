@@ -267,16 +267,7 @@ paths:
     post:
       summary: Get Draft Pick Recommendations
       description: |
-        Provides intelligent draft pick suggestions by analyzing draft state, user roster composition,
-        scoring settings, and player ADP values. Considers snake draft mechanics and positional needs.
-
-        **ADP Data Types:**
-        - adp: Regular numeric value where lower numbers indicate players expected to be drafted earlier
-        - adp_formatted: Human-readable string format showing round and pick (e.g., "1.05", "2.12")
-        - adp_high/adp_low: Range of ADP values from different sources
-        - adp_stdev: Standard deviation showing ADP consistency across sources
-
-        **Use Case**: Get personalized draft recommendations for your fantasy team.
+        Provides intelligent draft pick suggestions based on draft state, roster composition, scoring settings, and ADP values. Considers snake draft mechanics and positional needs for personalized recommendations.
       operationId: getDraftPicks
       tags:
         - Fantasy Sports
@@ -363,10 +354,7 @@ paths:
     post:
       summary: Get League Information
       description: |
-        Get League tool fetches all leagues for a user and returns one league based on the name or ID.
-        It also fetches all users in the league and returns user information with username, display name, and team names.
-
-        **Use Case**: Get detailed information about a specific fantasy league including all participants.
+        Fetches detailed league information including all users, usernames, display names, and team names for a specific league identified by name or ID.
       operationId: getLeague
       tags:
         - Fantasy Sports
