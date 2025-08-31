@@ -35,27 +35,19 @@ servers:
 
 paths:
   /mcp/tools/{tool}:
-    parameters:
-      - name: tool
-        in: path
-        required: true
-        schema:
-          type: string
-        description: The MCP tool to invoke (e.g., fetch-trending-players, fetch-adp-players, draft-picks, get-league, etc.)
     post:
+      parameters:
+        - name: tool
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The MCP tool to invoke
       summary: Invoke MCP Tool
       description: |
         Invokes a specific MCP tool with the provided parameters.
-        Each tool provides different fantasy football data and analysis.
-
-        **Available Tools:**
-        - fetch-trending-players: Get trending player data based on adds/drops
-        - fetch-adp-players: Get players ranked by Average Draft Position
-        - fetch-user-leagues: Get all leagues for a specific user
-        - draft-picks: Get intelligent draft pick recommendations
-        - get-league: Get detailed league information and users
-        - fetch-rosters: Get roster data for all teams in a league
-        - get-matchups: Get matchup data for a specific week
+        Supports tools: fetch-trending-players, fetch-adp-players, fetch-user-leagues,
+        draft-picks, get-league, fetch-rosters, get-matchups.
       operationId: invokeMcpTool
       tags:
         - Fantasy Sports
@@ -102,6 +94,7 @@ components:
     McpToolRequest:
       type: object
       description: Generic request schema for MCP tool invocations
+      properties: {}
       additionalProperties: true
       example:
         type: "add"
