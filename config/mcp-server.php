@@ -250,7 +250,11 @@ return [
         // Custom Sleeper Fantasy Sports Tools
         \App\MCP\Tools\FetchTrendingPlayersTool::class,
         \App\MCP\Tools\FetchADPPlayersTool::class,
+        \App\MCP\Tools\FetchUserLeaguesTool::class,
         \App\MCP\Tools\DraftPicksTool::class,
+        \App\MCP\Tools\GetLeagueTool::class,
+        \App\MCP\Tools\FetchRostersTool::class,
+        \App\MCP\Tools\GetMatchupsTool::class,
 
         // ===== REGISTER YOUR CUSTOM TOOLS BELOW =====
         // App\MCP\Tools\Database\Your::class,

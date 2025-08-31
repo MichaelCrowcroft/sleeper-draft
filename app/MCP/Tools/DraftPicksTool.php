@@ -2,6 +2,7 @@
 
 namespace App\MCP\Tools;
 
+use App\Http\Resources\PlayerResource;
 use App\Models\Player;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
@@ -23,7 +24,21 @@ class DraftPicksTool implements ToolInterface
 
     public function description(): string
     {
-        return 'Provides intelligent draft pick suggestions by analyzing draft state, user roster composition, scoring settings, and player ADP values. Considers snake draft mechanics and positional needs.';
+        return 'Provides intelligent draft pick suggestions by analyzing draft state, user roster composition, scoring settings, and player ADP values. Considers snake draft mechanics and positional needs.
+
+ADP (Average Draft Position) Data Types:
+- adp: Regular numeric value where lower numbers indicate players expected to be drafted earlier
+- adp_formatted: Human-readable string format showing round and pick (e.g., "1.05", "2.12", "5.08")
+- adp_high/adp_low: Range of ADP values from different sources
+- adp_stdev: Standard deviation showing ADP consistency across sources
+
+ADP_formatted Interpretation:
+- Format: "round.pick" (e.g., "1.05", "2.12", "5.08")
+- Whole number = draft round (1 = Round 1, 2 = Round 2, etc.)
+- Decimal portion = pick within that round (.05 = Pick 5, .12 = Pick 12, etc.)
+- Examples: "1.05" = Round 1, Pick 5; "2.12" = Round 2, Pick 12; "5.08" = Round 5, Pick 8
+- Lower ADP_formatted values indicate players expected to be drafted earlier
+- ADP helps predict when players will be available in your draft';
     }
 
     public function inputSchema(): array
@@ -62,7 +77,27 @@ class DraftPicksTool implements ToolInterface
             // Custom annotations
             'category' => 'fantasy-sports',
             'data_source' => 'external_api',
-            'cache_recommended' => false, // Draft state changes frequently
+            'cache_recommended' => false,
+
+            // ADP interpretation guide
+            'adp_interpretation' => [
+                'data_types' => [
+                    'adp' => 'Regular numeric value (lower = drafted earlier)',
+                    'adp_formatted' => 'String format "round.pick" (e.g., "1.05")',
+                    'adp_high' => 'Highest ADP value from sources',
+                    'adp_low' => 'Lowest ADP value from sources',
+                    'adp_stdev' => 'Standard deviation of ADP values',
+                ],
+                'adp_formatted_format' => 'round.pick (e.g., "1.05", "2.12", "5.08")',
+                'adp_formatted_examples' => [
+                    '1.05' => 'Round 1, Pick 5',
+                    '2.12' => 'Round 2, Pick 12',
+                    '5.08' => 'Round 5, Pick 8',
+                    '12.03' => 'Round 12, Pick 3',
+                ],
+                'meaning' => 'Lower ADP/adp_formatted values indicate players expected to be drafted earlier',
+                'usage' => 'Helps predict when players will be available in your draft',
+            ],
         ];
     }
 
@@ -86,81 +121,78 @@ class DraftPicksTool implements ToolInterface
         $draftId = $arguments['draft_id'];
         $limit = $arguments['limit'] ?? 10;
 
-        try {
-            // Step 1: Fetch draft details
-            $draftData = $this->fetchDraftData($draftId);
-            if (! is_array($draftData)) {
-                throw new JsonRpcErrorException(
-                    message: 'Invalid draft data received from API',
-                    code: JsonRpcErrorCode::INTERNAL_ERROR
-                );
-            }
-
-            // Step 2: Fetch draft picks to see who's already drafted
-            $draftPicks = $this->fetchDraftPicks($draftId);
-            if (! is_array($draftPicks)) {
-                logger('DraftPicksTool: Draft picks is not an array, using empty array', [
-                    'draft_picks_type' => gettype($draftPicks),
-                    'draft_id' => $draftId,
-                ]);
-                $draftPicks = [];
-            }
-
-            // Step 3: Find user's roster in the draft
-            $userRoster = $this->findUserRoster($draftData, $userId);
-            if (! is_array($userRoster) || empty($userRoster)) {
-                throw new JsonRpcErrorException(
-                    message: 'User not found in this draft or invalid roster data',
-                    code: JsonRpcErrorCode::INVALID_REQUEST
-                );
-            }
-
-            // Step 4: Analyze draft state and user's next pick
-            $draftAnalysis = $this->analyzeDraftState($draftData, $draftPicks, $userRoster);
-
-            // Step 5: Get user's current roster composition
-            $rosterComposition = $this->analyzeRosterComposition($draftPicks, $userRoster);
-
-            // Step 6: Determine positional needs based on league settings
-            $positionalNeeds = $this->determinePositionalNeeds($draftData, $rosterComposition, $draftAnalysis);
-
-            // Step 7: Get available players and generate suggestions
-            $suggestions = $this->generateSuggestions($draftPicks, $positionalNeeds, $limit);
-
-            return [
-                'success' => true,
-                'data' => [
-                    'suggestions' => $suggestions,
-                    'draft_analysis' => $draftAnalysis,
-                    'roster_composition' => $rosterComposition,
-                    'positional_needs' => $positionalNeeds,
-                ],
-                'metadata' => [
-                    'user_id' => $userId,
-                    'draft_id' => $draftId,
-                    'draft_type' => $draftData['type'] ?? 'unknown',
-                    'scoring_type' => $draftData['scoring_type'] ?? 'unknown',
-                    'season_type' => $draftData['season_type'] ?? 'unknown',
-                    'suggestions_count' => count($suggestions),
-                    'executed_at' => now()->toISOString(),
-                ],
-            ];
-
-        } catch (JsonRpcErrorException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            logger('DraftPicksTool execution failed', [
-                'tool' => static::class,
-                'arguments' => $arguments,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
+        // Step 1: Fetch draft details
+        $draftData = $this->fetchDraftData($draftId);
+        if (! is_array($draftData)) {
             throw new JsonRpcErrorException(
-                message: 'Tool execution failed: '.$e->getMessage(),
+                message: 'Invalid draft data received from API',
                 code: JsonRpcErrorCode::INTERNAL_ERROR
             );
         }
+
+        // Step 2: Fetch draft picks to see who's already drafted
+        $draftPicks = $this->fetchDraftPicks($draftId);
+
+        // Step 3: Find user's roster in the draft
+        $userRoster = $this->findUserRoster($draftData, $userId);
+
+        // Step 4: Analyze draft state and user's next pick
+        $draftAnalysis = $this->analyzeDraftState($draftData, $draftPicks, $userRoster);
+
+        // Step 5: Get user's current roster composition
+        $rosterComposition = $this->analyzeRosterComposition($draftPicks, $userRoster);
+
+        // Step 6: Determine positional needs based on league settings
+        $positionalNeeds = $this->determinePositionalNeeds($draftData, $rosterComposition, $draftAnalysis);
+
+        // Step 7: Get available players and generate suggestions
+        $suggestions = $this->generateSuggestions($draftPicks, $positionalNeeds, $limit);
+
+        return [
+            'success' => true,
+            'data' => [
+                'suggestions' => $suggestions,
+                'draft_analysis' => $draftAnalysis,
+                'roster_composition' => $rosterComposition,
+                'positional_needs' => $positionalNeeds,
+            ],
+            'metadata' => [
+                'user_id' => $userId,
+                'draft_id' => $draftId,
+                'draft_type' => $draftData['type'] ?? 'unknown',
+                'scoring_type' => $draftData['scoring_type'] ?? 'unknown',
+                'season_type' => $draftData['season_type'] ?? 'unknown',
+                'suggestions_count' => count($suggestions),
+                'executed_at' => now()->toISOString(),
+            ],
+            'adp_guide' => [
+                'data_types' => [
+                    'adp' => 'Regular numeric value where lower numbers indicate players drafted earlier',
+                    'adp_formatted' => 'Human-readable string showing round and pick (e.g., "1.05", "2.12")',
+                    'adp_high' => 'Highest ADP value across different sources',
+                    'adp_low' => 'Lowest ADP value across different sources',
+                    'adp_stdev' => 'Standard deviation showing ADP consistency',
+                ],
+                'adp_formatted_interpretation' => 'String format showing round and pick position',
+                'adp_formatted_format_breakdown' => [
+                    'whole_number' => 'Draft round (1 = Round 1, 2 = Round 2, etc.)',
+                    'decimal_portion' => 'Pick within round (.05 = Pick 5, .12 = Pick 12, etc.)',
+                ],
+                'adp_formatted_examples' => [
+                    '1.05' => 'Round 1, Pick 5',
+                    '2.12' => 'Round 2, Pick 12',
+                    '5.08' => 'Round 5, Pick 8',
+                    '12.03' => 'Round 12, Pick 3',
+                ],
+                'usage_tips' => [
+                    'Lower adp/adp_formatted values = drafted earlier',
+                    'Compare your draft position to ADP to assess availability',
+                    'Look for value picks (players going later than their ADP)',
+                    'Use ADP range (adp_high/adp_low) to understand variability',
+                    'Lower adp_stdev indicates more consistent ADP across sources',
+                ],
+            ],
+        ];
     }
 
     /**
@@ -169,13 +201,6 @@ class DraftPicksTool implements ToolInterface
     private function fetchDraftData(string $draftId): array
     {
         $response = Http::get("https://api.sleeper.app/v1/draft/{$draftId}");
-
-        if (! $response->successful()) {
-            throw new JsonRpcErrorException(
-                message: 'Failed to fetch draft data from Sleeper API',
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
-        }
 
         return $response->json();
     }
@@ -486,7 +511,7 @@ class DraftPicksTool implements ToolInterface
 
             foreach ($availablePlayers as $player) {
                 $suggestions[] = [
-                    'player' => $player->toArray(),
+                    'player' => new PlayerResource($player),
                     'recommendation_reason' => $this->getRecommendationReason($player, $positionalNeeds[$position]),
                     'positional_need' => $positionalNeeds[$position],
                 ];
@@ -509,7 +534,7 @@ class DraftPicksTool implements ToolInterface
 
             foreach ($bestAvailable as $player) {
                 $suggestions[] = [
-                    'player' => $player->toArray(),
+                    'player' => new PlayerResource($player),
                     'recommendation_reason' => 'Best available player by ADP',
                     'positional_need' => null,
                 ];

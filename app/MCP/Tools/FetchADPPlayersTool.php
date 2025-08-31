@@ -2,6 +2,7 @@
 
 namespace App\MCP\Tools;
 
+use App\Http\Resources\PlayerResource;
 use App\Models\Player;
 use Illuminate\Support\Facades\Validator;
 use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
@@ -39,11 +40,6 @@ class FetchADPPlayersTool implements ToolInterface
         ];
     }
 
-    /**
-     * Provides metadata about the tool's behavior and characteristics.
-     *
-     * @return array Associative array of tool metadata and behavioral hints
-     */
     public function annotations(): array
     {
         return [
@@ -51,7 +47,7 @@ class FetchADPPlayersTool implements ToolInterface
             'readOnlyHint' => true,
             'destructiveHint' => false,
             'idempotentHint' => true,
-            'openWorldHint' => false, // Only interacts with local database
+            'openWorldHint' => false,
 
             // Custom annotations
             'category' => 'fantasy-sports',
@@ -60,20 +56,8 @@ class FetchADPPlayersTool implements ToolInterface
         ];
     }
 
-    /**
-     * The core logic of this tool.
-     *
-     * Fetches top players by ADP from the database, optionally filtered by position,
-     * and returns them ordered by ADP in ascending order.
-     *
-     * @param  array  $arguments  Associative array of input parameters from the client
-     * @return mixed The tool's result (will be JSON-encoded in the response)
-     *
-     * @throws JsonRpcErrorException When validation fails or execution errors occur
-     */
     public function execute(array $arguments): mixed
     {
-        // Validate input arguments
         $validator = Validator::make($arguments, [
             'position' => ['nullable', 'string', 'max:10'],
         ]);
@@ -87,47 +71,28 @@ class FetchADPPlayersTool implements ToolInterface
 
         $position = $arguments['position'] ?? null;
 
-        try {
-            // Build query for players with ADP values
-            $query = Player::whereNotNull('adp')
-                ->orderBy('adp', 'asc'); // Lowest ADP first (most desirable)
+        $query = Player::whereNotNull('adp')
+            ->orderBy('adp', 'asc');
 
-            // Apply position filter if provided
-            if ($position) {
-                $query->where('position', $position);
-            }
-
-            $players = $query->get();
-
-            $filterDescription = $position ? " for position '{$position}'" : ' for all positions';
-
-            return [
-                'success' => true,
-                'data' => $players->toArray(),
-                'count' => $players->count(),
-                'message' => "Successfully fetched {$players->count()} players by ADP{$filterDescription}",
-                'metadata' => [
-                    'position_filter' => $position,
-                    'order_by' => 'adp',
-                    'order_direction' => 'asc',
-                    'executed_at' => now()->toISOString(),
-                ],
-            ];
-
-        } catch (\Exception $e) {
-            // Log the error for debugging
-            logger('FetchADPPlayersTool execution failed', [
-                'tool' => static::class,
-                'arguments' => $arguments,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            // Handle any execution errors gracefully
-            throw new JsonRpcErrorException(
-                message: 'Tool execution failed: '.$e->getMessage(),
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
+        if ($position) {
+            $query->where('position', $position);
         }
+
+        $players = $query->get();
+
+        $filterDescription = $position ? " for position '{$position}'" : ' for all positions';
+
+        return [
+            'success' => true,
+            'data' => PlayerResource::collection($players),
+            'count' => $players->count(),
+            'message' => "Successfully fetched {$players->count()} players by ADP{$filterDescription}",
+            'metadata' => [
+                'position_filter' => $position,
+                'order_by' => 'adp',
+                'order_direction' => 'asc',
+                'executed_at' => now()->toISOString(),
+            ],
+        ];
     }
 }

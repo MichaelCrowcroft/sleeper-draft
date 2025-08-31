@@ -1,0 +1,925 @@
+openapi: 3.1.0
+info:
+  title: Sleeper Draft MCP Actions API
+  description: |
+    OpenAI Custom GPT Actions shim for the Sleeper Draft MCP Server.
+
+    This API provides a REST interface to interact with fantasy football data through
+    the Model Context Protocol (MCP) server. All endpoints proxy requests to MCP tools
+    that fetch data from the Sleeper fantasy sports platform and local player database.
+
+    ## Available Tools
+
+    - **fetch-trending-players**: Get trending player data based on recent adds/drops
+    - **fetch-adp-players**: Get players ranked by Average Draft Position (ADP)
+    - **fetch-user-leagues**: Get all leagues for a specific user
+    - **draft-picks**: Get intelligent draft pick recommendations
+    - **get-league**: Get detailed league information and users
+    - **fetch-rosters**: Get roster data for all teams in a league
+    - **get-matchups**: Get matchup data for a specific week
+
+    ## Authentication
+
+    Authentication may be required depending on server configuration.
+    Check the MCP server configuration for required middleware.
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://sleeperdraft.example.com
+    email: support@example.com
+
+servers:
+  - url: https://sleeperdraft.com/api
+    description: Production server
+
+
+paths:
+  /mcp/tools/fetch-trending-players:
+    post:
+      summary: Fetch Trending Players
+      description: |
+        Fetches trending players from the database based on adds or drops within the last 24 hours.
+        Returns players ordered by trending value in descending order.
+
+        **Use Case**: Find players who are being heavily added or dropped in recent days,
+        which can indicate market sentiment or news-driven changes.
+      operationId: fetchTrendingPlayers
+      tags:
+        - Fantasy Sports
+        - Player Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [add, drop]
+                  description: The type of trending data to fetch
+                  example: "add"
+              required:
+                - type
+            examples:
+              fetch_adds:
+                summary: Fetch players being added
+                value:
+                  type: "add"
+              fetch_drops:
+                summary: Fetch players being dropped
+                value:
+                  type: "drop"
+      responses:
+        '200':
+          description: Successful response with trending player data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Player'
+                  count:
+                    type: integer
+                    example: 25
+                  message:
+                    type: string
+                    example: "Successfully fetched 25 trending players for type 'add'"
+                  metadata:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        example: "add"
+                      column:
+                        type: string
+                        example: "adds_24h"
+                      executed_at:
+                        type: string
+                        format: date-time
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/fetch-adp-players:
+    post:
+      summary: Fetch ADP Players
+      description: |
+        Fetches top players by Average Draft Position (ADP) from the database.
+        Returns players ordered by ADP in ascending order (lowest ADP first).
+
+        **Use Case**: Get players ranked by their expected draft position to understand
+        market consensus on player values.
+      operationId: fetchADPPlayers
+      tags:
+        - Fantasy Sports
+        - Player Rankings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                position:
+                  type: string
+                  description: Optional filter to get players for a specific position (e.g., "QB", "RB", "WR", "TE")
+                  example: "QB"
+            examples:
+              all_positions:
+                summary: Get all players by ADP
+                value: {}
+              qb_only:
+                summary: Get only quarterbacks by ADP
+                value:
+                  position: "QB"
+      responses:
+        '200':
+          description: Successful response with ADP-ranked player data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Player'
+                  count:
+                    type: integer
+                    example: 50
+                  message:
+                    type: string
+                    example: "Successfully fetched 50 players by ADP for all positions"
+                  metadata:
+                    type: object
+                    properties:
+                      position_filter:
+                        type: string
+                        nullable: true
+                        example: "QB"
+                      order_by:
+                        type: string
+                        example: "adp"
+                      order_direction:
+                        type: string
+                        example: "asc"
+                      executed_at:
+                        type: string
+                        format: date-time
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/fetch-user-leagues:
+    post:
+      summary: Fetch User Leagues
+      description: |
+        Fetches all leagues for a user by username or user ID.
+        Returns league IDs and names for the specified sport and season.
+
+        **Use Case**: Find all fantasy leagues a user is participating in.
+      operationId: fetchUserLeagues
+      tags:
+        - Fantasy Sports
+        - League Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_identifier:
+                  type: string
+                  description: Sleeper username or user ID to fetch leagues for
+                  example: "johndoe123"
+                sport:
+                  type: string
+                  description: Sport type
+                  default: "nfl"
+                  example: "nfl"
+                season:
+                  type: string
+                  description: Season year
+                  example: "2024"
+              required:
+                - user_identifier
+            examples:
+              by_username:
+                summary: Fetch leagues by username
+                value:
+                  user_identifier: "fantasyexpert"
+                  sport: "nfl"
+                  season: "2024"
+      responses:
+        '200':
+          description: Successful response with user's leagues
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/League'
+                  count:
+                    type: integer
+                    example: 3
+                  message:
+                    type: string
+                    example: "Successfully fetched 3 leagues for user 'fantasyexpert'"
+                  metadata:
+                    type: object
+                    properties:
+                      user_identifier:
+                        type: string
+                        example: "fantasyexpert"
+                      sport:
+                        type: string
+                        example: "nfl"
+                      season:
+                        type: string
+                        example: "2024"
+                      executed_at:
+                        type: string
+                        format: date-time
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/draft-picks:
+    post:
+      summary: Get Draft Pick Recommendations
+      description: |
+        Provides intelligent draft pick suggestions by analyzing draft state, user roster composition,
+        scoring settings, and player ADP values. Considers snake draft mechanics and positional needs.
+
+        **ADP Data Types:**
+        - adp: Regular numeric value where lower numbers indicate players expected to be drafted earlier
+        - adp_formatted: Human-readable string format showing round and pick (e.g., "1.05", "2.12")
+        - adp_high/adp_low: Range of ADP values from different sources
+        - adp_stdev: Standard deviation showing ADP consistency across sources
+
+        **Use Case**: Get personalized draft recommendations for your fantasy team.
+      operationId: getDraftPicks
+      tags:
+        - Fantasy Sports
+        - Draft Strategy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  description: Sleeper user ID
+                  example: "123456789"
+                draft_id:
+                  type: string
+                  description: Sleeper draft ID
+                  example: "987654321"
+                limit:
+                  type: integer
+                  description: Maximum number of suggestions to return
+                  minimum: 1
+                  maximum: 50
+                  default: 10
+                  example: 15
+              required:
+                - user_id
+                - draft_id
+            examples:
+              basic_recommendations:
+                summary: Get basic draft recommendations
+                value:
+                  user_id: "123456789"
+                  draft_id: "987654321"
+              limited_recommendations:
+                summary: Get limited number of recommendations
+                value:
+                  user_id: "123456789"
+                  draft_id: "987654321"
+                  limit: 5
+      responses:
+        '200':
+          description: Successful response with draft recommendations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DraftRecommendation'
+                  count:
+                    type: integer
+                    example: 10
+                  message:
+                    type: string
+                    example: "Successfully generated 10 draft pick recommendations"
+                  metadata:
+                    type: object
+                    properties:
+                      user_id:
+                        type: string
+                        example: "123456789"
+                      draft_id:
+                        type: string
+                        example: "987654321"
+                      limit:
+                        type: integer
+                        example: 10
+                      executed_at:
+                        type: string
+                        format: date-time
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/get-league:
+    post:
+      summary: Get League Information
+      description: |
+        Get League tool fetches all leagues for a user and returns one league based on the name or ID.
+        It also fetches all users in the league and returns user information with username, display name, and team names.
+
+        **Use Case**: Get detailed information about a specific fantasy league including all participants.
+      operationId: getLeague
+      tags:
+        - Fantasy Sports
+        - League Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  description: Sleeper user ID to fetch leagues for
+                  example: "123456789"
+                league_identifier:
+                  type: string
+                  description: League name or league ID to find and return
+                  example: "My Fantasy League"
+                sport:
+                  type: string
+                  description: Sport type
+                  default: "nfl"
+                  example: "nfl"
+                season:
+                  type: string
+                  description: Season year
+                  example: "2024"
+              required:
+                - user_id
+                - league_identifier
+            examples:
+              by_league_name:
+                summary: Get league by name
+                value:
+                  user_id: "123456789"
+                  league_identifier: "Championship League"
+                  sport: "nfl"
+                  season: "2024"
+              by_league_id:
+                summary: Get league by ID
+                value:
+                  user_id: "123456789"
+                  league_identifier: "987654321"
+      responses:
+        '200':
+          description: Successful response with league information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/DetailedLeague'
+                  message:
+                    type: string
+                    example: "Successfully fetched league 'Championship League'"
+                  metadata:
+                    type: object
+                    properties:
+                      user_id:
+                        type: string
+                        example: "123456789"
+                      league_identifier:
+                        type: string
+                        example: "Championship League"
+                      sport:
+                        type: string
+                        example: "nfl"
+                      season:
+                        type: string
+                        example: "2024"
+                      executed_at:
+                        type: string
+                        format: date-time
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          description: League not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "League not found"
+                  message:
+                    type: string
+                    example: "No league found matching 'Nonexistent League'"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/fetch-rosters:
+    post:
+      summary: Fetch League Rosters
+      description: |
+        Fetches rosters for a league using the Sleeper SDK. Returns roster data with player information
+        from the database and owner details when available.
+
+        **Use Case**: Get current roster compositions for all teams in a league.
+      operationId: fetchRosters
+      tags:
+        - Fantasy Sports
+        - Roster Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                league_id:
+                  type: string
+                  description: Sleeper league ID to fetch rosters for
+                  example: "987654321"
+                include_player_details:
+                  type: boolean
+                  description: Whether to include detailed player information from database
+                  default: true
+                  example: true
+                include_owner_details:
+                  type: boolean
+                  description: Whether to include owner/user details from Sleeper API
+                  default: true
+                  example: true
+              required:
+                - league_id
+            examples:
+              full_details:
+                summary: Get rosters with all details
+                value:
+                  league_id: "987654321"
+                  include_player_details: true
+                  include_owner_details: true
+              minimal:
+                summary: Get basic roster info only
+                value:
+                  league_id: "987654321"
+                  include_player_details: false
+                  include_owner_details: false
+      responses:
+        '200':
+          description: Successful response with league rosters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Roster'
+                  count:
+                    type: integer
+                    example: 12
+                  message:
+                    type: string
+                    example: "Successfully fetched 12 rosters for league '987654321'"
+                  metadata:
+                    type: object
+                    properties:
+                      league_id:
+                        type: string
+                        example: "987654321"
+                      include_player_details:
+                        type: boolean
+                        example: true
+                      include_owner_details:
+                        type: boolean
+                        example: true
+                      executed_at:
+                        type: string
+                        format: date-time
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/get-matchups:
+    post:
+      summary: Get League Matchups
+      description: |
+        Get matchups for a league for a given week (defaults to current week).
+        Optionally filter by username or user ID to return only that user's matchup.
+
+        **Use Case**: Get matchup data and scores for a specific week in a league.
+      operationId: getMatchups
+      tags:
+        - Fantasy Sports
+        - Matchup Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                league_id:
+                  type: string
+                  description: Sleeper league ID to fetch matchups for
+                  example: "987654321"
+                week:
+                  type: integer
+                  description: Week number to fetch matchups for (defaults to current week)
+                  minimum: 1
+                  maximum: 18
+                  example: 5
+                user_id:
+                  type: string
+                  description: Optional Sleeper user ID to filter matchups for a specific user
+                  example: "123456789"
+                username:
+                  type: string
+                  description: Optional username to filter matchups for a specific user
+                  example: "fantasyexpert"
+                sport:
+                  type: string
+                  description: Sport type
+                  default: "nfl"
+                  example: "nfl"
+              required:
+                - league_id
+            examples:
+              current_week:
+                summary: Get current week matchups
+                value:
+                  league_id: "987654321"
+              specific_week:
+                summary: Get matchups for week 5
+                value:
+                  league_id: "987654321"
+                  week: 5
+              user_matchup:
+                summary: Get matchup for specific user
+                value:
+                  league_id: "987654321"
+                  week: 5
+                  user_id: "123456789"
+      responses:
+        '200':
+          description: Successful response with league matchups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Matchup'
+                  count:
+                    type: integer
+                    example: 6
+                  message:
+                    type: string
+                    example: "Successfully fetched 6 matchups for league '987654321' week 5"
+                  metadata:
+                    type: object
+                    properties:
+                      league_id:
+                        type: string
+                        example: "987654321"
+                      week:
+                        type: integer
+                        example: 5
+                      user_filter:
+                        type: string
+                        nullable: true
+                        example: "123456789"
+                      sport:
+                        type: string
+                        example: "nfl"
+                      executed_at:
+                        type: string
+                        format: date-time
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  schemas:
+    Player:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Player database ID
+          example: 12345
+        player_id:
+          type: string
+          description: Sleeper player ID
+          example: "1234"
+        name:
+          type: string
+          description: Player full name
+          example: "Patrick Mahomes"
+        position:
+          type: string
+          description: Player position
+          example: "QB"
+        team:
+          type: string
+          description: Player team
+          example: "KC"
+        age:
+          type: integer
+          description: Player age
+          example: 28
+        adp:
+          type: number
+          description: Average Draft Position
+          example: 5.2
+        adp_formatted:
+          type: string
+          description: ADP in round.pick format
+          example: "1.05"
+        adds_24h:
+          type: integer
+          description: Players added in last 24 hours
+          example: 1250
+        drops_24h:
+          type: integer
+          description: Players dropped in last 24 hours
+          example: 450
+
+    League:
+      type: object
+      properties:
+        league_id:
+          type: string
+          description: Sleeper league ID
+          example: "987654321"
+        name:
+          type: string
+          description: League name
+          example: "Championship League"
+        season:
+          type: string
+          description: Season year
+          example: "2024"
+        sport:
+          type: string
+          description: Sport type
+          example: "nfl"
+        total_rosters:
+          type: integer
+          description: Total number of teams
+          example: 12
+        status:
+          type: string
+          description: League status
+          example: "in_season"
+
+    DetailedLeague:
+      allOf:
+        - $ref: '#/components/schemas/League'
+        - type: object
+          properties:
+            users:
+              type: array
+              description: League participants with user details
+              items:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    description: Sleeper user ID
+                    example: "123456789"
+                  username:
+                    type: string
+                    description: Username
+                    example: "fantasyexpert"
+                  display_name:
+                    type: string
+                    description: Display name
+                    example: "Fantasy Expert"
+                  team_name:
+                    type: string
+                    description: Team name in this league
+                    example: "Expert's Eagles"
+
+    DraftRecommendation:
+      type: object
+      properties:
+        player_id:
+          type: string
+          description: Sleeper player ID
+          example: "1234"
+        name:
+          type: string
+          description: Player name
+          example: "Patrick Mahomes"
+        position:
+          type: string
+          description: Player position
+          example: "QB"
+        adp:
+          type: number
+          description: Average Draft Position
+          example: 5.2
+        adp_formatted:
+          type: string
+          description: ADP in round.pick format
+          example: "1.05"
+        recommendation_score:
+          type: number
+          description: Recommendation score (higher is better)
+          example: 95.5
+        reasoning:
+          type: string
+          description: Explanation for the recommendation
+          example: "Elite QB with consistent performance and favorable ADP"
+
+    Roster:
+      type: object
+      properties:
+        roster_id:
+          type: integer
+          description: Roster ID
+          example: 1
+        owner_id:
+          type: string
+          description: Owner user ID
+          example: "123456789"
+        owner_username:
+          type: string
+          description: Owner username
+          example: "fantasyexpert"
+        owner_display_name:
+          type: string
+          description: Owner display name
+          example: "Fantasy Expert"
+        players:
+          type: array
+          description: Players on this roster
+          items:
+            $ref: '#/components/schemas/Player'
+        starters:
+          type: array
+          description: Starting lineup player IDs
+          items:
+            type: string
+          example: ["1234", "5678", "9012"]
+        reserve:
+          type: array
+          description: Reserve/bench player IDs
+          items:
+            type: string
+          example: ["3456", "7890"]
+
+    Matchup:
+      type: object
+      properties:
+        matchup_id:
+          type: integer
+          description: Matchup ID
+          example: 1
+        week:
+          type: integer
+          description: Week number
+          example: 5
+        home_team:
+          type: object
+          description: Home team details
+          properties:
+            roster_id:
+              type: integer
+              example: 1
+            owner_username:
+              type: string
+              example: "fantasyexpert"
+            points:
+              type: number
+              example: 125.5
+            projected_points:
+              type: number
+              example: 118.2
+        away_team:
+          type: object
+          description: Away team details
+          properties:
+            roster_id:
+              type: integer
+              example: 2
+            owner_username:
+              type: string
+              example: "rivalfan"
+            points:
+              type: number
+              example: 110.8
+            projected_points:
+              type: number
+              example: 122.1
+
+  responses:
+    ValidationError:
+      description: Validation error in request parameters
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Tool execution failed"
+              message:
+                type: string
+                example: "Validation failed: The user_id field is required"
+              mcp_error:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: -32602
+                  message:
+                    type: string
+                    example: "Invalid params"
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Internal server error"
+              message:
+                type: string
+                example: "An unexpected error occurred while processing the request"
+
+tags:
+  - name: Fantasy Sports
+    description: Core fantasy sports data and analysis tools
+  - name: Player Data
+    description: Player statistics, rankings, and trending data
+  - name: League Data
+    description: League information, rosters, and participants
+  - name: Roster Data
+    description: Team rosters and player assignments
+  - name: Matchup Data
+    description: Weekly matchup results and projections
+  - name: Draft Strategy
+    description: Draft recommendations and strategy tools
