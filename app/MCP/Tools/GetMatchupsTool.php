@@ -2,6 +2,7 @@
 
 namespace App\MCP\Tools;
 
+use App\Models\Player;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
@@ -295,7 +296,32 @@ class GetMatchupsTool implements ToolInterface
                 }
             }
 
-            // Enhance matchups
+            // Collect all player IDs from matchups to fetch player data
+            $allPlayerIds = [];
+            foreach ($matchups as $matchup) {
+                // Extract player IDs from starters array
+                if (isset($matchup['starters']) && is_array($matchup['starters'])) {
+                    $allPlayerIds = array_merge($allPlayerIds, $matchup['starters']);
+                }
+                // Extract player IDs from players array (full roster)
+                if (isset($matchup['players']) && is_array($matchup['players'])) {
+                    $allPlayerIds = array_merge($allPlayerIds, $matchup['players']);
+                }
+            }
+
+            // Remove duplicates and null values
+            $uniquePlayerIds = array_unique(array_filter($allPlayerIds));
+
+            // Fetch player data from database
+            $playersMap = [];
+            if (!empty($uniquePlayerIds)) {
+                $players = Player::whereIn('player_id', $uniquePlayerIds)->get();
+                foreach ($players as $player) {
+                    $playersMap[$player->player_id] = $player;
+                }
+            }
+
+            // Enhance matchups with player data
             $enhancedMatchups = [];
             foreach ($matchups as $matchup) {
                 $rosterId = $matchup['roster_id'] ?? null;
@@ -312,6 +338,32 @@ class GetMatchupsTool implements ToolInterface
                     'avatar' => $user['avatar'] ?? null,
                     'team_name' => $user['metadata']['team_name'] ?? $user['display_name'] ?? $user['username'] ?? 'Team '.$ownerId,
                 ] : null;
+
+                // Enhance starters with full player data
+                if (isset($enhancedMatchup['starters']) && is_array($enhancedMatchup['starters'])) {
+                    $enhancedMatchup['starters_data'] = [];
+                    foreach ($enhancedMatchup['starters'] as $playerId) {
+                        if (isset($playersMap[$playerId])) {
+                            $enhancedMatchup['starters_data'][] = $playersMap[$playerId];
+                        } else {
+                            // Keep the original player ID if no data found
+                            $enhancedMatchup['starters_data'][] = ['player_id' => $playerId];
+                        }
+                    }
+                }
+
+                // Enhance full roster with player data
+                if (isset($enhancedMatchup['players']) && is_array($enhancedMatchup['players'])) {
+                    $enhancedMatchup['players_data'] = [];
+                    foreach ($enhancedMatchup['players'] as $playerId) {
+                        if (isset($playersMap[$playerId])) {
+                            $enhancedMatchup['players_data'][] = $playersMap[$playerId];
+                        } else {
+                            // Keep the original player ID if no data found
+                            $enhancedMatchup['players_data'][] = ['player_id' => $playerId];
+                        }
+                    }
+                }
 
                 $enhancedMatchups[] = $enhancedMatchup;
             }

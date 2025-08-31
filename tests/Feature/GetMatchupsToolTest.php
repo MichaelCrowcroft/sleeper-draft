@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\MCP\Tools\GetMatchupsTool;
+use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
@@ -331,4 +332,122 @@ it('returns correct metadata structure', function () {
     expect($result['metadata']['league_id'])->toBe('league_123');
     expect($result['metadata']['week'])->toBe(3);
     expect($result['metadata']['sport'])->toBe('nfl');
+});
+
+it('enhances matchups with player data from database', function () {
+    // Create test players in the database
+    $starterPlayer = Player::factory()->create([
+        'player_id' => '12345',
+        'first_name' => 'Josh',
+        'last_name' => 'Allen',
+        'position' => 'QB',
+        'team' => 'BUF',
+        'fantasy_positions' => ['QB'],
+    ]);
+
+    $benchPlayer = Player::factory()->create([
+        'player_id' => '67890',
+        'first_name' => 'Stefon',
+        'last_name' => 'Diggs',
+        'position' => 'WR',
+        'team' => 'HOU',
+        'fantasy_positions' => ['WR'],
+    ]);
+
+    // Mock successful API responses with player IDs that match our test players
+    Http::fake([
+        'https://api.sleeper.app/v1/league/league_123/matchups/5' => Http::response([
+            [
+                'roster_id' => 1,
+                'matchup_id' => 1,
+                'points' => 123.45,
+                'players' => ['12345', '67890'],
+                'starters' => ['12345'],
+            ],
+        ]),
+        'https://api.sleeper.app/v1/league/league_123/rosters' => Http::response([
+            ['roster_id' => 1, 'owner_id' => 'user_123'],
+        ]),
+        'https://api.sleeper.app/v1/league/league_123/users' => Http::response([
+            ['user_id' => 'user_123', 'username' => 'testuser', 'display_name' => 'Test User'],
+        ]),
+    ]);
+
+    $result = $this->tool->execute([
+        'league_id' => 'league_123',
+        'week' => 5,
+    ]);
+
+    expect($result)->toBeArray();
+    expect($result['success'])->toBeTrue();
+    expect($result['data']['matchups'])->toHaveCount(1);
+
+    $matchup = $result['data']['matchups'][0];
+
+    // Verify original data is preserved
+    expect($matchup['roster_id'])->toBe(1);
+    expect($matchup['points'])->toBe(123.45);
+    expect($matchup['starters'])->toEqual(['12345']);
+    expect($matchup['players'])->toEqual(['12345', '67890']);
+
+    // Verify enhanced starters data
+    expect($matchup)->toHaveKey('starters_data');
+    expect($matchup['starters_data'])->toHaveCount(1);
+    expect($matchup['starters_data'][0]['player_id'])->toBe('12345');
+    expect($matchup['starters_data'][0]['first_name'])->toBe('Josh');
+    expect($matchup['starters_data'][0]['last_name'])->toBe('Allen');
+    expect($matchup['starters_data'][0]['position'])->toBe('QB');
+    expect($matchup['starters_data'][0]['team'])->toBe('BUF');
+
+    // Verify enhanced players data
+    expect($matchup)->toHaveKey('players_data');
+    expect($matchup['players_data'])->toHaveCount(2);
+
+    // Check first player (starter)
+    $starterData = collect($matchup['players_data'])->firstWhere('player_id', '12345');
+    expect($starterData['first_name'])->toBe('Josh');
+    expect($starterData['last_name'])->toBe('Allen');
+    expect($starterData['position'])->toBe('QB');
+
+    // Check second player (bench)
+    $benchData = collect($matchup['players_data'])->firstWhere('player_id', '67890');
+    expect($benchData['first_name'])->toBe('Stefon');
+    expect($benchData['last_name'])->toBe('Diggs');
+    expect($benchData['position'])->toBe('WR');
+});
+
+it('handles missing player data gracefully', function () {
+    // Mock API response with player IDs that don't exist in the database
+    Http::fake([
+        'https://api.sleeper.app/v1/league/league_123/matchups/5' => Http::response([
+            [
+                'roster_id' => 1,
+                'matchup_id' => 1,
+                'points' => 123.45,
+                'players' => ['99999'],
+                'starters' => ['99999'],
+            ],
+        ]),
+        'https://api.sleeper.app/v1/league/league_123/rosters' => Http::response([
+            ['roster_id' => 1, 'owner_id' => 'user_123'],
+        ]),
+        'https://api.sleeper.app/v1/league/league_123/users' => Http::response([
+            ['user_id' => 'user_123', 'username' => 'testuser'],
+        ]),
+    ]);
+
+    $result = $this->tool->execute([
+        'league_id' => 'league_123',
+        'week' => 5,
+    ]);
+
+    expect($result['success'])->toBeTrue();
+    $matchup = $result['data']['matchups'][0];
+
+    // Verify that missing players return just the player_id
+    expect($matchup['starters_data'])->toHaveCount(1);
+    expect($matchup['starters_data'][0])->toEqual(['player_id' => '99999']);
+
+    expect($matchup['players_data'])->toHaveCount(1);
+    expect($matchup['players_data'][0])->toEqual(['player_id' => '99999']);
 });
