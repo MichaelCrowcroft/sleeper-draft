@@ -25,11 +25,11 @@ info:
   version: 1.0.0
   contact:
     name: API Support
-    url: https://sleeperdraft.example.com
-    email: support@example.com
+    url: https://www.sleeperdraft.com
+    email: support@sleeperdraft.com
 
 servers:
-  - url: https://sleeperdraft.com/api
+  - url: https://www.sleeperdraft.com/api
     description: Production server
 
 
@@ -222,61 +222,6 @@ paths:
                 $ref: '#/components/schemas/GetMatchupsResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  # Legacy generic endpoint for backward compatibility
-  /mcp/tools/{tool}:
-    post:
-      parameters:
-        - name: tool
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [fetch-trending-players, fetch-adp-players, fetch-user-leagues, draft-picks, get-league, fetch-rosters, get-matchups]
-          description: The MCP tool to invoke
-      summary: Invoke MCP Tool (Legacy)
-      description: |
-        Legacy endpoint for invoking MCP tools. Use the specific tool endpoints above for better compatibility.
-        Supports tools: fetch-trending-players, fetch-adp-players, fetch-user-leagues,
-        draft-picks, get-league, fetch-rosters, get-matchups.
-      operationId: invokeMcpToolLegacy
-      tags:
-        - Fantasy Sports
-        - Legacy
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/McpToolRequest'
-      responses:
-        '200':
-          description: Successful tool execution
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/McpToolResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '404':
-          description: Tool not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unknown tool"
-                  message:
-                    type: string
-                    example: "Tool 'unknown-tool' is not available"
-                  available_tools:
-                    type: array
-                    items:
-                      type: string
         '500':
           $ref: '#/components/responses/ServerError'
 
