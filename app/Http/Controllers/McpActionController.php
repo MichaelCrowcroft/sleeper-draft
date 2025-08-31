@@ -91,7 +91,7 @@ class McpActionController extends Controller
             $sessionId = Str::uuid()->toString();
             $mcpRequest = [
                 'jsonrpc' => '2.0',
-                'id' => Str::uuid()->toString(),
+                'id' => random_int(1, PHP_INT_MAX),
                 'method' => 'tools/call',
                 'params' => [
                     'name' => $this->mapToolName($tool),
@@ -101,7 +101,7 @@ class McpActionController extends Controller
             ];
 
             // Get MCP server configuration
-            $mcpUrl = env('APP_URL') . '/mcp';
+            $mcpUrl = rtrim((string) config('app.url'), '/') . '/mcp';
             $timeout = 30;
 
             // Make request to MCP server
