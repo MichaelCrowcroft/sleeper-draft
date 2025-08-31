@@ -34,6 +34,198 @@ servers:
 
 
 paths:
+  # Individual tool endpoints for better GPT Actions compatibility
+  /mcp/tools/fetch-trending-players:
+    post:
+      summary: Fetch trending players
+      description: |
+        Fetches trending players from the database based on adds or drops within the last 24 hours.
+        Returns players ordered by trending value in descending order.
+      operationId: fetchTrendingPlayers
+      tags:
+        - Player Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchTrendingPlayersRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchTrendingPlayersResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/fetch-adp-players:
+    post:
+      summary: Fetch players by ADP
+      description: |
+        Fetches top players by Average Draft Position (ADP) from the database.
+        Returns players ordered by ADP in ascending order (lowest ADP first).
+      operationId: fetchADPPlayers
+      tags:
+        - Player Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchADPPlayersRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchADPPlayersResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/fetch-user-leagues:
+    post:
+      summary: Fetch user leagues
+      description: |
+        Fetches all leagues for a specific Sleeper user.
+        Returns league information including league ID, name, season, and sport.
+      operationId: fetchUserLeagues
+      tags:
+        - League Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchUserLeaguesRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchUserLeaguesResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/draft-picks:
+    post:
+      summary: Get draft pick recommendations
+      description: |
+        Provides intelligent draft pick suggestions by analyzing draft state,
+        user roster composition, scoring settings, and player ADP values.
+        Considers snake draft mechanics and positional needs.
+      operationId: getDraftPicks
+      tags:
+        - Draft Strategy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftPicksRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftPicksResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/get-league:
+    post:
+      summary: Get league details
+      description: |
+        Get detailed league information and users for a specific league.
+        Returns league settings, participants, and user details.
+      operationId: getLeagueDetails
+      tags:
+        - League Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetLeagueRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetLeagueResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/fetch-rosters:
+    post:
+      summary: Fetch league rosters
+      description: |
+        Fetches roster data for all teams in a league.
+        Returns player assignments, starters, and bench players for each team.
+      operationId: fetchRosters
+      tags:
+        - Roster Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchRostersRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchRostersResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/get-matchups:
+    post:
+      summary: Get league matchups
+      description: |
+        Fetches matchup data for a specific week in a league.
+        Returns scores, projections, and matchup pairings.
+      operationId: getMatchups
+      tags:
+        - Matchup Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetMatchupsRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMatchupsResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # Legacy generic endpoint for backward compatibility
   /mcp/tools/{tool}:
     post:
       parameters:
@@ -42,15 +234,17 @@ paths:
           required: true
           schema:
             type: string
+            enum: [fetch-trending-players, fetch-adp-players, fetch-user-leagues, draft-picks, get-league, fetch-rosters, get-matchups]
           description: The MCP tool to invoke
-      summary: Invoke MCP Tool
+      summary: Invoke MCP Tool (Legacy)
       description: |
-        Invokes a specific MCP tool with the provided parameters.
+        Legacy endpoint for invoking MCP tools. Use the specific tool endpoints above for better compatibility.
         Supports tools: fetch-trending-players, fetch-adp-players, fetch-user-leagues,
         draft-picks, get-league, fetch-rosters, get-matchups.
-      operationId: invokeMcpTool
+      operationId: invokeMcpToolLegacy
       tags:
         - Fantasy Sports
+        - Legacy
       requestBody:
         required: true
         content:

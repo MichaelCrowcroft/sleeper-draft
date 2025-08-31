@@ -10,6 +10,57 @@ use Illuminate\Support\Facades\Log;
 class McpActionController extends Controller
 {
     /**
+     * Handle MCP tool invocations from specific tool endpoints
+     *
+     * This method handles requests from individual tool endpoints like /mcp/tools/fetch-adp-players
+     */
+    public function invokeTool(Request $request)
+    {
+        // Extract tool name from the route
+        $routeName = $request->route()->getName();
+
+        // Map route names to tool class names
+        $routeToToolClassMap = [
+            'api.mcp.fetch-trending-players' => \App\MCP\Tools\FetchTrendingPlayersTool::class,
+            'api.mcp.fetch-adp-players' => \App\MCP\Tools\FetchADPPlayersTool::class,
+            'api.mcp.fetch-user-leagues' => \App\MCP\Tools\FetchUserLeaguesTool::class,
+            'api.mcp.draft-picks' => \App\MCP\Tools\DraftPicksTool::class,
+            'api.mcp.get-league' => \App\MCP\Tools\GetLeagueTool::class,
+            'api.mcp.fetch-rosters' => \App\MCP\Tools\FetchRostersTool::class,
+            'api.mcp.get-matchups' => \App\MCP\Tools\GetMatchupsTool::class,
+        ];
+
+        $toolClass = $routeToToolClassMap[$routeName] ?? null;
+
+        if (!$toolClass) {
+            return response()->json([
+                'error' => 'Invalid route',
+                'message' => 'Could not determine tool class from route',
+            ], 500);
+        }
+
+        try {
+            // Instantiate and execute the tool directly
+            $tool = app($toolClass);
+            $result = $tool->execute($request->all());
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            Log::error('MCP Tool execution failed', [
+                'tool' => $toolClass,
+                'arguments' => $request->all(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Tool execution failed',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Handle MCP tool invocations from OpenAI Custom GPT Actions
      *
      * This method acts as a shim between OpenAI's Actions format and our MCP server.

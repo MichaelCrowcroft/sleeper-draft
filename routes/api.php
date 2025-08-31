@@ -5,8 +5,26 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // MCP Actions Shim Routes
+// Individual tool endpoints for better GPT Actions compatibility
 // Each route maps to an MCP tool for seamless OpenAI GPT Actions integration
-// Apply rate limiting and security headers to prevent abuse
+
+// Specific tool endpoints (recommended for GPT Actions)
+Route::post('/mcp/tools/fetch-trending-players', [McpActionController::class, 'invokeTool'])
+    ->name('api.mcp.fetch-trending-players');
+Route::post('/mcp/tools/fetch-adp-players', [McpActionController::class, 'invokeTool'])
+    ->name('api.mcp.fetch-adp-players');
+Route::post('/mcp/tools/fetch-user-leagues', [McpActionController::class, 'invokeTool'])
+    ->name('api.mcp.fetch-user-leagues');
+Route::post('/mcp/tools/draft-picks', [McpActionController::class, 'invokeTool'])
+    ->name('api.mcp.draft-picks');
+Route::post('/mcp/tools/get-league', [McpActionController::class, 'invokeTool'])
+    ->name('api.mcp.get-league');
+Route::post('/mcp/tools/fetch-rosters', [McpActionController::class, 'invokeTool'])
+    ->name('api.mcp.fetch-rosters');
+Route::post('/mcp/tools/get-matchups', [McpActionController::class, 'invokeTool'])
+    ->name('api.mcp.get-matchups');
+
+// Legacy generic endpoint for backward compatibility
 Route::post('/mcp/tools/{tool}', [McpActionController::class, 'invoke'])
     ->where('tool', 'fetch-trending-players|fetch-adp-players|fetch-user-leagues|draft-picks|get-league|fetch-rosters|get-matchups')
     ->name('api.mcp.invoke');
@@ -53,11 +71,13 @@ Route::get('/mcp/tools', function () {
                 },
                 'endpoint' => "/api/mcp/tools/{$tool}",
                 'method' => 'POST',
+                'route_name' => "api.mcp.{$tool}",
             ];
         }, $tools),
         'openapi_spec_url' => route('api.openapi'),
         'version' => '1.0.0',
         'documentation' => 'See OpenAPI spec for detailed parameter schemas and examples',
+        'note' => 'Both individual endpoints (/api/mcp/tools/{tool}) and legacy generic endpoint (/api/mcp/tools/{tool}) are supported',
     ]);
 })->name('api.mcp.tools');
 
