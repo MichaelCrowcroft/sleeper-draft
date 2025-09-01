@@ -91,7 +91,7 @@ class FetchRostersTool implements ToolInterface
         $rosters = $this->fetchRosters($leagueId);
 
         // Enhance rosters with player and owner details
-        $enhancedRosters = $this->enhanceRosters($rosters, $includePlayerDetails, $includeOwnerDetails);
+        $enhancedRosters = $this->enhanceRosters($leagueId, $rosters, $includePlayerDetails, $includeOwnerDetails);
 
         return [
             'success' => true,
@@ -129,7 +129,7 @@ class FetchRostersTool implements ToolInterface
         return $rosters;
     }
 
-    private function enhanceRosters(array $rosters, bool $includePlayerDetails, bool $includeOwnerDetails): array
+    private function enhanceRosters(string $leagueId, array $rosters, bool $includePlayerDetails, bool $includeOwnerDetails): array
     {
         $enhancedRosters = [];
 
@@ -147,12 +147,15 @@ class FetchRostersTool implements ToolInterface
             $allPlayerIds = array_unique($allPlayerIds);
         }
 
-        // Fetch player data from database
+        // Fetch player data from database in a single query and prepare resources
         $playersFromDb = [];
         if (! empty($allPlayerIds) && $includePlayerDetails) {
             $playersFromDb = Player::whereIn('player_id', $allPlayerIds)
                 ->get()
-                ->keyBy('player_id');
+                ->mapWithKeys(fn ($player) => [
+                    $player->player_id => (new PlayerResource($player))->resolve(),
+                ])
+                ->all();
         }
 
         // Get all unique owner IDs for batch user lookup
@@ -169,7 +172,7 @@ class FetchRostersTool implements ToolInterface
         // Fetch owner details from Sleeper API
         $ownerDetails = [];
         if (! empty($ownerIds) && $includeOwnerDetails) {
-            $ownerDetails = $this->fetchOwnerDetails($ownerIds);
+            $ownerDetails = $this->fetchOwnerDetails($leagueId, $ownerIds);
         }
 
         // Process each roster
@@ -194,62 +197,57 @@ class FetchRostersTool implements ToolInterface
         return $enhancedRosters;
     }
 
-    private function enhancePlayerArray(array $playerIds, $playersFromDb): array
+    private function enhancePlayerArray(array $playerIds, array $playersFromDb): array
     {
-        $enhancedPlayers = [];
-
-        foreach ($playerIds as $playerId) {
-            $player = $playersFromDb[$playerId] ?? null;
-            $playerData = $player ? new PlayerResource($player) : null;
-
-            $enhancedPlayers[] = [
-                'player_id' => $playerId,
-                'player_data' => $playerData,
-            ];
-        }
-
-        return $enhancedPlayers;
+        return array_map(fn ($playerId) => [
+            'player_id' => $playerId,
+            'player_data' => $playersFromDb[$playerId] ?? null,
+        ], $playerIds);
     }
 
-    private function fetchOwnerDetails(array $ownerIds): array
+    private function fetchOwnerDetails(string $leagueId, array $ownerIds): array
     {
         $ownerDetails = [];
 
-        foreach ($ownerIds as $ownerId) {
-            try {
-                $response = Sleeper::users()->get($ownerId);
+        try {
+            $response = Sleeper::leagues()->users($leagueId);
 
-                if ($response->successful()) {
-                    $userData = $response->json();
-                    if (is_array($userData)) {
-                        $ownerDetails[$ownerId] = [
-                            'user_id' => $userData['user_id'] ?? $ownerId,
-                            'username' => $userData['username'] ?? null,
-                            'display_name' => $userData['display_name'] ?? null,
-                            'avatar' => $userData['avatar'] ?? null,
-                            'metadata' => $userData['metadata'] ?? [],
-                            'team_name' => $userData['metadata']['team_name'] ?? $userData['display_name'] ?? $userData['username'] ?? 'Team '.$ownerId,
-                        ];
+            if ($response->successful()) {
+                $users = $response->json();
+
+                if (is_array($users)) {
+                    foreach ($users as $user) {
+                        $userId = $user['user_id'] ?? null;
+                        if ($userId && in_array($userId, $ownerIds)) {
+                            $ownerDetails[$userId] = [
+                                'user_id' => $userId,
+                                'username' => $user['username'] ?? null,
+                                'display_name' => $user['display_name'] ?? null,
+                                'avatar' => $user['avatar'] ?? null,
+                                'metadata' => $user['metadata'] ?? [],
+                                'team_name' => $user['metadata']['team_name']
+                                    ?? $user['display_name']
+                                    ?? $user['username']
+                                    ?? 'Team '.$userId,
+                            ];
+                        }
                     }
-                } else {
-                    // If individual user fetch fails, set basic info
-                    $ownerDetails[$ownerId] = [
-                        'user_id' => $ownerId,
-                        'username' => null,
-                        'display_name' => null,
-                        'avatar' => null,
-                        'metadata' => [],
-                        'team_name' => 'Team '.$ownerId,
-                        'fetch_error' => 'Failed to fetch user details',
-                    ];
                 }
-            } catch (\Exception $e) {
-                // Log error but continue processing
-                logger('FetchRostersTool: Failed to fetch owner details', [
-                    'owner_id' => $ownerId,
-                    'error' => $e->getMessage(),
+            } else {
+                logger('FetchRostersTool: Failed to fetch league users', [
+                    'league_id' => $leagueId,
                 ]);
+            }
+        } catch (\Exception $e) {
+            logger('FetchRostersTool: Exception fetching league users', [
+                'league_id' => $leagueId,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
+        // Ensure every requested owner ID has an entry
+        foreach ($ownerIds as $ownerId) {
+            if (! isset($ownerDetails[$ownerId])) {
                 $ownerDetails[$ownerId] = [
                     'user_id' => $ownerId,
                     'username' => null,
@@ -257,7 +255,6 @@ class FetchRostersTool implements ToolInterface
                     'avatar' => null,
                     'metadata' => [],
                     'team_name' => 'Team '.$ownerId,
-                    'fetch_error' => $e->getMessage(),
                 ];
             }
         }
