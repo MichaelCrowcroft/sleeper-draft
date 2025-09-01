@@ -2,7 +2,7 @@
 <x-layouts.app.marketing>
     <div class="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] dark:text-[#EDEDEC] px-4 sm:px-6 py-8 sm:py-12 break-words overflow-x-hidden">
         <div class="mx-auto max-w-6xl w-full">
-            <header class="mb-6 flex justify-end">
+            <!-- <header class="mb-6 flex justify-end">
                 @if (Route::has('login'))
                     <nav class="flex items-center gap-2 sm:gap-4 flex-wrap">
                         @auth
@@ -21,7 +21,7 @@
                         @endauth
                     </nav>
                 @endif
-            </header>
+            </header> -->
 
             <div class="rounded-2xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm dark:border-white/10 dark:bg-[#141414]">
                 <div class="grid items-start gap-8 md:gap-10 md:grid-cols-2 w-full min-w-0">
