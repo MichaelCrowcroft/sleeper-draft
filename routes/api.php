@@ -21,12 +21,14 @@ Route::post('/mcp/tools/get-league', [McpActionController::class, 'invokeTool'])
     ->name('api.mcp.get-league');
 Route::post('/mcp/tools/fetch-rosters', [McpActionController::class, 'invokeTool'])
     ->name('api.mcp.fetch-rosters');
-Route::post('/mcp/tools/get-matchups', [McpActionController::class, 'invokeTool'])
-    ->name('api.mcp.get-matchups');
+Route::post('/mcp/tools/fetch-matchups', [McpActionController::class, 'invokeTool'])
+    ->name('api.mcp.fetch-matchups');
+Route::post('/mcp/tools/fetch-trades', [McpActionController::class, 'invokeTool'])
+    ->name('api.mcp.fetch-trades');
 
 // Legacy generic endpoint for backward compatibility
 Route::post('/mcp/tools/{tool}', [McpActionController::class, 'invoke'])
-    ->where('tool', 'fetch-trending-players|fetch-adp-players|fetch-user-leagues|draft-picks|get-league|fetch-rosters|get-matchups')
+    ->where('tool', 'fetch-trending-players|fetch-adp-players|fetch-user-leagues|draft-picks|get-league|fetch-rosters|fetch-matchups|fetch-trades')
     ->name('api.mcp.invoke');
 
 Route::get('/openapi.yaml', function () {
@@ -53,7 +55,8 @@ Route::get('/mcp/tools', function () {
         'draft-picks',
         'get-league',
         'fetch-rosters',
-        'get-matchups',
+        'fetch-matchups',
+        'fetch-trades',
     ];
 
     return response()->json([
@@ -67,7 +70,8 @@ Route::get('/mcp/tools', function () {
                     'draft-picks' => 'Provides intelligent draft pick suggestions by analyzing draft state and player ADP values',
                     'get-league' => 'Get league information and users for a specific league',
                     'fetch-rosters' => 'Fetches rosters for all users in a league',
-                    'get-matchups' => 'Fetches matchups and scores for a league in a specific week',
+                    'fetch-matchups' => 'Fetches matchups and scores for a league in a specific week',
+                    'fetch-trades' => 'Fetches trades in a league with expanded player details',
                 },
                 'endpoint' => "/api/mcp/tools/{$tool}",
                 'method' => 'POST',

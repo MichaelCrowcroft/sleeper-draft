@@ -10,7 +10,7 @@ use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
-class GetMatchupsTool implements ToolInterface
+class FetchMatchupsTool implements ToolInterface
 {
     public function isStreaming(): bool
     {
@@ -19,12 +19,12 @@ class GetMatchupsTool implements ToolInterface
 
     public function name(): string
     {
-        return 'get-matchups';
+        return 'fetch-matchups';
     }
 
     public function description(): string
     {
-        return 'Get matchups for a league for a given week (defaults to current week). Optionally filter by username or user ID to return only that user\'s matchup.';
+        return 'Fetch matchups for a league for a given week (defaults to current week). Optionally filter by username or user ID to return only that user\'s matchup.';
     }
 
     public function inputSchema(): array
@@ -70,7 +70,7 @@ class GetMatchupsTool implements ToolInterface
     public function annotations(): array
     {
         return [
-            'title' => 'Get League Matchups',
+            'title' => 'Fetch League Matchups',
             'readOnlyHint' => true,
             'destructiveHint' => false,
             'idempotentHint' => true,
@@ -170,7 +170,7 @@ class GetMatchupsTool implements ToolInterface
             return (int) ($state['week'] ?? 1);
         } catch (\Exception $e) {
             // Fallback to week 1 if we can't get the current week
-            logger('GetMatchupsTool: Failed to fetch current week, defaulting to 1', [
+            logger('FetchMatchupsTool: Failed to fetch current week, defaulting to 1', [
                 'sport' => $sport,
                 'error' => $e->getMessage(),
             ]);
@@ -213,7 +213,7 @@ class GetMatchupsTool implements ToolInterface
                 return $userData['user_id'] ?? null;
             }
         } catch (\Exception $e) {
-            logger('GetMatchupsTool: Failed to resolve username to user_id', [
+            logger('FetchMatchupsTool: Failed to resolve username to user_id', [
                 'username' => $username,
                 'error' => $e->getMessage(),
             ]);
@@ -256,7 +256,7 @@ class GetMatchupsTool implements ToolInterface
                 }
             }
         } catch (\Exception $e) {
-            logger('GetMatchupsTool: Failed to filter matchups by user', [
+            logger('FetchMatchupsTool: Failed to filter matchups by user', [
                 'user_id' => $userId,
                 'league_id' => $leagueId,
                 'error' => $e->getMessage(),
@@ -370,7 +370,7 @@ class GetMatchupsTool implements ToolInterface
 
             return $enhancedMatchups;
         } catch (\Exception $e) {
-            logger('GetMatchupsTool: Failed to enhance matchups with details', [
+            logger('FetchMatchupsTool: Failed to enhance matchups with details', [
                 'league_id' => $leagueId,
                 'error' => $e->getMessage(),
             ]);

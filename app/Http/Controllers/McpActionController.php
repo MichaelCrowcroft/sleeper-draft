@@ -27,7 +27,8 @@ class McpActionController extends Controller
             'api.mcp.draft-picks' => \App\MCP\Tools\DraftPicksTool::class,
             'api.mcp.get-league' => \App\MCP\Tools\GetLeagueTool::class,
             'api.mcp.fetch-rosters' => \App\MCP\Tools\FetchRostersTool::class,
-            'api.mcp.get-matchups' => \App\MCP\Tools\GetMatchupsTool::class,
+            'api.mcp.fetch-matchups' => \App\MCP\Tools\FetchMatchupsTool::class,
+            'api.mcp.fetch-trades' => \App\MCP\Tools\FetchTradesTool::class,
         ];
 
         $toolClass = $routeToToolClassMap[$routeName] ?? null;
@@ -181,7 +182,8 @@ class McpActionController extends Controller
             'draft-picks',
             'get-league',
             'fetch-rosters',
-            'get-matchups',
+            'fetch-matchups',
+            'fetch-trades',
         ];
     }
 
@@ -197,7 +199,8 @@ class McpActionController extends Controller
             'draft-picks' => 'draft-picks',
             'get-league' => 'get-league',
             'fetch-rosters' => 'fetch-rosters',
-            'get-matchups' => 'get-matchups',
+            'fetch-matchups' => 'fetch-matchups',
+            'fetch-trades' => 'fetch-trades',
         ];
 
         return $mapping[$tool] ?? $tool;

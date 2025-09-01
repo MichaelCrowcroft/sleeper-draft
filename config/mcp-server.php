@@ -254,7 +254,8 @@ return [
         \App\MCP\Tools\DraftPicksTool::class,
         \App\MCP\Tools\GetLeagueTool::class,
         \App\MCP\Tools\FetchRostersTool::class,
-        \App\MCP\Tools\GetMatchupsTool::class,
+        \App\MCP\Tools\FetchMatchupsTool::class,
+        \App\MCP\Tools\FetchTradesTool::class,
 
         // ===== REGISTER YOUR CUSTOM TOOLS BELOW =====
         // App\MCP\Tools\Database\Your::class,
