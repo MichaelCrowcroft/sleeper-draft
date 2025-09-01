@@ -27,11 +27,11 @@
                 <div class="grid items-start gap-8 md:gap-10 md:grid-cols-2">
                     <div>
                         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                            <img src="{{ asset('images/sleeper-draft-icon.png') }}" alt="Sleeper Draft" class="size-20 sm:size-24 flex-shrink-0">
+                            <x-app-logo-icon class="size-20 sm:size-24 flex-shrink-0" />
                             <h1 class="text-2xl leading-tight font-semibold sm:text-3xl lg:text-4xl">MCP Tools for Fantasy Football</h1>
                         </div>
                         <p class="mt-3 text-[15px] leading-7 text-[#575654] dark:text-[#A1A09A]">
-                            This Laravel server exposes a Model Context Protocol (MCP) endpoint with tools for Sleeper: unified data access, fantasy recommendations, lineup management, and core utilities.
+                            This Laravel server exposes a Model Context Protocol (MCP) endpoint with tools for Sleeper: unified data access, fantasy recommendations, lineup management, strategy tools, and core utilities.
                         </p>
                         <div class="mt-6 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
                             <a href="https://github.com/MichaelCrowcroft/fantasy-football-mcp" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-md border border-black bg-black px-4 py-2 text-sm font-medium text-white hover:bg-[#1b1b18] dark:border-white dark:bg-white dark:text-[#1b1b18] dark:hover:bg-[#EDEDEC]">
