@@ -76,7 +76,7 @@
                                     <div class="space-y-3">
                                         <div>
                                             <div class="mb-1 text-[12px] text-[#706f6c] dark:text-[#A1A09A]">Claude Desktop</div>
-                                            <div class="overflow-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]"><pre><code class="json">{!! App\Helpers\CodeHighlighter::highlightJson('{
+                                            <div class="w-full overflow-x-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]"><pre><code class="json">{!! App\Helpers\CodeHighlighter::highlightJson('{
   "mcpServers": {
     "fantasy-football-mcp": {
       "command": "npx",
@@ -92,7 +92,7 @@
                                         </div>
                                         <div>
                                             <div class="mb-1 text-[12px] text-[#706f6c] dark:text-[#A1A09A]">Cursor</div>
-                                            <div class="overflow-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]"><pre><code class="json">{!! App\Helpers\CodeHighlighter::highlightJson('{
+                                            <div class="w-full overflow-x-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]"><pre><code class="json">{!! App\Helpers\CodeHighlighter::highlightJson('{
   "mcpServers": {
     "fantasy-football-mcp": {
       "transport": {
