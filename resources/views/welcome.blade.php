@@ -1,6 +1,6 @@
 
 <x-layouts.app.marketing>
-    <div class="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] dark:text-[#EDEDEC] px-4 sm:px-6 py-8 sm:py-12">
+    <div class="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] dark:text-[#EDEDEC] px-4 sm:px-6 py-8 sm:py-12 break-words">
         <div class="mx-auto max-w-6xl">
             <header class="mb-6 flex justify-end">
                 @if (Route::has('login'))
