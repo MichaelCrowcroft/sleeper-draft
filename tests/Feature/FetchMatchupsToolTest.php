@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\MCP\Tools\GetMatchupsTool;
+use App\MCP\Tools\FetchMatchupsTool;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -11,13 +11,13 @@ use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->tool = new GetMatchupsTool;
+    $this->tool = new FetchMatchupsTool;
 });
 
 it('has correct tool properties', function () {
-    expect($this->tool->name())->toBe('get-matchups');
+    expect($this->tool->name())->toBe('fetch-matchups');
     expect($this->tool->isStreaming())->toBeFalse();
-    expect($this->tool->description())->toContain('Get matchups for a league');
+    expect($this->tool->description())->toContain('Fetch matchups for a league');
 });
 
 it('validates required fields', function () {
@@ -303,7 +303,7 @@ it('has correct input schema', function () {
 it('has correct annotations', function () {
     $annotations = $this->tool->annotations();
 
-    expect($annotations['title'])->toBe('Get League Matchups');
+    expect($annotations['title'])->toBe('Fetch League Matchups');
     expect($annotations['readOnlyHint'])->toBeTrue();
     expect($annotations['destructiveHint'])->toBeFalse();
     expect($annotations['idempotentHint'])->toBeTrue();

@@ -16,7 +16,8 @@ info:
     - **draft-picks**: Get intelligent draft pick recommendations
     - **get-league**: Get detailed league information and users
     - **fetch-rosters**: Get roster data for all teams in a league
-    - **get-matchups**: Get matchup data for a specific week
+    - **fetch-matchups**: Fetch matchup data for a specific week
+    - **fetch-trades**: Fetch trades in a league with player details
 
     ## Authentication
 
@@ -198,13 +199,13 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /mcp/tools/get-matchups:
+  /mcp/tools/fetch-matchups:
     post:
-      summary: Get league matchups
+      summary: Fetch league matchups
       description: |
         Fetches matchup data for a specific week in a league.
         Returns scores, projections, and matchup pairings.
-      operationId: getMatchups
+      operationId: fetchMatchups
       tags:
         - Matchup Data
       requestBody:
@@ -212,14 +213,40 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GetMatchupsRequest'
+              $ref: '#/components/schemas/FetchMatchupsRequest'
       responses:
         '200':
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetMatchupsResponse'
+                $ref: '#/components/schemas/FetchMatchupsResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/fetch-trades:
+    post:
+      summary: Fetch league trades
+      description: |
+        Fetches trades for a league and returns trade details with expanded player information. Set `pending_only` to true to limit results to pending trades.
+      operationId: fetchTrades
+      tags:
+        - Trades
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchTradesRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchTradesResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
         '500':
@@ -366,7 +393,7 @@ components:
       required:
         - league_id
 
-    GetMatchupsRequest:
+    FetchMatchupsRequest:
       type: object
       properties:
         league_id:
@@ -584,7 +611,7 @@ components:
               type: string
               format: date-time
 
-    GetMatchupsResponse:
+    FetchMatchupsResponse:
       type: object
       properties:
         success:
@@ -620,6 +647,117 @@ components:
               type: string
               format: date-time
 
+    FetchTradesRequest:
+      type: object
+      properties:
+        league_id:
+          type: string
+          description: Sleeper league ID to fetch trades for
+          example: "987654321"
+        round:
+          type: integer
+          description: Week/round to fetch transactions for
+          example: 1
+        roster_id:
+          type: integer
+          nullable: true
+          description: Optional roster ID to filter trades
+          example: 2
+        pending_only:
+          type: boolean
+          description: If true, only include trades with status pending
+          example: false
+      required:
+        - league_id
+
+    TradeAddedPlayer:
+      type: object
+      properties:
+        player_id:
+          type: string
+          example: "p1"
+        to_roster_id:
+          type: integer
+          example: 2
+        player:
+          $ref: '#/components/schemas/Player'
+
+    TradeDroppedPlayer:
+      type: object
+      properties:
+        player_id:
+          type: string
+          example: "p1"
+        from_roster_id:
+          type: integer
+          example: 1
+        player:
+          $ref: '#/components/schemas/Player'
+
+    TradeDetails:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+          example: "1234567890"
+        status:
+          type: string
+          example: pending
+        roster_ids:
+          type: array
+          items:
+            type: integer
+        adds:
+          type: array
+          items:
+            $ref: '#/components/schemas/TradeAddedPlayer'
+        drops:
+          type: array
+          items:
+            $ref: '#/components/schemas/TradeDroppedPlayer'
+        draft_picks:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        waiver_budget:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    FetchTradesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TradeDetails'
+        count:
+          type: integer
+          example: 1
+        metadata:
+          type: object
+          properties:
+            league_id:
+              type: string
+              example: "987654321"
+            round:
+              type: integer
+              example: 1
+            filtered_roster_id:
+              type: integer
+              nullable: true
+              example: 2
+            pending_only:
+              type: boolean
+              example: false
+            executed_at:
+              type: string
+              format: date-time
     Player:
       type: object
       properties:
