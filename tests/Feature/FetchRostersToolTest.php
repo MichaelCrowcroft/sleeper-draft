@@ -97,7 +97,11 @@ test('enhance player array works correctly', function () {
     $method = $reflector->getMethod('enhancePlayerArray');
     $method->setAccessible(true);
 
-    $playersFromDb = Player::all()->keyBy('player_id')->toArray();
+    $playersFromDb = Player::all()
+        ->mapWithKeys(fn($player) => [
+            $player->player_id => (new \App\Http\Resources\PlayerResource($player))->resolve(),
+        ])
+        ->toArray();
     $playerIds = ['player1', 'player2', 'player3']; // player3 not in DB
 
     $result = $method->invoke($tool, $playerIds, $playersFromDb);

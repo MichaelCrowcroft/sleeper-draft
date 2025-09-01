@@ -102,7 +102,7 @@ class McpActionController extends Controller
 
             // Get MCP server configuration
             $mcpUrl = env('APP_URL') . '/mcp';
-            $timeout = 30;
+            $timeout = 60;
 
             // Make request to MCP server
             $httpClient = Http::timeout($timeout)
