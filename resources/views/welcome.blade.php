@@ -41,6 +41,9 @@
                             <a href="https://donate.stripe.com/3cI7sKcfB6sB0FC33le3e00" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-md border border-[#2563eb]/20 bg-[#eff6ff] px-4 py-2 text-sm font-medium text-[#2563eb] hover:bg-[#dbeafe] dark:border-[#60a5fa]/30 dark:bg-[#172554] dark:text-[#93c5fd] dark:hover:bg-[#1e293b]">
                                 Support the project
                             </a>
+                            <a href="https://chatgpt.com/g/g-68b45e513c9881918831ae2a2dc294a5" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-md border border-[#10a37f]/20 bg-[#f0fdf9] px-4 py-2 text-sm font-medium text-[#0c8c67] hover:bg-[#dcfce7] dark:border-[#10a37f]/30 dark:bg-[#052e21] dark:text-[#6ee7b7] dark:hover:bg-[#064e3b]">
+                                Try the Custom GPT
+                            </a>
                         </div>
                         <div class="mt-8 space-y-2 text-[13px] leading-6">
                             <div class="font-semibold">Quick connect</div>
