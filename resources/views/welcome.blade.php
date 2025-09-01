@@ -1,7 +1,7 @@
 
 <x-layouts.app.marketing>
-    <div class="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] dark:text-[#EDEDEC] px-4 sm:px-6 py-8 sm:py-12 break-words">
-        <div class="mx-auto max-w-6xl">
+    <div class="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] dark:text-[#EDEDEC] px-4 sm:px-6 py-8 sm:py-12 break-words overflow-x-hidden">
+        <div class="mx-auto max-w-6xl w-full">
             <header class="mb-6 flex justify-end">
                 @if (Route::has('login'))
                     <nav class="flex items-center gap-2 sm:gap-4 flex-wrap">
@@ -24,8 +24,8 @@
             </header>
 
             <div class="rounded-2xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm dark:border-white/10 dark:bg-[#141414]">
-                <div class="grid items-start gap-8 md:gap-10 md:grid-cols-2">
-                    <div>
+                <div class="grid items-start gap-8 md:gap-10 md:grid-cols-2 w-full min-w-0">
+                    <div class="min-w-0">
                         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                             <x-app-logo-icon class="size-20 sm:size-24 flex-shrink-0" />
                             <h1 class="text-2xl leading-tight font-semibold sm:text-3xl lg:text-4xl">MCP Tools for Fantasy Football</h1>
@@ -49,15 +49,15 @@
                             <div class="font-semibold">Quick connect</div>
                             <div class="rounded-md border border-black/10 bg-[#FCFCFB] p-4 dark:border-white/10 dark:bg-[#0f0f0f]">
                                 <div class="mb-2 text-[12px] tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">Live MCP Endpoint</div>
-                                <div class="rounded-md bg-white px-3 py-2 text-[13px] break-all shadow-inner select-all dark:bg-[#161615]"> https://www.sleeperdraft.com/mcp </div>
+                                <div class="rounded-md bg-white px-3 py-2 text-[13px] break-all shadow-inner select-all dark:bg-[#161615] max-w-full overflow-hidden"> https://www.sleeperdraft.com/mcp </div>
                             </div>
                             <div class="rounded-md border border-black/10 bg-[#FCFCFB] p-4 dark:border-white/10 dark:bg-[#0f0f0f]">
                                 <div class="mb-2 text-[12px] tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">Local MCP Endpoint</div>
-                                <div class="rounded-md bg-white px-3 py-2 text-[13px] break-all shadow-inner select-all dark:bg-[#161615]"> {{ url('/mcp') }} </div>
+                                <div class="rounded-md bg-white px-3 py-2 text-[13px] break-all shadow-inner select-all dark:bg-[#161615] max-w-full overflow-hidden"> {{ url('/mcp') }} </div>
                             </div>
                         </div>
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <div class="rounded-md border border-black/10 bg-[#FCFCFB] p-4 dark:border-white/10 dark:bg-[#0f0f0f]">
                             <div class="mb-2 text-[12px] tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]"> Quickstart — Claude and Cursor </div>
                             <ol class="mb-3 list-decimal space-y-1 pl-5 text-[13px] text-[#575654] dark:text-[#A1A09A]">
@@ -76,7 +76,7 @@
                                     <div class="space-y-3">
                                         <div>
                                             <div class="mb-1 text-[12px] text-[#706f6c] dark:text-[#A1A09A]">Claude Desktop</div>
-                                            <div class="w-full overflow-x-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]"><pre><code class="json">{!! App\Helpers\CodeHighlighter::highlightJson('{
+                                            <div class="w-full overflow-x-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]"><pre class="overflow-x-auto max-w-full"><code class="json whitespace-pre">{!! App\Helpers\CodeHighlighter::highlightJson('{
   "mcpServers": {
     "fantasy-football-mcp": {
       "command": "npx",
@@ -92,7 +92,7 @@
                                         </div>
                                         <div>
                                             <div class="mb-1 text-[12px] text-[#706f6c] dark:text-[#A1A09A]">Cursor</div>
-                                            <div class="w-full overflow-x-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]"><pre><code class="json">{!! App\Helpers\CodeHighlighter::highlightJson('{
+                                            <div class="w-full overflow-x-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]"><pre class="overflow-x-auto max-w-full"><code class="json whitespace-pre">{!! App\Helpers\CodeHighlighter::highlightJson('{
   "mcpServers": {
     "fantasy-football-mcp": {
       "transport": {
