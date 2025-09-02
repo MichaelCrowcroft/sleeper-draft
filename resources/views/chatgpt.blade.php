@@ -1,8 +1,8 @@
 @php
-$title = 'ChatGPT Custom GPT - Fantasy Football AI Assistant';
+$title = 'Fantasy Football AI Assistant CustomGPT';
 @endphp
 
-<x-layouts.app.marketing>
+<x-layouts.app.marketing :title="$title">
     <div class="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] dark:text-[#EDEDEC] px-4 sm:px-6 py-8 sm:py-12 break-words overflow-x-hidden">
         <div class="mx-auto max-w-6xl w-full">
             @include('partials.marketing-nav')

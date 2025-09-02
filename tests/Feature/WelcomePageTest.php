@@ -11,4 +11,6 @@ it('renders the simplified welcome page', function () {
         ->assertSee('Try the Custom GPT')
         ->assertSee('View MCP Documentation')
         ->assertSee('How to Use');
+
+    $response->assertSee('<title>MCP Tools for Fantasy Football - AI-Powered Draft Assistant</title>', false);
 });
