@@ -17,7 +17,7 @@ Schedule::command(UpdatePlayerTrending::class, [
     '--lookback' => 24,
     '--type' => 'drop',
     '--limit' => 100,
-])->hourly();
+])->hourlyAt(15); // Run 15 minutes past the hour
 
 Schedule::command(UpdatePlayerADP::class, [
     '--teams' => 12,
