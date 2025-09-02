@@ -9,6 +9,8 @@ Route::get('/', function () {
 
 Route::view('chatgpt', 'chatgpt')->name('chatgpt');
 
+Route::view('mcp', 'mcp')->name('mcp');
+
 Route::view('privacy', 'privacy')->name('privacy');
 
 Route::view('dashboard', 'dashboard')

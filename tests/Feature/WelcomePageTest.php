@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-it('renders the redesigned welcome page', function () {
+it('renders the simplified welcome page', function () {
     $response = $this->get('/');
 
     $response->assertSuccessful()
         ->assertSee('MCP Tools for Fantasy Football')
-        ->assertSee('Quickstart — Claude and Cursor')
-        ->assertSee('Tools Reference')
-        ->assertSee('fantasy_recommendations');
+        ->assertSee('Connect your AI assistant to Sleeper fantasy football data')
+        ->assertSee('Try the Custom GPT')
+        ->assertSee('View MCP Documentation')
+        ->assertSee('How to Use');
 });

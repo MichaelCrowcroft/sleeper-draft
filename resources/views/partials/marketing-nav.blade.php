@@ -7,6 +7,9 @@
         <a href="{{ route('chatgpt') }}" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
             ChatGPT
         </a>
+        <a href="{{ route('mcp') }}" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
+            MCP
+        </a>
     </div>
 
     <!-- Right side: Auth-related links -->
