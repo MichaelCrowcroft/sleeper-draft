@@ -2,26 +2,7 @@
 <x-layouts.app.marketing>
     <div class="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] dark:text-[#EDEDEC] px-4 sm:px-6 py-8 sm:py-12 break-words overflow-x-hidden">
         <div class="mx-auto max-w-6xl w-full">
-            <!-- <header class="mb-6 flex justify-end">
-                @if (Route::has('login'))
-                    <nav class="flex items-center gap-2 sm:gap-4 flex-wrap">
-                        @auth
-                            <a href="{{ url('/dashboard') }}" class="inline-flex items-center gap-2 rounded-md border border-black/10 bg-white px-3 py-2 text-sm font-medium text-black hover:bg-gray-50 dark:border-white/10 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700">
-                                Dashboard
-                            </a>
-                        @else
-                            <a href="{{ route('login') }}" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
-                                Log in
-                            </a>
-                            @if (Route::has('register'))
-                                <a href="{{ route('register') }}" class="inline-flex items-center gap-2 rounded-md border border-black/10 bg-white px-3 py-2 text-sm font-medium text-black hover:bg-gray-50 dark:border-white/10 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700">
-                                    Register
-                                </a>
-                            @endif
-                        @endauth
-                    </nav>
-                @endif
-            </header> -->
+            @include('partials.marketing-nav')
 
             <div class="rounded-2xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm dark:border-white/10 dark:bg-[#141414]">
                 <div class="grid items-start gap-8 md:gap-10 md:grid-cols-2 w-full min-w-0">
