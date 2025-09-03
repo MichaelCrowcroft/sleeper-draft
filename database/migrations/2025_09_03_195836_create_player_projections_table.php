@@ -14,11 +14,6 @@ return new class extends Migration
         Schema::create('player_projections', function (Blueprint $table) {
             $table->id();
 
-            // Relations
-            $table->foreignId('player_db_id')
-                ->constrained('players')
-                ->cascadeOnDelete();
-
             // Identity
             $table->string('player_id')->index(); // Sleeper player_id for convenience
             $table->string('sport', 16)->default('nfl')->index();
