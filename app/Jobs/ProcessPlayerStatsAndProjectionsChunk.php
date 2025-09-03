@@ -22,7 +22,7 @@ class ProcessPlayerStatsAndProjectionsChunk implements ShouldQueue
         public string $season,
         public string $sport = 'nfl',
         public string $seasonType = 'regular',
-        public int $maxPerMinute = 250
+        public int $maxPerMinute = 250 // Back to higher rate since each player now makes only 2 requests (1 for stats, 1 for projections)
     ) {
         $this->onQueue('default');
     }
@@ -31,15 +31,21 @@ class ProcessPlayerStatsAndProjectionsChunk implements ShouldQueue
     {
         $chunkStartedAt = microtime(true);
 
+        \Illuminate\Support\Facades\Log::info("Processing chunk with players: " . implode(', ', $this->playerIds));
+
         foreach ($this->playerIds as $playerId) {
             $player = Player::where('player_id', (string) $playerId)->first();
             if (! $player) {
+                \Illuminate\Support\Facades\Log::warning("Player not found: $playerId");
                 continue;
             }
+
+            \Illuminate\Support\Facades\Log::info("Processing player: {$player->player_id} ({$player->first_name} {$player->last_name})");
 
             try {
                 $this->fetchAndStoreForPlayer($player, $this->season, $this->sport, $this->seasonType);
             } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error("Error processing player {$player->player_id}: " . $e->getMessage());
                 // Swallow per-player errors; job continues
             }
         }
@@ -49,40 +55,47 @@ class ProcessPlayerStatsAndProjectionsChunk implements ShouldQueue
 
     protected function fetchAndStoreForPlayer(Player $player, string $season, string $sport, string $seasonType): void
     {
+        // Fetch weekly stats data using grouping=week parameter
         $statsResponse = Sleeper::players()->stats((string) $player->player_id, $season, $sport, $seasonType, 'week');
         $stats = $statsResponse->json();
-        if (is_array($stats)) {
-            foreach ($stats as $weekKey => $payload) {
-                if (! is_array($payload)) {
+
+        if (is_array($stats) && !empty($stats)) {
+            // With grouping=week, the response should be keyed by week numbers
+            foreach ($stats as $weekKey => $weekData) {
+                if (!is_numeric($weekKey) || !is_array($weekData)) {
                     continue;
                 }
-                $week = $this->determineWeek($weekKey, $payload);
-                if ($week === null) {
+                $week = (int) $weekKey;
+                if ($week < 1 || $week > 25) {
                     continue;
                 }
-                $this->upsertStats($player, $week, $payload, $season, $sport, $seasonType);
+                $this->upsertStats($player, $week, $weekData, $season, $sport, $seasonType);
             }
         }
 
+        // Fetch weekly projections data using grouping=week parameter
         $projectionsResponse = Sleeper::players()->projections((string) $player->player_id, $season, $sport, $seasonType, 'week');
         $projections = $projectionsResponse->json();
-        if (is_array($projections)) {
-            foreach ($projections as $weekKey => $payload) {
-                if (! is_array($payload)) {
+
+        if (is_array($projections) && !empty($projections)) {
+            // With grouping=week, the response should be keyed by week numbers
+            foreach ($projections as $weekKey => $weekData) {
+                if (!is_numeric($weekKey) || !is_array($weekData)) {
                     continue;
                 }
-                $week = $this->determineWeek($weekKey, $payload);
-                if ($week === null) {
+                $week = (int) $weekKey;
+                if ($week < 1 || $week > 25) {
                     continue;
                 }
-                $this->upsertProjections($player, $week, $payload, $season, $sport, $seasonType);
+                $this->upsertProjections($player, $week, $weekData, $season, $sport, $seasonType);
             }
         }
     }
 
     protected function upsertStats(Player $player, int $week, array $payload, string $season, string $sport, string $seasonType): void
     {
-        $stats = $payload['stats'] ?? [];
+        // For weekly data, the stats are nested under 'stats' key
+        $stats = $payload['stats'] ?? $payload;
 
         PlayerStats::updateOrCreate([
             'player_id' => (string) $player->player_id,
@@ -99,19 +112,20 @@ class ProcessPlayerStatsAndProjectionsChunk implements ShouldQueue
             'raw' => $payload,
             'updated_at_ms' => $payload['updated_at'] ?? null,
             'last_modified_ms' => $payload['last_modified'] ?? null,
-            'pts_half_ppr' => self::num($stats['pts_half_ppr'] ?? null),
-            'pts_ppr' => self::num($stats['pts_ppr'] ?? null),
-            'pts_std' => self::num($stats['pts_std'] ?? null),
-            'pos_rank_half_ppr' => self::int($stats['pos_rank_half_ppr'] ?? null),
-            'pos_rank_ppr' => self::int($stats['pos_rank_ppr'] ?? null),
-            'pos_rank_std' => self::int($stats['pos_rank_std'] ?? null),
-            'gp' => self::int($stats['gp'] ?? null),
-            'gs' => self::int($stats['gs'] ?? null),
-            'gms_active' => self::int($stats['gms_active'] ?? null),
-            'off_snp' => self::int($stats['off_snp'] ?? null),
-            'tm_off_snp' => self::int($stats['tm_off_snp'] ?? null),
-            'tm_def_snp' => self::int($stats['tm_def_snp'] ?? null),
-            'tm_st_snp' => self::int($stats['tm_st_snp'] ?? null),
+            // Map ranking data to database columns (Sleeper API returns rankings, not actual stats)
+            'pts_half_ppr' => self::num($stats['rank_half_ppr'] ?? null),
+            'pts_ppr' => self::num($stats['rank_ppr'] ?? null),
+            'pts_std' => self::num($stats['rank_std'] ?? null),
+            'pos_rank_half_ppr' => self::num($stats['pos_rank_half_ppr'] ?? null),
+            'pos_rank_ppr' => self::num($stats['pos_rank_ppr'] ?? null),
+            'pos_rank_std' => self::num($stats['pos_rank_std'] ?? null),
+            'gp' => self::num($stats['gp'] ?? null),
+            'gs' => self::num($stats['gs'] ?? null),
+            'gms_active' => self::num($stats['gms_active'] ?? null),
+            'off_snp' => self::num($stats['off_snp'] ?? null),
+            'tm_off_snp' => self::num($stats['tm_off_snp'] ?? null),
+            'tm_def_snp' => self::num($stats['tm_def_snp'] ?? null),
+            'tm_st_snp' => self::num($stats['tm_st_snp'] ?? null),
             'rec' => self::num($stats['rec'] ?? null),
             'rec_tgt' => self::num($stats['rec_tgt'] ?? null),
             'rec_yd' => self::num($stats['rec_yd'] ?? null),
@@ -119,7 +133,7 @@ class ProcessPlayerStatsAndProjectionsChunk implements ShouldQueue
             'rec_fd' => self::num($stats['rec_fd'] ?? null),
             'rec_air_yd' => self::num($stats['rec_air_yd'] ?? null),
             'rec_rz_tgt' => self::num($stats['rec_rz_tgt'] ?? null),
-            'rec_lng' => self::int($stats['rec_lng'] ?? null),
+            'rec_lng' => self::num($stats['rec_lng'] ?? null),
             'rush_att' => self::num($stats['rush_att'] ?? null),
             'rush_yd' => self::num($stats['rush_yd'] ?? null),
             'rush_td' => self::num($stats['rush_td'] ?? null),
@@ -130,7 +144,8 @@ class ProcessPlayerStatsAndProjectionsChunk implements ShouldQueue
 
     protected function upsertProjections(Player $player, int $week, array $payload, string $season, string $sport, string $seasonType): void
     {
-        $stats = $payload['stats'] ?? [];
+        // For weekly projections, the stats are nested under 'stats' key
+        $stats = $payload['stats'] ?? $payload;
 
         PlayerProjections::updateOrCreate([
             'player_id' => (string) $player->player_id,
@@ -147,18 +162,30 @@ class ProcessPlayerStatsAndProjectionsChunk implements ShouldQueue
             'raw' => $payload,
             'updated_at_ms' => $payload['updated_at'] ?? null,
             'last_modified_ms' => $payload['last_modified'] ?? null,
-            'pts_half_ppr' => self::num($stats['pts_half_ppr'] ?? null),
-            'pts_ppr' => self::num($stats['pts_ppr'] ?? null),
-            'pts_std' => self::num($stats['pts_std'] ?? null),
-            'adp_dd_ppr' => self::int($stats['adp_dd_ppr'] ?? null),
-            'pos_adp_dd_ppr' => self::int($stats['pos_adp_dd_ppr'] ?? null),
+            // Map ranking data to database columns (Sleeper API returns rankings, not actual stats)
+            'pts_half_ppr' => self::num($stats['rank_half_ppr'] ?? null),
+            'pts_ppr' => self::num($stats['rank_ppr'] ?? null),
+            'pts_std' => self::num($stats['rank_std'] ?? null),
+            'adp_dd_ppr' => self::num($stats['adp_dd_ppr'] ?? null),
+            'pos_adp_dd_ppr' => self::num($stats['pos_adp_dd_ppr'] ?? null),
+            'gp' => self::num($stats['gp'] ?? null),
+            'gs' => self::num($stats['gs'] ?? null),
+            'gms_active' => self::num($stats['gms_active'] ?? null),
+            'off_snp' => self::num($stats['off_snp'] ?? null),
+            'tm_off_snp' => self::num($stats['tm_off_snp'] ?? null),
+            'tm_def_snp' => self::num($stats['tm_def_snp'] ?? null),
+            'tm_st_snp' => self::num($stats['tm_st_snp'] ?? null),
             'rec' => self::num($stats['rec'] ?? null),
             'rec_tgt' => self::num($stats['rec_tgt'] ?? null),
             'rec_yd' => self::num($stats['rec_yd'] ?? null),
             'rec_td' => self::num($stats['rec_td'] ?? null),
             'rec_fd' => self::num($stats['rec_fd'] ?? null),
+            'rec_air_yd' => self::num($stats['rec_air_yd'] ?? null),
+            'rec_rz_tgt' => self::num($stats['rec_rz_tgt'] ?? null),
+            'rec_lng' => self::num($stats['rec_lng'] ?? null),
             'rush_att' => self::num($stats['rush_att'] ?? null),
             'rush_yd' => self::num($stats['rush_yd'] ?? null),
+            'rush_td' => self::num($stats['rush_td'] ?? null),
             'fum' => self::num($stats['fum'] ?? null),
             'fum_lost' => self::num($stats['fum_lost'] ?? null),
         ]);
@@ -180,18 +207,7 @@ class ProcessPlayerStatsAndProjectionsChunk implements ShouldQueue
         return (int) $value;
     }
 
-    protected function determineWeek(int|string $weekKey, array $payload): ?int
-    {
-        $candidate = $payload['week'] ?? $weekKey;
-        if (! is_numeric($candidate)) {
-            return null;
-        }
-        $week = (int) $candidate;
-        if ($week < 1 || $week > 25) {
-            return null;
-        }
-        return $week;
-    }
+
 
     protected function enforceRateLimitForChunk(int $processedInChunk, float $chunkStartedAt, int $maxPerMinute): void
     {
