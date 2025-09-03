@@ -166,6 +166,71 @@ class ApiAnalytics extends Model
     }
 
     /**
+     * Get tool badge color for UI
+     */
+    public function getToolBadgeColor(): string
+    {
+        if (!$this->tool_name) {
+            return 'bg-gray-100 text-gray-800';
+        }
+
+        // Color code different tool types
+        return match(strtolower($this->tool_name)) {
+            'mcp_fantasy-football-mcp_fetch-trending-players',
+            'mcp_fantasy-football-mcp_fetch-adp-players' => 'bg-orange-100 text-orange-800',
+            'mcp_fantasy-football-mcp_fetch-user-leagues',
+            'mcp_fantasy-football-mcp_get-league' => 'bg-blue-100 text-blue-800',
+            'mcp_fantasy-football-mcp_draft-picks' => 'bg-purple-100 text-purple-800',
+            'mcp_fantasy-football-mcp_fetch-rosters',
+            'mcp_fantasy-football-mcp_fetch-matchups' => 'bg-green-100 text-green-800',
+            'mcp_fantasy-football-mcp_fetch-trades' => 'bg-yellow-100 text-yellow-800',
+            default => 'bg-indigo-100 text-indigo-800',
+        };
+    }
+
+    /**
+     * Get formatted user agent for display
+     */
+    public function getFormattedUserAgentAttribute(): string
+    {
+        if (!$this->user_agent) {
+            return 'Unknown';
+        }
+
+        $userAgent = $this->user_agent;
+
+        // Map common user agents to cleaner display names
+        $userAgentMap = [
+            'ChatGPT-User' => 'ChatGPT',
+            'Claude' => 'Claude',
+            'Grok' => 'Grok',
+            'curl' => 'cURL',
+            'PostmanRuntime' => 'Postman',
+            'Thunder Client' => 'Thunder Client',
+            'Insomnia' => 'Insomnia',
+            'Mozilla/5.0' => 'Browser',
+            'python-requests' => 'Python Requests',
+            'axios' => 'Axios',
+            'fetch' => 'Fetch API',
+            'Go-http-client' => 'Go HTTP Client',
+            'Node.js' => 'Node.js',
+            'PHP' => 'PHP',
+            'Java' => 'Java',
+            'C#' => 'C#',
+            '.NET' => '.NET',
+        ];
+
+        foreach ($userAgentMap as $pattern => $displayName) {
+            if (str_contains($userAgent, $pattern)) {
+                return $displayName;
+            }
+        }
+
+        // If no match found, return a truncated version
+        return strlen($userAgent) > 30 ? substr($userAgent, 0, 27) . '...' : $userAgent;
+    }
+
+    /**
      * Get status code badge color for UI
      */
     public function getStatusBadgeColor(): string
