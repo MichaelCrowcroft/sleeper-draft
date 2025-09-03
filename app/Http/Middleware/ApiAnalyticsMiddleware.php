@@ -234,7 +234,9 @@ class ApiAnalyticsMiddleware
     private function extractToolName(Request $request): ?string
     {
         $routeName = $request->route() ? $request->route()->getName() : null;
+        $path = $request->path();
 
+        // Handle API MCP routes
         if (!$routeName) {
             return null;
         }
@@ -249,6 +251,21 @@ class ApiAnalyticsMiddleware
             return $request->route('tool');
         }
 
+        // Handle direct MCP endpoint with JSON-RPC payload
+        if ($path === 'mcp') {
+            try {
+                $payload = $request->json();
+                if ($payload && isset($payload['method']) && $payload['method'] === 'tools/call') {
+                    if (isset($payload['params']['name'])) {
+                        return $payload['params']['name'];
+                    }
+                }
+            } catch (\Exception $e) {
+                // If JSON parsing fails, return null
+                return null;
+            }
+        }
+
         return null;
     }
 
@@ -259,7 +276,7 @@ class ApiAnalyticsMiddleware
     {
         $path = $request->path();
 
-        if (str_starts_with($path, 'api/mcp')) {
+        if (str_starts_with($path, 'api/mcp') || $path === 'mcp') {
             return 'mcp';
         }
 

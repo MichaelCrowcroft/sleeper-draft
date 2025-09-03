@@ -164,7 +164,7 @@ return [
     */
     'middlewares' => [
         // Development: Minimal middleware for easier testing
-        // 'throttle:60,1',
+        'api.analytics',     // Track MCP request analytics
 
         // Production: Uncomment and customize these for security
         // 'auth:sanctum',     // Require authentication
