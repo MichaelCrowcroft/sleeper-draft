@@ -39,8 +39,26 @@
                     <div class="space-y-2">
                         @foreach($stats['requests_by_category'] as $category => $count)
                             <div class="flex justify-between items-center">
-                                <span class="text-sm font-medium {{ $category === 'mcp' ? 'text-blue-600' : ($category === 'openapi' ? 'text-green-600' : 'text-gray-600') }}">
-                                    {{ ucfirst($category ?? 'Other') }}
+                                <span class="text-sm font-medium
+                                    {{ $category === 'mcp' ? 'text-blue-600' :
+                                       ($category === 'mcp_tools_api' ? 'text-cyan-600' :
+                                       ($category === 'openapi' ? 'text-green-600' : 'text-gray-600')) }}">
+                                    @switch($category)
+                                        @case('mcp')
+                                            MCP Server
+                                            @break
+                                        @case('mcp_tools_api')
+                                            MCP Tools API
+                                            @break
+                                        @case('openapi')
+                                            OpenAPI
+                                            @break
+                                        @case('health')
+                                            Health Check
+                                            @break
+                                        @default
+                                            {{ ucfirst($category ?? 'Other') }}
+                                    @endswitch
                                 </span>
                                 <span class="text-sm text-gray-500">{{ number_format($count) }}</span>
                             </div>

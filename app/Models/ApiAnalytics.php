@@ -158,7 +158,8 @@ class ApiAnalytics extends Model
     public function getCategoryBadgeColor(): string
     {
         return match($this->endpoint_category) {
-            'mcp' => 'bg-blue-100 text-blue-800',
+            'mcp' => 'bg-blue-100 text-blue-800', // Direct MCP server endpoint
+            'mcp_tools_api' => 'bg-cyan-100 text-cyan-800', // REST API MCP tools endpoints
             'openapi' => 'bg-green-100 text-green-800',
             'health' => 'bg-gray-100 text-gray-800',
             default => 'bg-purple-100 text-purple-800',
@@ -175,15 +176,22 @@ class ApiAnalytics extends Model
         }
 
         // Color code different tool types
-        return match(strtolower($this->tool_name)) {
-            'mcp_fantasy-football-mcp_fetch-trending-players',
-            'mcp_fantasy-football-mcp_fetch-adp-players' => 'bg-orange-100 text-orange-800',
-            'mcp_fantasy-football-mcp_fetch-user-leagues',
-            'mcp_fantasy-football-mcp_get-league' => 'bg-blue-100 text-blue-800',
-            'mcp_fantasy-football-mcp_draft-picks' => 'bg-purple-100 text-purple-800',
-            'mcp_fantasy-football-mcp_fetch-rosters',
-            'mcp_fantasy-football-mcp_fetch-matchups' => 'bg-green-100 text-green-800',
-            'mcp_fantasy-football-mcp_fetch-trades' => 'bg-yellow-100 text-yellow-800',
+        $toolName = strtolower($this->tool_name);
+
+        // Handle both old format (without prefix) and new format (with prefix)
+        if (str_starts_with($toolName, 'mcp_fantasy-football-mcp_')) {
+            $toolName = str_replace('mcp_fantasy-football-mcp_', '', $toolName);
+        }
+
+        return match($toolName) {
+            'fetch-trending-players',
+            'fetch-adp-players' => 'bg-orange-100 text-orange-800',
+            'fetch-user-leagues',
+            'get-league' => 'bg-blue-100 text-blue-800',
+            'draft-picks' => 'bg-purple-100 text-purple-800',
+            'fetch-rosters',
+            'fetch-matchups' => 'bg-green-100 text-green-800',
+            'fetch-trades' => 'bg-yellow-100 text-yellow-800',
             default => 'bg-indigo-100 text-indigo-800',
         };
     }

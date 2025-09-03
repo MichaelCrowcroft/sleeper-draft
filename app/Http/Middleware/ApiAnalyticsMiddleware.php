@@ -243,12 +243,13 @@ class ApiAnalyticsMiddleware
 
         // Extract tool name from route names like 'api.mcp.fetch-trending-players'
         if (str_starts_with($routeName, 'api.mcp.')) {
-            return str_replace('api.mcp.', '', $routeName);
+            $toolName = str_replace('api.mcp.', '', $routeName);
+            return 'mcp_fantasy-football-mcp_' . $toolName;
         }
 
         // Check if it's a generic MCP route with tool parameter
         if ($routeName === 'api.mcp.invoke' && $request->route('tool')) {
-            return $request->route('tool');
+            return 'mcp_fantasy-football-mcp_' . $request->route('tool');
         }
 
         // Handle direct MCP endpoint with JSON-RPC payload
@@ -257,7 +258,7 @@ class ApiAnalyticsMiddleware
                 $payload = $request->json();
                 if ($payload && isset($payload['method']) && $payload['method'] === 'tools/call') {
                     if (isset($payload['params']['name'])) {
-                        return $payload['params']['name'];
+                        return 'mcp_fantasy-football-mcp_' . $payload['params']['name'];
                     }
                 }
             } catch (\Exception $e) {
@@ -275,9 +276,24 @@ class ApiAnalyticsMiddleware
     private function determineEndpointCategory(Request $request): string
     {
         $path = $request->path();
+        $routeName = $request->route() ? $request->route()->getName() : null;
 
-        if (str_starts_with($path, 'api/mcp') || $path === 'mcp') {
+        // Direct MCP endpoint (/mcp) - this is the proper MCP server endpoint
+        if ($path === 'mcp') {
             return 'mcp';
+        }
+
+        // API MCP tools endpoints (/api/mcp/tools/*) - these are REST API endpoints
+        if (str_starts_with($path, 'api/mcp')) {
+            // Check if it's the generic invoke route with tool parameter
+            if ($routeName === 'api.mcp.invoke' && $request->route('tool')) {
+                return 'mcp_tools_api';
+            }
+
+            // Check if it's a specific tool route
+            if (str_starts_with($routeName, 'api.mcp.')) {
+                return 'mcp_tools_api';
+            }
         }
 
         if (str_contains($path, 'openapi')) {
