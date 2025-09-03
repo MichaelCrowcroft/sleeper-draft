@@ -133,6 +133,17 @@ class BackfillAnalyticsData extends Command
                 $subQuery->where('endpoint_category', 'mcp')
                          ->where('endpoint', 'like', 'api/mcp%');
             });
+
+            // OR records that are MCP-related but missing tool_name
+            $query->orWhere(function ($subQuery) {
+                $subQuery->where(function ($innerQuery) {
+                    $innerQuery->where('endpoint_category', 'mcp')
+                              ->orWhere('endpoint_category', 'mcp_tools_api')
+                              ->orWhere('endpoint', 'like', 'api/mcp%')
+                              ->orWhere('endpoint', '=', 'mcp')
+                              ->orWhere('route_name', 'like', 'api.mcp%');
+                })->whereNull('tool_name');
+            });
         })->count();
     }
 
@@ -145,15 +156,13 @@ class BackfillAnalyticsData extends Command
         $originalCategory = $record->endpoint_category;
         $wasUpdated = false;
 
-        // Update tool name if needed
-        if ($record->tool_name && !str_starts_with($record->tool_name, 'mcp_fantasy-football-mcp_')) {
-            $newToolName = $this->mapToolName($record);
-            if ($newToolName !== $record->tool_name) {
-                if (!$isDryRun) {
-                    $record->tool_name = $newToolName;
-                }
-                $wasUpdated = true;
+        // Update tool name if needed (both existing and missing tool names)
+        $newToolName = $this->determineToolName($record);
+        if ($newToolName !== $record->tool_name) {
+            if (!$isDryRun) {
+                $record->tool_name = $newToolName;
             }
+            $wasUpdated = true;
         }
 
         // Update category if needed
@@ -171,6 +180,25 @@ class BackfillAnalyticsData extends Command
         }
 
         return $wasUpdated;
+    }
+
+    /**
+     * Determine the correct tool name for a record (handles both existing and missing tool names)
+     */
+    private function determineToolName(ApiAnalytics $record): ?string
+    {
+        // If tool name already exists and is in the correct format, return it
+        if ($record->tool_name && str_starts_with($record->tool_name, 'mcp_fantasy-football-mcp_')) {
+            return $record->tool_name;
+        }
+
+        // If tool name exists but needs updating, map it
+        if ($record->tool_name) {
+            return $this->mapToolName($record);
+        }
+
+        // Tool name is missing - try to extract it from various sources
+        return $this->extractToolNameFromRecord($record);
     }
 
     /**
@@ -211,6 +239,63 @@ class BackfillAnalyticsData extends Command
 
         // If no mapping found, return original (don't break existing data)
         return $oldToolName;
+    }
+
+    /**
+     * Extract tool name from record when it's missing
+     */
+    private function extractToolNameFromRecord(ApiAnalytics $record): ?string
+    {
+        // Only process MCP-related records
+        if (!$this->isMcpRelatedRecord($record)) {
+            return null;
+        }
+
+        // Map from route name
+        if ($record->route_name && isset($this->routeMappings[$record->route_name])) {
+            return $this->routeMappings[$record->route_name];
+        }
+
+        // Extract from specific MCP routes
+        if (str_starts_with($record->route_name, 'api.mcp.') && $record->route_name !== 'api.mcp.invoke') {
+            $toolPart = str_replace('api.mcp.', '', $record->route_name);
+            if (isset($this->toolMappings[$toolPart])) {
+                return $this->toolMappings[$toolPart];
+            }
+        }
+
+        // Extract from generic MCP route
+        if ($record->route_name === 'api.mcp.invoke' && $record->endpoint) {
+            $toolFromUrl = basename($record->endpoint);
+            if (isset($this->toolMappings[$toolFromUrl])) {
+                return $this->toolMappings[$toolFromUrl];
+            }
+        }
+
+        // Extract from MCP JSON-RPC payload
+        if ($record->endpoint === 'mcp' && $record->request_payload) {
+            $payload = $record->request_payload;
+            if (is_array($payload) && isset($payload['params']['name'])) {
+                $toolName = $payload['params']['name'];
+                if (isset($this->toolMappings[$toolName])) {
+                    return $this->toolMappings[$toolName];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if a record is MCP-related
+     */
+    private function isMcpRelatedRecord(ApiAnalytics $record): bool
+    {
+        return $record->endpoint_category === 'mcp' ||
+               $record->endpoint_category === 'mcp_tools_api' ||
+               str_starts_with($record->endpoint, 'api/mcp') ||
+               $record->endpoint === 'mcp' ||
+               str_starts_with($record->route_name, 'api.mcp');
     }
 
     /**
