@@ -93,7 +93,10 @@ class FetchPlayerStatsAndProjections extends Command
         $stats = $statsResponse->json();
         if (is_array($stats)) {
             foreach ($stats as $weekString => $payload) {
-                $week = (int) $payload['week'] ?? (int) $weekString;
+                if (! is_array($payload)) {
+                    continue;
+                }
+                $week = (int) ($payload['week'] ?? $weekString);
                 $this->upsertStats($player, $week, $payload, $season, $sport, $seasonType);
             }
         }
@@ -110,7 +113,10 @@ class FetchPlayerStatsAndProjections extends Command
         $projections = $projectionsResponse->json();
         if (is_array($projections)) {
             foreach ($projections as $weekString => $payload) {
-                $week = (int) $payload['week'] ?? (int) $weekString;
+                if (! is_array($payload)) {
+                    continue;
+                }
+                $week = (int) ($payload['week'] ?? $weekString);
                 $this->upsertProjections($player, $week, $payload, $season, $sport, $seasonType);
             }
         }
