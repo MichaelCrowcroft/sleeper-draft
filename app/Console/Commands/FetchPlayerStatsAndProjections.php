@@ -92,11 +92,14 @@ class FetchPlayerStatsAndProjections extends Command
 
         $stats = $statsResponse->json();
         if (is_array($stats)) {
-            foreach ($stats as $weekString => $payload) {
+            foreach ($stats as $weekKey => $payload) {
                 if (! is_array($payload)) {
                     continue;
                 }
-                $week = (int) ($payload['week'] ?? $weekString);
+                $week = $this->determineWeek($weekKey, $payload);
+                if ($week === null) {
+                    continue; // not a weekly payload, likely season summary/ranks
+                }
                 $this->upsertStats($player, $week, $payload, $season, $sport, $seasonType);
             }
         }
@@ -112,11 +115,14 @@ class FetchPlayerStatsAndProjections extends Command
 
         $projections = $projectionsResponse->json();
         if (is_array($projections)) {
-            foreach ($projections as $weekString => $payload) {
+            foreach ($projections as $weekKey => $payload) {
                 if (! is_array($payload)) {
                     continue;
                 }
-                $week = (int) ($payload['week'] ?? $weekString);
+                $week = $this->determineWeek($weekKey, $payload);
+                if ($week === null) {
+                    continue;
+                }
                 $this->upsertProjections($player, $week, $payload, $season, $sport, $seasonType);
             }
         }
@@ -130,7 +136,7 @@ class FetchPlayerStatsAndProjections extends Command
             'week' => $week,
             'season_type' => $seasonType,
             'sport' => $sport,
-            'company' => $payload['company'] ?? null,
+            'company' => $payload['company'] ?? ($payload['category'] ?? null),
         ];
 
         $values = [
@@ -155,7 +161,7 @@ class FetchPlayerStatsAndProjections extends Command
             'week' => $week,
             'season_type' => $seasonType,
             'sport' => $sport,
-            'company' => $payload['company'] ?? null,
+            'company' => $payload['company'] ?? ($payload['category'] ?? null),
         ];
 
         $values = [
@@ -170,5 +176,20 @@ class FetchPlayerStatsAndProjections extends Command
         ];
 
         PlayerProjections::updateOrCreate($attributes, $values);
+    }
+
+    protected function determineWeek(int|string $weekKey, array $payload): ?int
+    {
+        $candidate = $payload['week'] ?? $weekKey;
+        if (! is_numeric($candidate)) {
+            return null;
+        }
+
+        $week = (int) $candidate;
+        if ($week < 1 || $week > 25) { // NFL weeks range guard
+            return null;
+        }
+
+        return $week;
     }
 }
