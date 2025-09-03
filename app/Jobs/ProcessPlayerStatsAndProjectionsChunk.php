@@ -82,6 +82,8 @@ class ProcessPlayerStatsAndProjectionsChunk implements ShouldQueue
 
     protected function upsertStats(Player $player, int $week, array $payload, string $season, string $sport, string $seasonType): void
     {
+        $stats = $payload['stats'] ?? [];
+
         PlayerStats::updateOrCreate([
             'player_id' => (string) $player->player_id,
             'season' => $season,
@@ -94,15 +96,42 @@ class ProcessPlayerStatsAndProjectionsChunk implements ShouldQueue
             'team' => $payload['team'] ?? $player->team,
             'opponent' => $payload['opponent'] ?? null,
             'game_id' => $payload['game_id'] ?? null,
-            'stats' => $payload['stats'] ?? [],
             'raw' => $payload,
             'updated_at_ms' => $payload['updated_at'] ?? null,
             'last_modified_ms' => $payload['last_modified'] ?? null,
+            'pts_half_ppr' => self::num($stats['pts_half_ppr'] ?? null),
+            'pts_ppr' => self::num($stats['pts_ppr'] ?? null),
+            'pts_std' => self::num($stats['pts_std'] ?? null),
+            'pos_rank_half_ppr' => self::int($stats['pos_rank_half_ppr'] ?? null),
+            'pos_rank_ppr' => self::int($stats['pos_rank_ppr'] ?? null),
+            'pos_rank_std' => self::int($stats['pos_rank_std'] ?? null),
+            'gp' => self::int($stats['gp'] ?? null),
+            'gs' => self::int($stats['gs'] ?? null),
+            'gms_active' => self::int($stats['gms_active'] ?? null),
+            'off_snp' => self::int($stats['off_snp'] ?? null),
+            'tm_off_snp' => self::int($stats['tm_off_snp'] ?? null),
+            'tm_def_snp' => self::int($stats['tm_def_snp'] ?? null),
+            'tm_st_snp' => self::int($stats['tm_st_snp'] ?? null),
+            'rec' => self::num($stats['rec'] ?? null),
+            'rec_tgt' => self::num($stats['rec_tgt'] ?? null),
+            'rec_yd' => self::num($stats['rec_yd'] ?? null),
+            'rec_td' => self::num($stats['rec_td'] ?? null),
+            'rec_fd' => self::num($stats['rec_fd'] ?? null),
+            'rec_air_yd' => self::num($stats['rec_air_yd'] ?? null),
+            'rec_rz_tgt' => self::num($stats['rec_rz_tgt'] ?? null),
+            'rec_lng' => self::int($stats['rec_lng'] ?? null),
+            'rush_att' => self::num($stats['rush_att'] ?? null),
+            'rush_yd' => self::num($stats['rush_yd'] ?? null),
+            'rush_td' => self::num($stats['rush_td'] ?? null),
+            'fum' => self::num($stats['fum'] ?? null),
+            'fum_lost' => self::num($stats['fum_lost'] ?? null),
         ]);
     }
 
     protected function upsertProjections(Player $player, int $week, array $payload, string $season, string $sport, string $seasonType): void
     {
+        $stats = $payload['stats'] ?? [];
+
         PlayerProjections::updateOrCreate([
             'player_id' => (string) $player->player_id,
             'season' => $season,
@@ -115,11 +144,40 @@ class ProcessPlayerStatsAndProjectionsChunk implements ShouldQueue
             'team' => $payload['team'] ?? $player->team,
             'opponent' => $payload['opponent'] ?? null,
             'game_id' => $payload['game_id'] ?? null,
-            'stats' => $payload['stats'] ?? [],
             'raw' => $payload,
             'updated_at_ms' => $payload['updated_at'] ?? null,
             'last_modified_ms' => $payload['last_modified'] ?? null,
+            'pts_half_ppr' => self::num($stats['pts_half_ppr'] ?? null),
+            'pts_ppr' => self::num($stats['pts_ppr'] ?? null),
+            'pts_std' => self::num($stats['pts_std'] ?? null),
+            'adp_dd_ppr' => self::int($stats['adp_dd_ppr'] ?? null),
+            'pos_adp_dd_ppr' => self::int($stats['pos_adp_dd_ppr'] ?? null),
+            'rec' => self::num($stats['rec'] ?? null),
+            'rec_tgt' => self::num($stats['rec_tgt'] ?? null),
+            'rec_yd' => self::num($stats['rec_yd'] ?? null),
+            'rec_td' => self::num($stats['rec_td'] ?? null),
+            'rec_fd' => self::num($stats['rec_fd'] ?? null),
+            'rush_att' => self::num($stats['rush_att'] ?? null),
+            'rush_yd' => self::num($stats['rush_yd'] ?? null),
+            'fum' => self::num($stats['fum'] ?? null),
+            'fum_lost' => self::num($stats['fum_lost'] ?? null),
         ]);
+    }
+
+    protected static function num(null|int|float|string $value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        return (float) $value;
+    }
+
+    protected static function int(null|int|string $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        return (int) $value;
     }
 
     protected function determineWeek(int|string $weekKey, array $payload): ?int
