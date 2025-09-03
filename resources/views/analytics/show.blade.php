@@ -16,7 +16,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Request Information -->
-                <flux:card>
+                <flux:callout class="p-6">
                     <flux:heading size="lg">Request Information</flux:heading>
 
                     <div class="space-y-4">
@@ -74,10 +74,10 @@
                             </div>
                         @endif
                     </div>
-                </flux:card>
+                </flux:callout>
 
                 <!-- Response Information -->
-                <flux:card>
+                <flux:callout class="p-6">
                     <flux:heading size="lg">Response Information</flux:heading>
 
                     <div class="space-y-4">
@@ -146,54 +146,54 @@
                             </div>
                         @endif
                     </div>
-                </flux:card>
+                </flux:callout>
 
                 <!-- Request Payload -->
                 @if($analytic->request_payload)
-                    <flux:card>
+                    <flux:callout class="p-6">
                         <flux:heading size="lg">Request Payload</flux:heading>
                         <div class="bg-gray-50 dark:bg-gray-800 rounded p-4 overflow-x-auto">
                             <pre class="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
 {{ json_encode($analytic->request_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
                         </div>
-                    </flux:card>
+                    </flux:callout>
                 @endif
 
                 <!-- Response Data -->
                 @if($analytic->response_data && is_array($analytic->response_data))
-                    <flux:card>
+                    <flux:callout class="p-6">
                         <flux:heading size="lg">Response Data</flux:heading>
                         <div class="bg-gray-50 dark:bg-gray-800 rounded p-4 overflow-x-auto">
                             <pre class="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
 {{ json_encode($analytic->response_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
                         </div>
-                    </flux:card>
+                    </flux:callout>
                 @endif
 
                 <!-- Query Parameters -->
                 @if($analytic->query_parameters)
-                    <flux:card>
+                    <flux:callout class="p-6">
                         <flux:heading size="lg">Query Parameters</flux:heading>
                         <div class="bg-gray-50 dark:bg-gray-800 rounded p-4 overflow-x-auto">
                             <pre class="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
 {{ json_encode($analytic->query_parameters, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
                         </div>
-                    </flux:card>
+                    </flux:callout>
                 @endif
 
                 <!-- Headers -->
                 @if($analytic->headers)
-                    <flux:card>
+                    <flux:callout class="p-6">
                         <flux:heading size="lg">Request Headers</flux:heading>
                         <div class="bg-gray-50 dark:bg-gray-800 rounded p-4 overflow-x-auto">
                             <pre class="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
 {{ json_encode($analytic->headers, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
                         </div>
-                    </flux:card>
+                    </flux:callout>
                 @endif
 
                 <!-- Performance Metrics -->
-                <flux:card>
+                <flux:callout class="p-6">
                     <flux:heading size="lg">Performance Metrics</flux:heading>
 
                     <div class="space-y-4">
@@ -236,7 +236,7 @@
                             </div>
                         </div>
                     </div>
-                </flux:card>
+                </flux:callout>
             </div>
         </div>
     </div>

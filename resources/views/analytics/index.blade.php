@@ -11,30 +11,30 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <!-- Statistics Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <flux:card>
+                <flux:callout class="p-6">
                     <flux:heading size="lg">Total Requests</flux:heading>
-                    <flux:subheading>{{ number_format($stats['total_requests']) }}</flux:subheading>
-                </flux:card>
+                    <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ number_format($stats['total_requests']) }}</div>
+                </flux:callout>
 
-                <flux:card>
+                <flux:callout class="p-6">
                     <flux:heading size="lg">Error Rate</flux:heading>
-                    <flux:subheading>{{ $stats['error_rate'] }}%</flux:subheading>
-                </flux:card>
+                    <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $stats['error_rate'] }}%</div>
+                </flux:callout>
 
-                <flux:card>
+                <flux:callout class="p-6">
                     <flux:heading size="lg">Avg Response Time</flux:heading>
-                    <flux:subheading>{{ $stats['avg_response_time'] }}ms</flux:subheading>
-                </flux:card>
+                    <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $stats['avg_response_time'] }}ms</div>
+                </flux:callout>
 
-                <flux:card>
+                <flux:callout class="p-6">
                     <flux:heading size="lg">Last 24h</flux:heading>
-                    <flux:subheading>{{ number_format($stats['requests_last_24h']) }}</flux:subheading>
-                </flux:card>
+                    <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ number_format($stats['requests_last_24h']) }}</div>
+                </flux:callout>
             </div>
 
             <!-- Category Breakdown -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <flux:card>
+                <flux:callout class="p-6">
                     <flux:heading size="lg">Requests by Category</flux:heading>
                     <div class="space-y-2">
                         @foreach($stats['requests_by_category'] as $category => $count)
@@ -49,9 +49,9 @@
                             <p class="text-sm text-gray-500">No data available</p>
                         @endif
                     </div>
-                </flux:card>
+                </flux:callout>
 
-                <flux:card>
+                <flux:callout class="p-6">
                     <flux:heading size="lg">Popular Tools</flux:heading>
                     <div class="space-y-2">
                         @foreach($stats['popular_tools'] as $tool => $count)
@@ -64,11 +64,11 @@
                             <p class="text-sm text-gray-500">No data available</p>
                         @endif
                     </div>
-                </flux:card>
+                </flux:callout>
             </div>
 
             <!-- Recent Analytics Table -->
-            <flux:card>
+            <flux:callout class="p-6">
                 <div class="flex justify-between items-center mb-6">
                     <flux:heading size="lg">Recent API Requests</flux:heading>
                     <div class="flex space-x-2">
@@ -186,7 +186,7 @@
                         </flux:button>
                     </div>
                 @endif
-            </flux:card>
+            </flux:callout>
         </div>
     </div>
 </x-layouts.app>
