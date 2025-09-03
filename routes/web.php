@@ -23,6 +23,11 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
+
+    // Analytics routes
+    Route::get('analytics', [\App\Http\Controllers\AnalyticsController::class, 'index'])->name('analytics.index');
+    Route::get('analytics/filter', [\App\Http\Controllers\AnalyticsController::class, 'filter'])->name('analytics.filter');
+    Route::get('analytics/{id}', [\App\Http\Controllers\AnalyticsController::class, 'show'])->name('analytics.show');
 });
 
 require __DIR__.'/auth.php';

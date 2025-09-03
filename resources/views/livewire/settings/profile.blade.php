@@ -9,14 +9,19 @@ use Livewire\Volt\Component;
 new class extends Component {
     public string $name = '';
     public string $email = '';
+    public string $sleeper_username = '';
+    public string $sleeper_user_id = '';
 
     /**
      * Mount the component.
      */
     public function mount(): void
     {
-        $this->name = Auth::user()->name;
-        $this->email = Auth::user()->email;
+        $user = Auth::user();
+        $this->name = $user->name;
+        $this->email = $user->email;
+        $this->sleeper_username = $user->sleeper_username ?? '';
+        $this->sleeper_user_id = $user->sleeper_user_id ?? '';
     }
 
     /**
@@ -96,6 +101,33 @@ new class extends Component {
                         @endif
                     </div>
                 @endif
+            </div>
+
+            <!-- Sleeper Account Information -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{{ __('Sleeper Account') }}</h3>
+
+                <div>
+                    <flux:input
+                        wire:model="sleeper_username"
+                        :label="__('Sleeper Username')"
+                        type="text"
+                        readonly
+                        disabled
+                        class="bg-zinc-50 dark:bg-zinc-800 cursor-not-allowed"
+                    />
+                </div>
+
+                <div>
+                    <flux:input
+                        wire:model="sleeper_user_id"
+                        :label="__('Sleeper User ID')"
+                        type="text"
+                        readonly
+                        disabled
+                        class="bg-zinc-50 dark:bg-zinc-800 cursor-not-allowed"
+                    />
+                </div>
             </div>
 
             <div class="flex items-center gap-4">

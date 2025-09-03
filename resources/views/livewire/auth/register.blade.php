@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\ValidateSleeperUsername;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
     public string $email = '';
     public string $password = '';
     public string $password_confirmation = '';
+    public string $sleeper_username = '';
 
     /**
      * Handle an incoming registration request.
@@ -22,8 +24,21 @@ new #[Layout('components.layouts.auth')] class extends Component {
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'sleeper_username' => ['required', 'string', 'max:255', 'unique:' . User::class . ',sleeper_username'],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);
+
+        // Validate Sleeper username exists
+        $sleeperValidator = new ValidateSleeperUsername();
+        $sleeperUserData = $sleeperValidator->execute($validated['sleeper_username']);
+
+        if (!$sleeperUserData) {
+            $this->addError('sleeper_username', 'This Sleeper username does not exist. Please check your username and try again.');
+            return;
+        }
+
+        // Add the validated Sleeper user ID to the validated data
+        $validated['sleeper_user_id'] = $sleeperUserData['user_id'];
 
         $validated['password'] = Hash::make($validated['password']);
 
@@ -61,6 +76,16 @@ new #[Layout('components.layouts.auth')] class extends Component {
             required
             autocomplete="email"
             placeholder="email@example.com"
+        />
+
+        <!-- Sleeper Username -->
+        <flux:input
+            wire:model="sleeper_username"
+            :label="__('Sleeper Username')"
+            type="text"
+            required
+            autocomplete="username"
+            placeholder="your-sleeper-username"
         />
 
         <!-- Password -->

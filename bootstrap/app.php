@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // API rate limiting for MCP Actions endpoints
         $middleware->alias([
             'api.throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1',
+            'api.analytics' => \App\Http\Middleware\ApiAnalyticsMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
