@@ -1,68 +1,55 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Jobs;
 
-use App\Jobs\ProcessPlayerStatsAndProjectionsChunk;
 use App\Models\Player;
 use App\Models\PlayerProjections;
 use App\Models\PlayerStats;
-use Illuminate\Console\Command;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
 use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 
-class FetchPlayerStatsAndProjections extends Command
+class ProcessPlayerStatsAndProjectionsChunk implements ShouldQueue
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'app:fetch-player-stats-and-projections {--season=} {--sport=nfl} {--season-type=regular} {--max-per-minute=250}';
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Fetch weekly player stats and projections for a season and store them in the database.';
-
-    /**
-     * Execute the console command.
-     */
-    public function handle(): void
-    {
-        $season = (string) ($this->option('season') ?: now()->year);
-        $sport = (string) $this->option('sport');
-        $seasonType = (string) $this->option('season-type');
-
-        $this->info("Fetching weekly stats & projections for season {$season} ({$seasonType})...");
-        $maxPerMinute = (int) $this->option('max-per-minute');
-
-        $playersQuery = Player::query()->where('sport', $sport);
-        $total = $playersQuery->count();
-        $this->info("Dispatching jobs for {$total} players...");
-
-        $playersQuery->orderBy('id')->chunk(250, function ($players) use ($season, $sport, $seasonType, $maxPerMinute) {
-            $ids = $players->pluck('player_id')->values()->all();
-            ProcessPlayerStatsAndProjectionsChunk::dispatch($ids, $season, $sport, $seasonType, $maxPerMinute);
-        });
-
-        $this->info('Jobs dispatched. The queue worker will process them.');
+    public function __construct(
+        public array $playerIds,
+        public string $season,
+        public string $sport = 'nfl',
+        public string $seasonType = 'regular',
+        public int $maxPerMinute = 250
+    ) {
+        $this->onQueue('default');
     }
 
-    // Processing moved to queued job
+    public function handle(): void
+    {
+        $chunkStartedAt = microtime(true);
+
+        foreach ($this->playerIds as $playerId) {
+            $player = Player::where('player_id', (string) $playerId)->first();
+            if (! $player) {
+                continue;
+            }
+
+            try {
+                $this->fetchAndStoreForPlayer($player, $this->season, $this->sport, $this->seasonType);
+            } catch (\Throwable $e) {
+                // Swallow per-player errors; job continues
+            }
+        }
+
+        $this->enforceRateLimitForChunk(count($this->playerIds), $chunkStartedAt, $this->maxPerMinute);
+    }
 
     protected function fetchAndStoreForPlayer(Player $player, string $season, string $sport, string $seasonType): void
     {
-        // Stats (weekly)
-        $statsResponse = Sleeper::players()->stats(
-            playerId: (string) $player->player_id,
-            season: $season,
-            sport: $sport,
-            seasonType: $seasonType,
-            grouping: 'week'
-        );
-
+        $statsResponse = Sleeper::players()->stats((string) $player->player_id, $season, $sport, $seasonType, 'week');
         $stats = $statsResponse->json();
         if (is_array($stats)) {
             foreach ($stats as $weekKey => $payload) {
@@ -71,21 +58,13 @@ class FetchPlayerStatsAndProjections extends Command
                 }
                 $week = $this->determineWeek($weekKey, $payload);
                 if ($week === null) {
-                    continue; // not a weekly payload, likely season summary/ranks
+                    continue;
                 }
                 $this->upsertStats($player, $week, $payload, $season, $sport, $seasonType);
             }
         }
 
-        // Projections (weekly)
-        $projectionsResponse = Sleeper::players()->projections(
-            playerId: (string) $player->player_id,
-            season: $season,
-            sport: $sport,
-            seasonType: $seasonType,
-            grouping: 'week'
-        );
-
+        $projectionsResponse = Sleeper::players()->projections((string) $player->player_id, $season, $sport, $seasonType, 'week');
         $projections = $projectionsResponse->json();
         if (is_array($projections)) {
             foreach ($projections as $weekKey => $payload) {
@@ -103,16 +82,14 @@ class FetchPlayerStatsAndProjections extends Command
 
     protected function upsertStats(Player $player, int $week, array $payload, string $season, string $sport, string $seasonType): void
     {
-        $attributes = [
+        PlayerStats::updateOrCreate([
             'player_id' => (string) $player->player_id,
             'season' => $season,
             'week' => $week,
             'season_type' => $seasonType,
             'sport' => $sport,
             'company' => $payload['company'] ?? ($payload['category'] ?? null),
-        ];
-
-        $values = [
+        ], [
             'date' => isset($payload['date']) ? Carbon::parse($payload['date'])->toDateString() : null,
             'team' => $payload['team'] ?? $player->team,
             'opponent' => $payload['opponent'] ?? null,
@@ -121,23 +98,19 @@ class FetchPlayerStatsAndProjections extends Command
             'raw' => $payload,
             'updated_at_ms' => $payload['updated_at'] ?? null,
             'last_modified_ms' => $payload['last_modified'] ?? null,
-        ];
-
-        PlayerStats::updateOrCreate($attributes, $values);
+        ]);
     }
 
     protected function upsertProjections(Player $player, int $week, array $payload, string $season, string $sport, string $seasonType): void
     {
-        $attributes = [
+        PlayerProjections::updateOrCreate([
             'player_id' => (string) $player->player_id,
             'season' => $season,
             'week' => $week,
             'season_type' => $seasonType,
             'sport' => $sport,
             'company' => $payload['company'] ?? ($payload['category'] ?? null),
-        ];
-
-        $values = [
+        ], [
             'date' => isset($payload['date']) ? Carbon::parse($payload['date'])->toDateString() : null,
             'team' => $payload['team'] ?? $player->team,
             'opponent' => $payload['opponent'] ?? null,
@@ -146,9 +119,7 @@ class FetchPlayerStatsAndProjections extends Command
             'raw' => $payload,
             'updated_at_ms' => $payload['updated_at'] ?? null,
             'last_modified_ms' => $payload['last_modified'] ?? null,
-        ];
-
-        PlayerProjections::updateOrCreate($attributes, $values);
+        ]);
     }
 
     protected function determineWeek(int|string $weekKey, array $payload): ?int
@@ -157,12 +128,25 @@ class FetchPlayerStatsAndProjections extends Command
         if (! is_numeric($candidate)) {
             return null;
         }
-
         $week = (int) $candidate;
-        if ($week < 1 || $week > 25) { // NFL weeks range guard
+        if ($week < 1 || $week > 25) {
             return null;
         }
-
         return $week;
+    }
+
+    protected function enforceRateLimitForChunk(int $processedInChunk, float $chunkStartedAt, int $maxPerMinute): void
+    {
+        if ($processedInChunk < $maxPerMinute) {
+            return;
+        }
+        $elapsed = microtime(true) - $chunkStartedAt;
+        $window = 60.0;
+        if ($elapsed < $window) {
+            $remaining = (int) floor(($window - $elapsed) * 1_000_000);
+            if ($remaining > 0) {
+                usleep($remaining);
+            }
+        }
     }
 }
