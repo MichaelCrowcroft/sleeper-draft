@@ -1,16 +1,18 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center space-x-4">
-            <flux:button variant="ghost" href="{{ route('analytics.index') }}">
-                ← Back to Analytics
-            </flux:button>
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ __('Analytics Details') }}
-            </h2>
-        </div>
-    </x-slot>
-
+<x-layouts.app title="Analytics Details">
     <div class="py-12">
+        <div class="mb-6">
+            <div class="flex items-center space-x-4 mb-4">
+                <flux:button variant="ghost" href="{{ route('analytics.index') }}">
+                    ← Back to Analytics
+                </flux:button>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                Analytics Details
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-2">
+                Detailed information about this API request.
+            </p>
+        </div>
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Request Information -->
@@ -238,4 +240,4 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+</x-layouts.app>
