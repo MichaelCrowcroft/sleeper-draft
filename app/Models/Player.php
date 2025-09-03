@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Player extends Model
 {
@@ -32,13 +33,57 @@ class Player extends Model
         'bye_week' => 'integer',
     ];
 
-    public function weeklyStats()
+    /**
+     * Get the player's stats for each week.
+     */
+    public function stats(): HasMany
     {
-        return $this->hasMany(PlayerStats::class, 'player_id', 'player_id');
+        return $this->hasMany(PlayerStats::class);
     }
 
-    public function weeklyProjections()
+    /**
+     * Get the player's projections for each week.
+     */
+    public function projections(): HasMany
     {
-        return $this->hasMany(PlayerProjections::class, 'player_id', 'player_id');
+        return $this->hasMany(PlayerProjections::class);
+    }
+
+    /**
+     * Get stats for a specific season.
+     */
+    public function getStatsForSeason(int $season): HasMany
+    {
+        return $this->stats()->where('season', $season)->orderBy('week');
+    }
+
+    /**
+     * Get projections for a specific season.
+     */
+    public function getProjectionsForSeason(int $season): HasMany
+    {
+        return $this->projections()->where('season', $season)->orderBy('week');
+    }
+
+    /**
+     * Get stats for a specific season and week.
+     */
+    public function getStatsForWeek(int $season, int $week)
+    {
+        return $this->stats()
+            ->where('season', $season)
+            ->where('week', $week)
+            ->first();
+    }
+
+    /**
+     * Get projections for a specific season and week.
+     */
+    public function getProjectionsForWeek(int $season, int $week)
+    {
+        return $this->projections()
+            ->where('season', $season)
+            ->where('week', $week)
+            ->first();
     }
 }

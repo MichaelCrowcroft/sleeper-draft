@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('player_projections', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('player_stats', function (Blueprint $table) {
+            //
         });
     }
 
@@ -22,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('player_projections');
+        Schema::table('player_stats', function (Blueprint $table) {
+            //
+        });
     }
 };
