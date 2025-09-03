@@ -31,4 +31,14 @@ class Player extends Model
         'adp_stdev' => 'float',
         'bye_week' => 'integer',
     ];
+
+    public function weeklyStats()
+    {
+        return $this->hasMany(PlayerStats::class, 'player_id', 'player_id');
+    }
+
+    public function weeklyProjections()
+    {
+        return $this->hasMany(PlayerProjections::class, 'player_id', 'player_id');
+    }
 }
