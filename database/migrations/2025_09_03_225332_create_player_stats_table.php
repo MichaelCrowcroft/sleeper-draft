@@ -12,8 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('player_stats', function (Blueprint $table) {
-            $table->string('player_id')->nullable();
-            $table->date('game_date')->nullable();
+            $table->string('player_id');
+            $table->date('game_date');
+            $table->integer('season');
+            $table->integer('week');
+            $table->string('season_type');
 
             // Additional game participation stats
             $table->integer('st_snp')->nullable();
