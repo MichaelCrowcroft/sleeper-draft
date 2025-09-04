@@ -2,7 +2,6 @@
 
 namespace App\MCP\Tools;
 
-use Illuminate\Support\Facades\Validator;
 use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
@@ -54,74 +53,56 @@ class FetchLeagueTool implements ToolInterface
 
     public function annotations(): array
     {
-        return [
-            'title' => 'Get League Information',
-            'readOnlyHint' => true,
-            'destructiveHint' => false,
-            'idempotentHint' => true,
-            'openWorldHint' => true, // Makes API calls to Sleeper
-
-            // Custom annotations
-            'category' => 'fantasy-sports',
-            'data_source' => 'external_api',
-            'cache_recommended' => true,
-        ];
+        return [];
     }
 
     public function execute(array $arguments): mixed
     {
-        // Validate input arguments
-        $validator = Validator::make($arguments, [
-            'user_id' => ['required', 'string'],
-            'league_identifier' => ['required', 'string'],
-            'sport' => ['nullable', 'string'],
-            'season' => ['nullable', 'string'],
-        ]);
-
         $userId = $arguments['user_id'];
         $leagueIdentifier = $arguments['league_identifier'];
         $sport = $arguments['sport'] ?? 'nfl';
-        $season = $arguments['season'] ?? null;
+        $season = $arguments['season'] ?? $this->getCurrentSeason($sport);
 
-        // Step 1: Get the current season if not provided
-        if (! $season) {
-            $season = $this->getCurrentSeason($sport);
-        }
+        // Get user's leagues and find the target league
+        $leagues = $this->apiCall(fn () => Sleeper::users()->leagues($userId, $sport, $season), 'fetch user leagues');
+        $targetLeague = collect($leagues)->first(fn ($league) => $league['league_id'] === $leagueIdentifier ||
+            strcasecmp($league['name'] ?? '', $leagueIdentifier) === 0
+        );
 
-        // Step 2: Fetch all user's leagues for the season
-        $userLeagues = $this->fetchUserLeagues($userId, $sport, $season);
-
-        // Step 3: Find the specific league by name or ID
-        $targetLeague = $this->findLeague($userLeagues, $leagueIdentifier);
         if (! $targetLeague) {
             throw new JsonRpcErrorException(
-                message: "League with identifier '{$leagueIdentifier}' not found in user's leagues",
+                message: "League '{$leagueIdentifier}' not found",
                 code: JsonRpcErrorCode::INVALID_REQUEST
             );
         }
 
-        // Step 4: Fetch full league details
         $leagueId = $targetLeague['league_id'];
-        $leagueDetails = $this->fetchLeagueDetails($leagueId);
 
-        // Step 5: Fetch league users with enhanced information
-        $leagueUsers = $this->fetchLeagueUsersWithDetails($leagueId);
+        // Get league details and users with rosters
+        $league = $this->apiCall(fn () => Sleeper::leagues()->get($leagueId), 'fetch league details');
+        $users = $this->apiCall(fn () => Sleeper::leagues()->users($leagueId), 'fetch league users');
+        $rosters = $this->apiCall(fn () => Sleeper::leagues()->rosters($leagueId), 'fetch league rosters');
+
+        // Map rosters to users
+        $rostersByUserId = collect($rosters)->keyBy('owner_id');
+        $enhancedUsers = collect($users)->map(function ($user) use ($rostersByUserId) {
+            $userId = $user['user_id'];
+            $roster = $rostersByUserId->get($userId);
+
+            return [
+                'user_id' => $userId,
+                'username' => $user['username'] ?? null,
+                'display_name' => $user['display_name'] ?? null,
+                'team_name' => $user['metadata']['team_name'] ?? $user['display_name'] ?? $user['username'] ?? "Team {$userId}",
+                'wins' => $roster['settings']['wins'] ?? 0,
+                'losses' => $roster['settings']['losses'] ?? 0,
+                'fpts' => $roster['settings']['fpts'] ?? 0,
+            ];
+        });
 
         return [
-            'success' => true,
-            'data' => [
-                'league' => $leagueDetails,
-                'users' => $leagueUsers,
-            ],
-            'metadata' => [
-                'user_id' => $userId,
-                'league_id' => $leagueId,
-                'league_name' => $leagueDetails['name'] ?? 'Unknown',
-                'sport' => $sport,
-                'season' => $season,
-                'total_users' => count($leagueUsers),
-                'executed_at' => now()->toISOString(),
-            ],
+            'league' => $league,
+            'users' => $enhancedUsers,
         ];
     }
 
@@ -129,166 +110,25 @@ class FetchLeagueTool implements ToolInterface
     {
         try {
             $response = Sleeper::state()->current($sport);
-
-            if (! $response->successful()) {
-                throw new \RuntimeException('Failed to fetch current season from Sleeper API');
-            }
-
-            $state = $response->json();
+            $state = $response->successful() ? $response->json() : [];
 
             return (string) ($state['league_season'] ?? $state['season'] ?? date('Y'));
-        } catch (\Exception $e) {
-            // Fallback to current year
-            logger('GetLeagueTool: Failed to fetch current season, using current year', [
-                'sport' => $sport,
-                'error' => $e->getMessage(),
-            ]);
-
+        } catch (\Exception) {
             return date('Y');
         }
     }
 
-    private function fetchUserLeagues(string $userId, string $sport, string $season): array
+    private function apiCall(callable $request, string $action): array
     {
-        $response = Sleeper::users()->leagues($userId, $sport, $season);
+        $response = $request();
 
         if (! $response->successful()) {
             throw new JsonRpcErrorException(
-                message: 'Failed to fetch user leagues from Sleeper API',
+                message: "Failed to {$action}",
                 code: JsonRpcErrorCode::INTERNAL_ERROR
             );
         }
 
-        $leagues = $response->json();
-
-        if (! is_array($leagues)) {
-            throw new JsonRpcErrorException(
-                message: 'Invalid leagues data received from API',
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
-        }
-
-        return $leagues;
-    }
-
-    private function findLeague(array $leagues, string $identifier): ?array
-    {
-        foreach ($leagues as $league) {
-            // Check by league ID
-            if (isset($league['league_id']) && $league['league_id'] === $identifier) {
-                return $league;
-            }
-
-            // Check by league name (case-insensitive)
-            if (isset($league['name']) && strcasecmp($league['name'], $identifier) === 0) {
-                return $league;
-            }
-        }
-
-        return null;
-    }
-
-    private function fetchLeagueDetails(string $leagueId): array
-    {
-        $response = Sleeper::leagues()->get($leagueId);
-
-        if (! $response->successful()) {
-            throw new JsonRpcErrorException(
-                message: 'Failed to fetch league details from Sleeper API',
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
-        }
-
-        $league = $response->json();
-
-        if (! is_array($league)) {
-            throw new JsonRpcErrorException(
-                message: 'Invalid league data received from API',
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
-        }
-
-        return $league;
-    }
-
-    private function fetchLeagueUsersWithDetails(string $leagueId): array
-    {
-        // Fetch users
-        $usersResponse = Sleeper::leagues()->users($leagueId);
-        if (! $usersResponse->successful()) {
-            throw new JsonRpcErrorException(
-                message: 'Failed to fetch league users from Sleeper API',
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
-        }
-
-        $users = $usersResponse->json();
-        if (! is_array($users)) {
-            throw new JsonRpcErrorException(
-                message: 'Invalid users data received from API',
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
-        }
-
-        // Fetch rosters to get team ownership information
-        $rostersResponse = Sleeper::leagues()->rosters($leagueId);
-        if (! $rostersResponse->successful()) {
-            throw new JsonRpcErrorException(
-                message: 'Failed to fetch league rosters from Sleeper API',
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
-        }
-
-        $rosters = $rostersResponse->json();
-        if (! is_array($rosters)) {
-            throw new JsonRpcErrorException(
-                message: 'Invalid rosters data received from API',
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
-        }
-
-        // Create mapping of user_id to roster information
-        $rostersByUserId = [];
-        foreach ($rosters as $roster) {
-            $ownerId = $roster['owner_id'] ?? null;
-            if ($ownerId) {
-                $rostersByUserId[$ownerId] = $roster;
-            }
-        }
-
-        // Enhance users with roster and team information
-        $enhancedUsers = [];
-        foreach ($users as $user) {
-            $userId = $user['user_id'] ?? null;
-            $roster = $rostersByUserId[$userId] ?? null;
-
-            $enhancedUser = [
-                'user_id' => $userId,
-                'username' => $user['username'] ?? null,
-                'display_name' => $user['display_name'] ?? null,
-                'avatar' => $user['avatar'] ?? null,
-                'metadata' => $user['metadata'] ?? [],
-                'team_name' => $user['metadata']['team_name'] ?? $user['display_name'] ?? $user['username'] ?? 'Team '.$userId,
-                'roster' => null,
-            ];
-
-            // Add roster information if available
-            if ($roster) {
-                $enhancedUser['roster'] = [
-                    'roster_id' => $roster['roster_id'] ?? null,
-                    'owner_id' => $roster['owner_id'] ?? null,
-                    'settings' => $roster['settings'] ?? [],
-                    'wins' => $roster['settings']['wins'] ?? 0,
-                    'losses' => $roster['settings']['losses'] ?? 0,
-                    'ties' => $roster['settings']['ties'] ?? 0,
-                    'fpts' => $roster['settings']['fpts'] ?? 0.0,
-                    'fpts_against' => $roster['settings']['fpts_against'] ?? 0.0,
-                ];
-            }
-
-            $enhancedUsers[] = $enhancedUser;
-        }
-
-        return $enhancedUsers;
+        return $response->json();
     }
 }

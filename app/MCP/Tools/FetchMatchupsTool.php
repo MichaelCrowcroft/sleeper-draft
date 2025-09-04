@@ -3,7 +3,6 @@
 namespace App\MCP\Tools;
 
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Validator;
 use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
@@ -23,7 +22,7 @@ class FetchMatchupsTool implements ToolInterface
 
     public function description(): string
     {
-        return 'Fetch basic matchup information for a league for a given week (defaults to current week), showing the two users in each matchup and league details. Use the roster tool for detailed team information.';
+        return 'Get matchups for a league and week, returning raw matchup data supplemented with basic user info.';
     }
 
     public function inputSchema(): array
@@ -70,53 +69,32 @@ class FetchMatchupsTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
-        // Validate input arguments
-        $validator = Validator::make($arguments, [
-            'league_id' => ['required', 'string'],
-            'week' => ['nullable', 'integer', 'min:1', 'max:18'],
-            'sport' => ['nullable', 'string'],
-        ]);
+        $leagueId = $arguments['league_id'] ?? null;
+        $week = $arguments['week'] ?? null;
+        $sport = $arguments['sport'] ?? 'nfl';
 
-        if ($validator->fails()) {
+        if (! is_string($leagueId) || $leagueId === '') {
             throw new JsonRpcErrorException(
-                message: 'Validation failed: '.$validator->errors()->first(),
+                message: 'league_id is required',
                 code: JsonRpcErrorCode::INVALID_REQUEST
             );
         }
 
-        $leagueId = $arguments['league_id'];
-        $week = $arguments['week'] ?? null;
-        $sport = $arguments['sport'] ?? 'nfl';
-
-        // Get current week if not provided
         if ($week === null) {
             $week = $this->getCurrentWeek($sport);
         }
 
         // Fetch matchups from Sleeper API
-        $matchups = $this->fetchMatchups($leagueId, $week);
+        $matchups = $this->fetchMatchups($leagueId, (int) $week);
 
-        // Get basic matchup information with user details
-        $basicMatchups = $this->getBasicMatchupInfo($matchups, $leagueId);
+        // Supplement with user info (via league users and rosters)
+        $supplemented = $this->supplementWithUsers($leagueId, $matchups);
 
-        $response = [
-            'success' => true,
-            'data' => [
-                'matchups' => $basicMatchups,
-                'week' => $week,
-                'league_id' => $leagueId,
-            ],
-            'count' => count($basicMatchups),
-            'metadata' => [
-                'league_id' => $leagueId,
-                'week' => $week,
-                'sport' => $sport,
-                'total_matchups_in_week' => count($matchups),
-                'executed_at' => now()->toISOString(),
-            ],
+        return [
+            'league_id' => $leagueId,
+            'week' => (int) $week,
+            'matchups' => $supplemented,
         ];
-
-        return json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 
     private function getCurrentWeek(string $sport): int
@@ -166,87 +144,67 @@ class FetchMatchupsTool implements ToolInterface
         return $matchups;
     }
 
-
-    private function getBasicMatchupInfo(array $matchups, string $leagueId): array
+    private function supplementWithUsers(string $leagueId, array $matchups): array
     {
-        if (empty($matchups)) {
+        if ($matchups === []) {
             return [];
         }
 
-        try {
-            // Fetch users for the league to get user details
-            $usersResponse = Sleeper::leagues()->users($leagueId);
-            $users = $usersResponse->successful() ? $usersResponse->json() : [];
+        // Fetch league users and rosters once
+        $usersResponse = Sleeper::leagues()->users($leagueId);
+        $users = $usersResponse->successful() ? (array) $usersResponse->json() : [];
 
-            // Create user lookup map
-            $userMap = [];
-            if (is_array($users)) {
-                foreach ($users as $user) {
-                    $userMap[$user['user_id'] ?? null] = $user;
-                }
+        $rostersResponse = Sleeper::leagues()->rosters($leagueId);
+        $rosters = $rostersResponse->successful() ? (array) $rostersResponse->json() : [];
+
+        // Build maps
+        $ownerIdByRosterId = [];
+        foreach ($rosters as $roster) {
+            $rid = $roster['roster_id'] ?? null;
+            if ($rid !== null) {
+                $ownerIdByRosterId[$rid] = $roster['owner_id'] ?? null;
             }
-
-            // Simplify matchups to basic info only
-            $basicMatchups = [];
-            foreach ($matchups as $matchup) {
-                $rosterId = $matchup['roster_id'] ?? null;
-
-                // Get user details for this roster (we'll need to fetch rosters to map roster_id to user_id)
-                $user = null;
-                if ($rosterId) {
-                    try {
-                        $rostersResponse = Sleeper::leagues()->rosters($leagueId);
-                        if ($rostersResponse->successful()) {
-                            $rosters = $rostersResponse->json();
-                            foreach ($rosters as $roster) {
-                                if (($roster['roster_id'] ?? null) == $rosterId) {
-                                    $ownerId = $roster['owner_id'] ?? null;
-                                    $user = $userMap[$ownerId] ?? null;
-                                    break;
-                                }
-                            }
-                        }
-                    } catch (\Exception $e) {
-                        logger('FetchMatchupsTool: Failed to fetch roster details', [
-                            'roster_id' => $rosterId,
-                            'league_id' => $leagueId,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                }
-
-                // Create simplified matchup entry
-                $basicMatchup = [
-                    'matchup_id' => $matchup['matchup_id'] ?? null,
-                    'roster_id' => $rosterId,
-                    'points' => $matchup['points'] ?? null,
-                    'user' => $user ? [
-                        'user_id' => $user['user_id'] ?? null,
-                        'username' => $user['username'] ?? null,
-                        'display_name' => $user['display_name'] ?? null,
-                        'team_name' => $user['metadata']['team_name'] ?? $user['display_name'] ?? $user['username'] ?? 'Team '.($user['user_id'] ?? 'Unknown'),
-                    ] : null,
-                ];
-
-                $basicMatchups[] = $basicMatchup;
-            }
-
-            return $basicMatchups;
-        } catch (\Exception $e) {
-            logger('FetchMatchupsTool: Failed to get basic matchup info', [
-                'league_id' => $leagueId,
-                'error' => $e->getMessage(),
-            ]);
-
-            // Return basic structure even on error
-            return array_map(function ($matchup) {
-                return [
-                    'matchup_id' => $matchup['matchup_id'] ?? null,
-                    'roster_id' => $matchup['roster_id'] ?? null,
-                    'points' => $matchup['points'] ?? null,
-                    'user' => null,
-                ];
-            }, $matchups);
         }
+
+        $userById = [];
+        foreach ($users as $user) {
+            $uid = $user['user_id'] ?? null;
+            if ($uid !== null) {
+                $userById[$uid] = $user;
+            }
+        }
+
+        // Supplement matchups
+        $result = [];
+        foreach ($matchups as $matchup) {
+            $starters = (array) ($matchup['starters'] ?? []);
+            $players = (array) ($matchup['players'] ?? []);
+            $bench = array_values(array_diff($players, $starters));
+
+            $rosterId = $matchup['roster_id'] ?? null;
+            $ownerId = $rosterId !== null ? ($ownerIdByRosterId[$rosterId] ?? null) : null;
+            $user = $ownerId !== null ? ($userById[$ownerId] ?? null) : null;
+
+            $result[] = [
+                'matchup_id' => $matchup['matchup_id'] ?? null,
+                'roster_id' => $rosterId,
+                'points' => $matchup['points'] ?? null,
+                'custom_points' => $matchup['custom_points'] ?? null,
+                'starters' => $starters,
+                'players' => $players,
+                'bench' => $bench,
+                'user' => $user ? [
+                    'user_id' => $user['user_id'] ?? null,
+                    'username' => $user['username'] ?? null,
+                    'display_name' => $user['display_name'] ?? null,
+                    'team_name' => $user['metadata']['team_name'] ?? $user['display_name'] ?? $user['username'] ?? (
+                        $user['user_id'] ?? 'Unknown'
+                    ),
+                    'avatar' => $user['avatar'] ?? null,
+                ] : null,
+            ];
+        }
+
+        return $result;
     }
 }
