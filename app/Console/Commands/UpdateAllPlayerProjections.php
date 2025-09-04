@@ -14,7 +14,7 @@ class UpdateAllPlayerProjections extends Command
      * @var string
      */
     protected $signature = 'sleeper:players:projections:update-all
-                           {--season=2024 : The season year (default: current year 2024)}
+                           {--season=2025 : The season year (default: current year 2024)}
                            {--season-type=regular : Season type (regular, postseason)}
                            {--rate-limit=250 : Maximum jobs per minute (default: 250)}
                            ';

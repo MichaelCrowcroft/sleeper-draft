@@ -21,7 +21,7 @@ class UpdatePlayerProjectionsJob implements ShouldQueue
 
     public function __construct(
         public string $playerId,
-        public string $season = '2024',
+        public string $season = '2025',
         public string $seasonType = 'regular',
         public ?int $delaySeconds = null
     ) {}

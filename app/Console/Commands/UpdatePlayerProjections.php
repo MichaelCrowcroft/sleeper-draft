@@ -15,7 +15,7 @@ class UpdatePlayerProjections extends Command
      */
     protected $signature = 'sleeper:player:projections
                            {player-id : The Sleeper player ID (e.g., 6794)}
-                           {--season=2024 : The season year (default: current year 2024)}
+                           {--season=2025 : The season year (default: current year 2024)}
                            {--season-type=regular : Season type (regular, postseason)}
                            ';
 
