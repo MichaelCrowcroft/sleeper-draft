@@ -17,8 +17,33 @@ return new class extends Migration
             $table->integer('season');
             $table->integer('week');
             $table->string('season_type');
+            $table->string('sport')->nullable();
+            $table->string('company')->nullable();
+            $table->datetime('date')->nullable();
+            $table->string('team')->nullable();
+            $table->string('opponent')->nullable();
+            $table->string('game_id')->nullable();
+            $table->bigInteger('updated_at_ms')->nullable();
+            $table->bigInteger('last_modified_ms')->nullable();
 
-            // Additional game participation stats
+            // Fantasy points
+            $table->decimal('pts_half_ppr')->nullable();
+            $table->decimal('pts_ppr')->nullable();
+            $table->decimal('pts_std')->nullable();
+
+            // Position rankings
+            $table->integer('pos_rank_half_ppr')->nullable();
+            $table->integer('pos_rank_ppr')->nullable();
+            $table->integer('pos_rank_std')->nullable();
+
+            // Game participation
+            $table->integer('gp')->nullable();
+            $table->integer('gs')->nullable();
+            $table->integer('gms_active')->nullable();
+            $table->integer('off_snp')->nullable();
+            $table->integer('tm_off_snp')->nullable();
+            $table->integer('tm_def_snp')->nullable();
+            $table->integer('tm_st_snp')->nullable();
             $table->integer('st_snp')->nullable();
 
             // Passing stats
