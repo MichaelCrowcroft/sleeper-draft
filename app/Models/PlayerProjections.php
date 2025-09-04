@@ -11,6 +11,10 @@ class PlayerProjections extends Model
 
     protected $guarded = [];
 
+    protected $primaryKey = null;
+
+    public $incrementing = false;
+
     protected $casts = [
         'season' => 'integer',
         'week' => 'integer',
@@ -81,5 +85,28 @@ class PlayerProjections extends Model
             ->where('season', $season)
             ->where('source', $source)
             ->orderBy('week');
+    }
+
+    /**
+     * Custom updateOrCreate for composite primary key.
+     */
+    public static function updateOrCreate(array $attributes, array $values = [])
+    {
+        $instance = static::where($attributes)->first();
+
+        if ($instance) {
+            $instance->update($values);
+            return $instance;
+        }
+
+        return static::create(array_merge($attributes, $values));
+    }
+
+    /**
+     * Get the primary key for the model (composite key columns).
+     */
+    public function getKeyName()
+    {
+        return ['player_id', 'season', 'week', 'season_type'];
     }
 }
