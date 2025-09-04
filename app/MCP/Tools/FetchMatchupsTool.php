@@ -22,7 +22,7 @@ class FetchMatchupsTool implements ToolInterface
 
     public function description(): string
     {
-        return 'Get matchups for a league and week, returning raw matchup data supplemented with basic user info.';
+        return 'Fetch matchups for a league and week, returning raw matchup data supplemented with basic user info. Entries that share the same `matchup_id` are opponents in the same head-to-head matchup.';
     }
 
     public function inputSchema(): array
@@ -64,6 +64,7 @@ class FetchMatchupsTool implements ToolInterface
             'category' => 'fantasy-sports',
             'data_source' => 'external_api',
             'cache_recommended' => true,
+            'notes' => 'Two records with the same `matchup_id` represent opposing teams in the same matchup.',
         ];
     }
 

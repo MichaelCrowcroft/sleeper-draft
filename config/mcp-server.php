@@ -255,7 +255,6 @@ return [
         \App\MCP\Tools\FetchLeagueTool::class,
         \App\MCP\Tools\FetchRosterTool::class,
         \App\MCP\Tools\FetchMatchupsTool::class,
-        \App\MCP\Tools\FetchUserMatchupTool::class,
         \App\MCP\Tools\FetchTradesTool::class,
 
         // ===== REGISTER YOUR CUSTOM TOOLS BELOW =====
