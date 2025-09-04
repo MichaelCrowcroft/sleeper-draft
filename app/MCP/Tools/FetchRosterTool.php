@@ -73,6 +73,7 @@ class FetchRosterTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
+        $arguments = $this->normalizeArguments($arguments);
         // Validate input arguments
         $validator = Validator::make($arguments, [
             'league_id' => ['required', 'string'],
@@ -122,6 +123,86 @@ class FetchRosterTool implements ToolInterface
         ];
 
         return json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * Normalize loosely formatted argument payloads into a structured array.
+     */
+    private function normalizeArguments(array $arguments): array
+    {
+        // Handle cases where a single raw string is provided (e.g., "Arguments league_id\"123\" include_player_detailstrue …")
+        if (count($arguments) === 1 && array_key_exists(0, $arguments) && is_string($arguments[0])) {
+            $raw = trim((string) $arguments[0]);
+
+            // Strip optional leading label
+            $raw = preg_replace('/^\s*Arguments\s*/i', '', $raw ?? '');
+
+            // Try JSON first
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $arguments = $decoded;
+            } else {
+                // Fallback regex-based key/value extraction
+                $pairs = [];
+                $pattern = '/([A-Za-z0-9_]+)\s*(?::|=)?\s*(?:\"([^\"]*)\"|\'([^\']*)\'|([0-9]+)|(true|false|null))/i';
+                if (preg_match_all($pattern, $raw, $matches, PREG_SET_ORDER)) {
+                    foreach ($matches as $match) {
+                        $key = $match[1];
+                        $value = null;
+                        if (isset($match[2]) && $match[2] !== '') {
+                            $value = $match[2];
+                        } elseif (isset($match[3]) && $match[3] !== '') {
+                            $value = $match[3];
+                        } elseif (isset($match[4]) && $match[4] !== '') {
+                            $value = (int) $match[4];
+                        } elseif (isset($match[5]) && $match[5] !== '') {
+                            $lower = strtolower($match[5]);
+                            $value = $lower === 'true' ? true : ($lower === 'false' ? false : null);
+                        }
+                        $pairs[$key] = $value;
+                    }
+                }
+
+                if ($pairs !== []) {
+                    $arguments = $pairs;
+                }
+            }
+        }
+
+        // Map camelCase aliases to expected snake_case keys
+        $aliases = [
+            'leagueId' => 'league_id',
+            'userId' => 'user_id',
+            'includePlayerDetails' => 'include_player_details',
+            'includeOwnerDetails' => 'include_owner_details',
+        ];
+
+        $normalized = [];
+        foreach ($arguments as $key => $value) {
+            $normalized[$aliases[$key] ?? $key] = $value;
+        }
+
+        // Coerce booleans if provided as strings
+        foreach (['include_player_details', 'include_owner_details'] as $boolKey) {
+            if (isset($normalized[$boolKey]) && is_string($normalized[$boolKey])) {
+                $val = strtolower($normalized[$boolKey]);
+                if ($val === 'true') {
+                    $normalized[$boolKey] = true;
+                } elseif ($val === 'false') {
+                    $normalized[$boolKey] = false;
+                }
+            }
+        }
+
+        // Coerce identifiers to strings
+        if (isset($normalized['league_id'])) {
+            $normalized['league_id'] = (string) $normalized['league_id'];
+        }
+        if (isset($normalized['user_id'])) {
+            $normalized['user_id'] = (string) $normalized['user_id'];
+        }
+
+        return $normalized;
     }
 
     private function getRoster(string $leagueId, string $userId): ?array

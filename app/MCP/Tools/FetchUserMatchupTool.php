@@ -8,7 +8,7 @@ use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
-class FetchMatchupsTool implements ToolInterface
+class FetchUserMatchupTool implements ToolInterface
 {
     public function isStreaming(): bool
     {
@@ -17,12 +17,12 @@ class FetchMatchupsTool implements ToolInterface
 
     public function name(): string
     {
-        return 'fetch-matchups';
+        return 'fetch-user-matchup';
     }
 
     public function description(): string
     {
-        return 'Get matchups for a league and week, returning raw matchup data supplemented with basic user info.';
+        return 'Get a user\'s specific matchup for a league and week, returning that user and their opponent with basic user info.';
     }
 
     public function inputSchema(): array
@@ -32,14 +32,18 @@ class FetchMatchupsTool implements ToolInterface
             'properties' => [
                 'league_id' => [
                     'type' => 'string',
-                    'description' => 'Sleeper league ID to fetch matchups for',
+                    'description' => 'Sleeper league ID',
+                ],
+                'user_id' => [
+                    'type' => 'string',
+                    'description' => 'Sleeper user ID to find the matchup for',
                 ],
                 'week' => [
                     'anyOf' => [
                         ['type' => 'integer', 'minimum' => 1, 'maximum' => 18],
                         ['type' => 'null'],
                     ],
-                    'description' => 'Week number to fetch matchups for (defaults to current week)',
+                    'description' => 'Week number (defaults to current week for the sport)',
                 ],
                 'sport' => [
                     'type' => 'string',
@@ -47,30 +51,20 @@ class FetchMatchupsTool implements ToolInterface
                     'default' => 'nfl',
                 ],
             ],
-            'required' => ['league_id'],
+            'required' => ['league_id', 'user_id'],
         ];
     }
 
     public function annotations(): array
     {
-        return [
-            'title' => 'Fetch League Matchups',
-            'readOnlyHint' => true,
-            'destructiveHint' => false,
-            'idempotentHint' => true,
-            'openWorldHint' => true, // Makes API calls to Sleeper
-
-            // Custom annotations
-            'category' => 'fantasy-sports',
-            'data_source' => 'external_api',
-            'cache_recommended' => true,
-        ];
+        return [];
     }
 
     public function execute(array $arguments): mixed
     {
         $arguments = $this->normalizeArguments($arguments);
         $leagueId = $arguments['league_id'] ?? null;
+        $userId = $arguments['user_id'] ?? null;
         $week = $arguments['week'] ?? null;
         $sport = $arguments['sport'] ?? 'nfl';
 
@@ -81,20 +75,71 @@ class FetchMatchupsTool implements ToolInterface
             );
         }
 
+        if (! is_string($userId) || $userId === '') {
+            throw new JsonRpcErrorException(
+                message: 'user_id is required',
+                code: JsonRpcErrorCode::INVALID_REQUEST
+            );
+        }
+
         if ($week === null) {
             $week = $this->getCurrentWeek($sport);
         }
 
-        // Fetch matchups from Sleeper API
         $matchups = $this->fetchMatchups($leagueId, (int) $week);
 
-        // Supplement with user info (via league users and rosters)
-        $supplemented = $this->supplementWithUsers($leagueId, $matchups);
+        // Build maps for users/rosters
+        [$userById, $ownerIdByRosterId] = $this->buildLeagueMaps($leagueId);
+
+        // Find roster for provided user
+        $rosterId = array_search($userId, $ownerIdByRosterId, true);
+        if ($rosterId === false) {
+            throw new JsonRpcErrorException(
+                message: 'User not found in this league',
+                code: JsonRpcErrorCode::INVALID_REQUEST
+            );
+        }
+
+        // Find this user\'s matchup
+        $userMatchup = null;
+        foreach ($matchups as $m) {
+            if (($m['roster_id'] ?? null) === $rosterId) {
+                $userMatchup = $m;
+                break;
+            }
+        }
+
+        if (! $userMatchup || ! isset($userMatchup['matchup_id'])) {
+            throw new JsonRpcErrorException(
+                message: 'Matchup not found for user in this week',
+                code: JsonRpcErrorCode::INVALID_REQUEST
+            );
+        }
+
+        $matchupId = $userMatchup['matchup_id'];
+
+        // Find opponent (same matchup_id, different roster)
+        $opponentMatchup = null;
+        foreach ($matchups as $m) {
+            if (($m['matchup_id'] ?? null) === $matchupId && ($m['roster_id'] ?? null) !== $rosterId) {
+                $opponentMatchup = $m;
+                break;
+            }
+        }
+
+        $teams = [
+            $this->enrich($userMatchup, $ownerIdByRosterId, $userById),
+        ];
+
+        if ($opponentMatchup) {
+            $teams[] = $this->enrich($opponentMatchup, $ownerIdByRosterId, $userById);
+        }
 
         return [
             'league_id' => $leagueId,
             'week' => (int) $week,
-            'matchups' => $supplemented,
+            'matchup_id' => $matchupId,
+            'teams' => $teams,
         ];
     }
 
@@ -134,6 +179,7 @@ class FetchMatchupsTool implements ToolInterface
 
         $aliases = [
             'leagueId' => 'league_id',
+            'userId' => 'user_id',
             'weekNumber' => 'week',
             'sportType' => 'sport',
         ];
@@ -148,6 +194,9 @@ class FetchMatchupsTool implements ToolInterface
         if (isset($normalized['league_id'])) {
             $normalized['league_id'] = (string) $normalized['league_id'];
         }
+        if (isset($normalized['user_id'])) {
+            $normalized['user_id'] = (string) $normalized['user_id'];
+        }
         if (isset($normalized['sport'])) {
             $normalized['sport'] = (string) $normalized['sport'];
         }
@@ -159,22 +208,13 @@ class FetchMatchupsTool implements ToolInterface
     {
         try {
             $response = Sleeper::state()->current($sport);
-
             if (! $response->successful()) {
-                throw new \RuntimeException('Failed to fetch current state from Sleeper API');
+                return 1;
             }
-
             $state = $response->json();
 
-            // Get the current week from the state
             return (int) ($state['week'] ?? 1);
-        } catch (\Exception $e) {
-            // Fallback to week 1 if we can't get the current week
-            logger('FetchMatchupsTool: Failed to fetch current week, defaulting to 1', [
-                'sport' => $sport,
-                'error' => $e->getMessage(),
-            ]);
-
+        } catch (\Exception) {
             return 1;
         }
     }
@@ -182,7 +222,6 @@ class FetchMatchupsTool implements ToolInterface
     private function fetchMatchups(string $leagueId, int $week): array
     {
         $response = Http::get("https://api.sleeper.app/v1/league/{$leagueId}/matchups/{$week}");
-
         if (! $response->successful()) {
             throw new JsonRpcErrorException(
                 message: 'Failed to fetch matchups from Sleeper API',
@@ -192,37 +231,16 @@ class FetchMatchupsTool implements ToolInterface
 
         $matchups = $response->json();
 
-        if (! is_array($matchups)) {
-            throw new JsonRpcErrorException(
-                message: 'Invalid matchups data received from API',
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
-        }
-
-        return $matchups;
+        return is_array($matchups) ? $matchups : [];
     }
 
-    private function supplementWithUsers(string $leagueId, array $matchups): array
+    private function buildLeagueMaps(string $leagueId): array
     {
-        if ($matchups === []) {
-            return [];
-        }
-
-        // Fetch league users and rosters once
         $usersResponse = Sleeper::leagues()->users($leagueId);
         $users = $usersResponse->successful() ? (array) $usersResponse->json() : [];
 
         $rostersResponse = Sleeper::leagues()->rosters($leagueId);
         $rosters = $rostersResponse->successful() ? (array) $rostersResponse->json() : [];
-
-        // Build maps
-        $ownerIdByRosterId = [];
-        foreach ($rosters as $roster) {
-            $rid = $roster['roster_id'] ?? null;
-            if ($rid !== null) {
-                $ownerIdByRosterId[$rid] = $roster['owner_id'] ?? null;
-            }
-        }
 
         $userById = [];
         foreach ($users as $user) {
@@ -232,37 +250,44 @@ class FetchMatchupsTool implements ToolInterface
             }
         }
 
-        // Supplement matchups
-        $result = [];
-        foreach ($matchups as $matchup) {
-            $starters = (array) ($matchup['starters'] ?? []);
-            $players = (array) ($matchup['players'] ?? []);
-            $bench = array_values(array_diff($players, $starters));
-
-            $rosterId = $matchup['roster_id'] ?? null;
-            $ownerId = $rosterId !== null ? ($ownerIdByRosterId[$rosterId] ?? null) : null;
-            $user = $ownerId !== null ? ($userById[$ownerId] ?? null) : null;
-
-            $result[] = [
-                'matchup_id' => $matchup['matchup_id'] ?? null,
-                'roster_id' => $rosterId,
-                'points' => $matchup['points'] ?? null,
-                'custom_points' => $matchup['custom_points'] ?? null,
-                'starters' => $starters,
-                'players' => $players,
-                'bench' => $bench,
-                'user' => $user ? [
-                    'user_id' => $user['user_id'] ?? null,
-                    'username' => $user['username'] ?? null,
-                    'display_name' => $user['display_name'] ?? null,
-                    'team_name' => $user['metadata']['team_name'] ?? $user['display_name'] ?? $user['username'] ?? (
-                        $user['user_id'] ?? 'Unknown'
-                    ),
-                    'avatar' => $user['avatar'] ?? null,
-                ] : null,
-            ];
+        $ownerIdByRosterId = [];
+        foreach ($rosters as $roster) {
+            $rid = $roster['roster_id'] ?? null;
+            if ($rid !== null) {
+                $ownerIdByRosterId[$rid] = $roster['owner_id'] ?? null;
+            }
         }
 
-        return $result;
+        return [$userById, $ownerIdByRosterId];
+    }
+
+    private function enrich(array $matchup, array $ownerIdByRosterId, array $userById): array
+    {
+        $starters = (array) ($matchup['starters'] ?? []);
+        $players = (array) ($matchup['players'] ?? []);
+        $bench = array_values(array_diff($players, $starters));
+
+        $rosterId = $matchup['roster_id'] ?? null;
+        $ownerId = $rosterId !== null ? ($ownerIdByRosterId[$rosterId] ?? null) : null;
+        $user = $ownerId !== null ? ($userById[$ownerId] ?? null) : null;
+
+        return [
+            'matchup_id' => $matchup['matchup_id'] ?? null,
+            'roster_id' => $rosterId,
+            'points' => $matchup['points'] ?? null,
+            'custom_points' => $matchup['custom_points'] ?? null,
+            'starters' => $starters,
+            'players' => $players,
+            'bench' => $bench,
+            'user' => $user ? [
+                'user_id' => $user['user_id'] ?? null,
+                'username' => $user['username'] ?? null,
+                'display_name' => $user['display_name'] ?? null,
+                'team_name' => $user['metadata']['team_name'] ?? $user['display_name'] ?? $user['username'] ?? (
+                    $user['user_id'] ?? 'Unknown'
+                ),
+                'avatar' => $user['avatar'] ?? null,
+            ] : null,
+        ];
     }
 }
