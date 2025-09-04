@@ -170,10 +170,6 @@ return new class extends Migration
             // Additional snap counts
             $table->decimal('def_snp')->nullable();
 
-            // Position rankings
-            $table->decimal('pos_rank_half_ppr')->nullable();
-            $table->decimal('pos_rank_ppr')->nullable();
-            $table->decimal('pos_rank_std')->nullable();
 
             // Indexes for performance (only add new ones)
             $table->index(['player_id', 'season', 'week']);
