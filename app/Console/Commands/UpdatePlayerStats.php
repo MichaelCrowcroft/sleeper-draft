@@ -41,8 +41,6 @@ class UpdatePlayerStats extends Command
             'grouping' => 'week',
         ]);
 
-        dd($response->json());
-
         if (!$response->successful()) {
             $this->error("Failed to fetch player stats from Sleeper API. HTTP {$response->status()}");
             return;
