@@ -2011,16 +2011,16 @@
         },
         {
             "name": "livewire/flux",
-            "version": "v2.2.6",
+            "version": "v2.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/livewire/flux.git",
-                "reference": "a0e8f33a5cd54ead4d8e27721961425ccbae2e33"
+                "reference": "83559c48eb929aa2aa33e351e76b501467111e9e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/livewire/flux/zipball/a0e8f33a5cd54ead4d8e27721961425ccbae2e33",
-                "reference": "a0e8f33a5cd54ead4d8e27721961425ccbae2e33",
+                "url": "https://api.github.com/repos/livewire/flux/zipball/83559c48eb929aa2aa33e351e76b501467111e9e",
+                "reference": "83559c48eb929aa2aa33e351e76b501467111e9e",
                 "shasum": ""
             },
             "require": {
@@ -2071,9 +2071,9 @@
             ],
             "support": {
                 "issues": "https://github.com/livewire/flux/issues",
-                "source": "https://github.com/livewire/flux/tree/v2.2.6"
+                "source": "https://github.com/livewire/flux/tree/v2.3.0"
             },
-            "time": "2025-08-27T02:05:01+00:00"
+            "time": "2025-09-03T21:42:14+00:00"
         },
         {
             "name": "livewire/livewire",
@@ -2229,12 +2229,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/MichaelCrowcroft/sleeper-laravel.git",
-                "reference": "116e2aa52e932ae22b9c7371b6bff688b89d3faf"
+                "reference": "e33f7d1524720fdc4a8345e833b2778455a55dfa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/MichaelCrowcroft/sleeper-laravel/zipball/116e2aa52e932ae22b9c7371b6bff688b89d3faf",
-                "reference": "116e2aa52e932ae22b9c7371b6bff688b89d3faf",
+                "url": "https://api.github.com/repos/MichaelCrowcroft/sleeper-laravel/zipball/e33f7d1524720fdc4a8345e833b2778455a55dfa",
+                "reference": "e33f7d1524720fdc4a8345e833b2778455a55dfa",
                 "shasum": ""
             },
             "require": {
@@ -2300,7 +2300,7 @@
                 "issues": "https://github.com/MichaelCrowcroft/sleeper-laravel/issues",
                 "source": "https://github.com/MichaelCrowcroft/sleeper-laravel/tree/main"
             },
-            "time": "2025-09-03T19:51:50+00:00"
+            "time": "2025-09-04T01:59:50+00:00"
         },
         {
             "name": "monolog/monolog",
