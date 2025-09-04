@@ -19,7 +19,7 @@ class FetchRosterTool implements ToolInterface
 
     public function name(): string
     {
-        return 'get-roster';
+        return 'fetch-roster';
     }
 
     public function description(): string

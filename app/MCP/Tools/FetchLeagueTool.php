@@ -16,7 +16,7 @@ class FetchLeagueTool implements ToolInterface
 
     public function name(): string
     {
-        return 'get-league';
+        return 'fetch-league';
     }
 
     public function description(): string
