@@ -2,6 +2,7 @@
 
 namespace App\MCP\Tools;
 
+use App\Http\Resources\PlayerResource;
 use App\Models\Player;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
@@ -131,7 +132,7 @@ class FetchMatchupsTool implements ToolInterface
         // Enhance matchups with user/roster details
         $enhancedMatchups = $this->enhanceMatchupsWithDetails($filteredMatchups, $leagueId);
 
-        return [
+        $response = [
             'success' => true,
             'data' => [
                 'matchups' => $enhancedMatchups,
@@ -153,6 +154,8 @@ class FetchMatchupsTool implements ToolInterface
                 'executed_at' => now()->toISOString(),
             ],
         ];
+
+        return json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 
     private function getCurrentWeek(string $sport): int
@@ -314,10 +317,10 @@ class FetchMatchupsTool implements ToolInterface
 
             // Fetch player data from database
             $playersMap = [];
-            if (!empty($uniquePlayerIds)) {
+            if (! empty($uniquePlayerIds)) {
                 $players = Player::whereIn('player_id', $uniquePlayerIds)->get();
                 foreach ($players as $player) {
-                    $playersMap[$player->player_id] = $player;
+                    $playersMap[$player->player_id] = (new PlayerResource($player))->resolve();
                 }
             }
 
@@ -339,7 +342,7 @@ class FetchMatchupsTool implements ToolInterface
                     'team_name' => $user['metadata']['team_name'] ?? $user['display_name'] ?? $user['username'] ?? 'Team '.$ownerId,
                 ] : null;
 
-                // Enhance starters with full player data
+                // Enhance starters with filtered player data
                 if (isset($enhancedMatchup['starters']) && is_array($enhancedMatchup['starters'])) {
                     $enhancedMatchup['starters_data'] = [];
                     foreach ($enhancedMatchup['starters'] as $playerId) {
@@ -352,7 +355,7 @@ class FetchMatchupsTool implements ToolInterface
                     }
                 }
 
-                // Enhance full roster with player data
+                // Enhance full roster with filtered player data
                 if (isset($enhancedMatchup['players']) && is_array($enhancedMatchup['players'])) {
                     $enhancedMatchup['players_data'] = [];
                     foreach ($enhancedMatchup['players'] as $playerId) {
@@ -375,7 +378,7 @@ class FetchMatchupsTool implements ToolInterface
                 'error' => $e->getMessage(),
             ]);
 
-            return $matchups; // Return original matchups if enhancement fails
+            return $matchups;
         }
     }
 }
