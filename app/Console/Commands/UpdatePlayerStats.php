@@ -78,16 +78,47 @@ class UpdatePlayerStats extends Command
             return;
         }
 
-        PlayerStats::upsert(
-            $records,
-            ['player_id', 'season', 'week', 'season_type'],
-            [
-                'sport', 'game_date', 'date', 'team', 'opponent', 'game_id', 'company',
-                'updated_at_ms', 'last_modified_ms', 'stats', 'raw',
-            ]
-        );
+        $created = 0;
+        $updated = 0;
 
-        $this->info('Upserted '.count($records).' weekly player stat records for player '.$playerId);
+        foreach ($records as $row) {
+            // game_date is NOT NULL in the migration; skip if missing to avoid DB errors
+            if (empty($row['game_date'])) {
+                $this->warn('Skipping week '.$row['week'].' due to missing game_date');
+
+                continue;
+            }
+
+            $attributes = [
+                'player_id' => $row['player_id'],
+                'season' => $row['season'],
+                'week' => $row['week'],
+                'season_type' => $row['season_type'],
+            ];
+
+            $values = [
+                'sport' => $row['sport'] ?? 'nfl',
+                'game_date' => $row['game_date'],
+                'date' => $row['date'] ?? null,
+                'team' => $row['team'] ?? null,
+                'opponent' => $row['opponent'] ?? null,
+                'game_id' => $row['game_id'] ?? null,
+                'company' => $row['company'] ?? 'sportradar',
+                'updated_at_ms' => $row['updated_at_ms'] ?? null,
+                'last_modified_ms' => $row['last_modified_ms'] ?? null,
+                'stats' => $row['stats'] ?? null,
+                'raw' => $row['raw'] ?? null,
+            ];
+
+            $model = PlayerStats::updateOrCreate($attributes, $values);
+            if ($model->wasRecentlyCreated) {
+                $created++;
+            } else {
+                $updated++;
+            }
+        }
+
+        $this->info('Player '.$playerId.' weekly stats synced. Created: '.$created.', Updated: '.$updated.'.');
     }
 
     /**
