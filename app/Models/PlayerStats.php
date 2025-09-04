@@ -92,10 +92,16 @@ class PlayerStats extends Model
     }
 
     /**
-     * Get the primary key for the model (composite key columns).
+     * Override setKeysForSaveQuery to handle composite primary key.
      */
-    public function getKeyName()
+    protected function setKeysForSaveQuery($query)
     {
-        return ['player_id', 'season', 'week', 'season_type'];
+        $keys = ['player_id', 'season', 'week', 'season_type'];
+
+        foreach ($keys as $key) {
+            $query->where($key, '=', $this->getAttribute($key));
+        }
+
+        return $query;
     }
 }
