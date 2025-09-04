@@ -20,9 +20,7 @@ class FetchPlayerStatsAndProjections extends Command
                             {--player-id= : Specific player ID to fetch stats for (for testing)}
                             {--chunk-size=50 : Number of players to process at once}
                             {--limit= : Limit the number of players to process for testing}
-                            {--dry-run : Show what would be done without actually fetching data}
-                            {--verbose : Enable verbose logging for debugging}';
-
+                            {--dry-run : Show what would be done without actually fetching data}';
     /**
      * The console command description.
      *
@@ -40,16 +38,12 @@ class FetchPlayerStatsAndProjections extends Command
         $chunkSize = (int) $this->option('chunk-size');
         $limit = $this->option('limit');
         $dryRun = $this->option('dry-run');
-        $verbose = $this->option('verbose');
+        $debug = $this->option('debug');
 
         $this->info("Fetching player stats for season {$season}");
 
         if ($dryRun) {
             $this->warn('DRY RUN MODE - No data will be saved');
-        }
-
-        if ($verbose) {
-            $this->info('VERBOSE MODE - Additional logging enabled');
         }
 
         // Get players query
@@ -195,17 +189,6 @@ class FetchPlayerStatsAndProjections extends Command
 
             // Add all stats as flattened columns
             $data = array_merge($data, $this->flattenStats($stats));
-
-            // Debug logging for production issues
-            if ($verbose || config('app.debug')) {
-                Log::info('Attempting to save stats', [
-                    'player_id' => $player->player_id,
-                    'season' => $season,
-                    'week' => $week,
-                    'data_keys' => array_keys($data),
-                    'sample_data' => array_slice($data, 0, 10, true),
-                ]);
-            }
 
             // Use updateOrCreate to handle duplicates
             $saved = PlayerStats::updateOrCreate(
