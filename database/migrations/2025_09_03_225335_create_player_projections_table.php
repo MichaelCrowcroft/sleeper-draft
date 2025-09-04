@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('player_projections', function (Blueprint $table) {
+        Schema::create('player_projections', function (Blueprint $table) {
             $table->string('player_id')->nullable();
             $table->date('game_date')->nullable();
 
