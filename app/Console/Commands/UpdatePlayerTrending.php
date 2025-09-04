@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Models\Player;
 use Illuminate\Console\Command;
-use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 use MichaelCrowcroft\SleeperLaravel\Requests\Players\GetTrendingPlayers;
 use MichaelCrowcroft\SleeperLaravel\Sleeper as SleeperConnector;
 
