@@ -14,36 +14,11 @@ class PlayerStats extends Model
     protected $casts = [
         'season' => 'integer',
         'week' => 'integer',
+        'game_date' => 'date',
         'date' => 'datetime',
         'updated_at_ms' => 'integer',
         'last_modified_ms' => 'integer',
-        'pts_half_ppr' => 'decimal:2',
-        'pts_ppr' => 'decimal:2',
-        'pts_std' => 'decimal:2',
-        'pos_rank_half_ppr' => 'integer',
-        'pos_rank_ppr' => 'integer',
-        'pos_rank_std' => 'integer',
-        'gp' => 'integer',
-        'gs' => 'integer',
-        'gms_active' => 'integer',
-        'off_snp' => 'integer',
-        'tm_off_snp' => 'integer',
-        'tm_def_snp' => 'integer',
-        'tm_st_snp' => 'integer',
-        'st_snp' => 'integer',
-        'rec' => 'decimal:1',
-        'rec_tgt' => 'decimal:1',
-        'rec_yd' => 'decimal:1',
-        'rec_td' => 'decimal:1',
-        'rec_fd' => 'decimal:1',
-        'rec_air_yd' => 'decimal:1',
-        'rec_rz_tgt' => 'decimal:1',
-        'rec_lng' => 'integer',
-        'rush_att' => 'decimal:1',
-        'rush_yd' => 'decimal:1',
-        'rush_td' => 'decimal:1',
-        'fum' => 'decimal:1',
-        'fum_lost' => 'decimal:1',
+        'stats' => 'array',
         'raw' => 'array',
     ];
 
@@ -92,7 +67,7 @@ class PlayerStats extends Model
      */
     public function scopeForPlayer($query, string $sleeperPlayerId, int $season)
     {
-        return $query->where('sleeper_player_id', $sleeperPlayerId)
+        return $query->where('player_id', $sleeperPlayerId)
             ->where('season', $season)
             ->orderBy('week');
     }
