@@ -10,7 +10,7 @@ use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
-class GetRosterTool implements ToolInterface
+class FetchRosterTool implements ToolInterface
 {
     public function isStreaming(): bool
     {

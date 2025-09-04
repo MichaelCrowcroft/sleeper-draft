@@ -8,7 +8,7 @@ use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
-class GetLeagueTool implements ToolInterface
+class FetchLeagueTool implements ToolInterface
 {
     public function isStreaming(): bool
     {

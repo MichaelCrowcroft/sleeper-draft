@@ -252,8 +252,8 @@ return [
         \App\MCP\Tools\FetchADPPlayersTool::class,
         \App\MCP\Tools\FetchUserLeaguesTool::class,
         \App\MCP\Tools\DraftPicksTool::class,
-        \App\MCP\Tools\GetLeagueTool::class,
-        \App\MCP\Tools\FetchRostersTool::class,
+        \App\MCP\Tools\FetchLeagueTool::class,
+        \App\MCP\Tools\FetchRosterTool::class,
         \App\MCP\Tools\FetchMatchupsTool::class,
         \App\MCP\Tools\FetchTradesTool::class,
 
