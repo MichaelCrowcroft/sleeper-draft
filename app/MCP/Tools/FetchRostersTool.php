@@ -24,7 +24,7 @@ class FetchRostersTool implements ToolInterface
 
     public function description(): string
     {
-        return 'Fetches rosters for a league using the Sleeper SDK. Supports pagination and compact mode to prevent response truncation in chat platforms. Returns roster data with player information from the database and owner details when available.';
+        return 'Fetches rosters for a league using the Sleeper SDK. Returns roster data with player information from the database and owner details when available.';
     }
 
     public function inputSchema(): array
@@ -46,23 +46,6 @@ class FetchRostersTool implements ToolInterface
                     'description' => 'Whether to include owner/user details from Sleeper API (default: true)',
                     'default' => true,
                 ],
-                'limit' => [
-                    'type' => 'integer',
-                    'description' => 'Maximum number of rosters to return (1-50, helps prevent truncation)',
-                    'minimum' => 1,
-                    'maximum' => 50,
-                ],
-                'offset' => [
-                    'type' => 'integer',
-                    'description' => 'Number of rosters to skip (for pagination)',
-                    'minimum' => 0,
-                    'default' => 0,
-                ],
-                'compact' => [
-                    'type' => 'boolean',
-                    'description' => 'Return compact response format to reduce size',
-                    'default' => false,
-                ],
             ],
             'required' => ['league_id'],
         ];
@@ -81,9 +64,6 @@ class FetchRostersTool implements ToolInterface
             'category' => 'fantasy-sports',
             'data_source' => 'external_api_and_database',
             'cache_recommended' => true,
-            'supports_pagination' => true,
-            'handles_large_responses' => true,
-            'truncation_safe' => true,
         ];
     }
 
@@ -94,9 +74,6 @@ class FetchRostersTool implements ToolInterface
             'league_id' => ['required', 'string'],
             'include_player_details' => ['nullable', 'boolean'],
             'include_owner_details' => ['nullable', 'boolean'],
-            'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
-            'offset' => ['nullable', 'integer', 'min:0'],
-            'compact' => ['nullable', 'boolean'],
         ]);
 
         if ($validator->fails()) {
@@ -109,50 +86,30 @@ class FetchRostersTool implements ToolInterface
         $leagueId = $arguments['league_id'];
         $includePlayerDetails = $arguments['include_player_details'] ?? true;
         $includeOwnerDetails = $arguments['include_owner_details'] ?? true;
-        $limit = $arguments['limit'] ?? null;
-        $offset = $arguments['offset'] ?? 0;
-        $compact = $arguments['compact'] ?? false;
 
         // Fetch rosters from Sleeper API
         $rosters = $this->fetchRosters($leagueId);
 
-        // Apply pagination if requested
-        $totalRosters = count($rosters);
-        if ($limit !== null) {
-            $rosters = array_slice($rosters, $offset, $limit);
-        }
-
         // Enhance rosters with player and owner details
         $enhancedRosters = $this->enhanceRosters($leagueId, $rosters, $includePlayerDetails, $includeOwnerDetails);
 
-        // Prepare structured response to avoid truncation
         $response = [
             'success' => true,
-            'operation' => 'fetch_league_rosters',
+            'operation' => 'fetch-rosters',
+            'formattedOutput' => sprintf('Successfully fetched %d rosters for league %s', count($enhancedRosters), $leagueId),
             'data' => $enhancedRosters,
-            'pagination' => [
-                'total' => $totalRosters,
-                'count' => count($enhancedRosters),
-                'limit' => $limit,
-                'offset' => $offset,
-                'has_more' => $limit !== null && ($offset + $limit) < $totalRosters,
-            ],
+            'count' => count($enhancedRosters),
             'metadata' => [
                 'league_id' => $leagueId,
                 'include_player_details' => $includePlayerDetails,
                 'include_owner_details' => $includeOwnerDetails,
-                'compact_mode' => $compact,
                 'executed_at' => now()->toISOString(),
-                'response_size_kb' => strlen(json_encode($enhancedRosters)) / 1024,
+                'mode' => 'formatted',
+                'rosters' => count($enhancedRosters),
             ],
         ];
 
-        // Add formatted summary for large responses
-        if (count($enhancedRosters) > 5 || $compact) {
-            $response['summary'] = $this->generateSummary($enhancedRosters, $includePlayerDetails);
-        }
-
-        return $response;
+        return json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 
     private function fetchRosters(string $leagueId): array
@@ -309,46 +266,5 @@ class FetchRostersTool implements ToolInterface
         }
 
         return $ownerDetails;
-    }
-
-    private function generateSummary(array $rosters, bool $includePlayerDetails): array
-    {
-        $summary = [
-            'total_rosters' => count($rosters),
-            'rosters_with_owners' => 0,
-            'total_players' => 0,
-            'position_breakdown' => [],
-            'team_names' => [],
-        ];
-
-        foreach ($rosters as $roster) {
-            // Count rosters with owners
-            if (! empty($roster['owner'])) {
-                $summary['rosters_with_owners']++;
-                $summary['team_names'][] = $roster['owner']['team_name'] ?? 'Unknown Team';
-            }
-
-            // Count players and positions if player details are included
-            if ($includePlayerDetails) {
-                $allPlayers = array_merge(
-                    $roster['players_detailed'] ?? [],
-                    $roster['starters_detailed'] ?? [],
-                    $roster['bench_detailed'] ?? []
-                );
-
-                foreach ($allPlayers as $player) {
-                    if (! empty($player['player_data'])) {
-                        $summary['total_players']++;
-                        $position = $player['player_data']['position'] ?? 'Unknown';
-                        $summary['position_breakdown'][$position] = ($summary['position_breakdown'][$position] ?? 0) + 1;
-                    }
-                }
-            }
-        }
-
-        // Sort position breakdown by count
-        arsort($summary['position_breakdown']);
-
-        return $summary;
     }
 }
