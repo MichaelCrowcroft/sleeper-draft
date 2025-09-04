@@ -38,7 +38,7 @@ class Player extends Model
      */
     public function stats(): HasMany
     {
-        return $this->hasMany(PlayerStats::class);
+        return $this->hasMany(PlayerStats::class, 'player_id', 'player_id');
     }
 
     /**
@@ -46,7 +46,7 @@ class Player extends Model
      */
     public function projections(): HasMany
     {
-        return $this->hasMany(PlayerProjections::class);
+        return $this->hasMany(PlayerProjections::class, 'player_id', 'player_id');
     }
 
     /**

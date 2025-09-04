@@ -20,7 +20,8 @@ class FetchPlayerStatsAndProjections extends Command
                             {--player-id= : Specific player ID to fetch stats for (for testing)}
                             {--chunk-size=50 : Number of players to process at once}
                             {--limit= : Limit the number of players to process for testing}
-                            {--dry-run : Show what would be done without actually fetching data}';
+                            {--dry-run : Show what would be done without actually fetching data}
+                            {--verbose : Enable verbose logging for debugging}';
 
     /**
      * The console command description.
@@ -39,11 +40,16 @@ class FetchPlayerStatsAndProjections extends Command
         $chunkSize = (int) $this->option('chunk-size');
         $limit = $this->option('limit');
         $dryRun = $this->option('dry-run');
+        $verbose = $this->option('verbose');
 
         $this->info("Fetching player stats for season {$season}");
 
         if ($dryRun) {
             $this->warn('DRY RUN MODE - No data will be saved');
+        }
+
+        if ($verbose) {
+            $this->info('VERBOSE MODE - Additional logging enabled');
         }
 
         // Get players query
@@ -171,31 +177,68 @@ class FetchPlayerStatsAndProjections extends Command
                 'opponent' => $metadata['opponent'] ?? null,
                 'game_id' => $metadata['game_id'] ?? null,
                 'company' => $metadata['company'] ?? 'sportradar',
-                'updated_at_ms' => $metadata['updated_at'] ?? null,
-                'last_modified_ms' => $metadata['last_modified'] ?? null,
+                'updated_at_ms' => isset($metadata['updated_at']) ? (int) $metadata['updated_at'] : null,
+                'last_modified_ms' => isset($metadata['last_modified']) ? (int) $metadata['last_modified'] : null,
                 'raw' => json_encode($weekData),
             ];
+
+            // Validate required fields for MySQL compatibility
+            if (empty($data['player_id']) || empty($data['season'])) {
+                Log::error('Invalid data for MySQL - missing required fields', [
+                    'player_id' => $data['player_id'],
+                    'season' => $data['season'],
+                    'week' => $data['week'],
+                ]);
+
+                return 0;
+            }
 
             // Add all stats as flattened columns
             $data = array_merge($data, $this->flattenStats($stats));
 
+            // Debug logging for production issues
+            if ($verbose || config('app.debug')) {
+                Log::info('Attempting to save stats', [
+                    'player_id' => $player->player_id,
+                    'season' => $season,
+                    'week' => $week,
+                    'data_keys' => array_keys($data),
+                    'sample_data' => array_slice($data, 0, 10, true),
+                ]);
+            }
+
             // Use updateOrCreate to handle duplicates
-            PlayerStats::updateOrCreate(
+            $saved = PlayerStats::updateOrCreate(
                 [
                     'player_id' => $player->player_id,
                     'season' => (string) $season,
                     'week' => (int) $week,
                     'season_type' => $data['season_type'],
                     'company' => $data['company'],
-                    'sport' => 'nfl',
+                    'sport' => $data['sport'],
                 ],
                 $data
             );
 
+            if (! $saved || ! $saved->exists) {
+                Log::error('Failed to save stats - record not created', [
+                    'player_id' => $player->player_id,
+                    'season' => $season,
+                    'week' => $week,
+                    'data' => $data,
+                ]);
+
+                return 0;
+            }
+
             return 1;
 
         } catch (\Exception $e) {
-            Log::error("Failed to save stats for player {$player->player_id}, season {$season}, week {$week}: {$e->getMessage()}");
+            Log::error("Failed to save stats for player {$player->player_id}, season {$season}, week {$week}", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'data_keys' => isset($data) ? array_keys($data) : 'data not set',
+            ]);
 
             return 0;
         }
@@ -249,6 +292,7 @@ class FetchPlayerStatsAndProjections extends Command
 
     /**
      * Normalize stat values to ensure they're database-friendly.
+     * MySQL can be more strict about data types than SQLite.
      */
     private function normalizeStatValue($value)
     {
@@ -256,9 +300,18 @@ class FetchPlayerStatsAndProjections extends Command
             return null;
         }
 
-        // Convert to float if it's a number
+        // Handle empty strings and convert to null for MySQL compatibility
+        if ($value === '' || $value === 'null') {
+            return null;
+        }
+
+        // Convert to float if it's a number, but ensure it's a valid float
         if (is_numeric($value)) {
-            return (float) $value;
+            $floatValue = (float) $value;
+            // Check if the float conversion resulted in a valid number
+            if (is_finite($floatValue)) {
+                return $floatValue;
+            }
         }
 
         return $value;
