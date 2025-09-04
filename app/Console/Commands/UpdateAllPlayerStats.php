@@ -16,7 +16,6 @@ class UpdateAllPlayerStats extends Command
     protected $signature = 'sleeper:players:stats:update-all
                            {--season=2025 : The season year (default: 2025)}
                            {--season-type=regular : Season type (regular, postseason)}
-                           {--rate-limit=250 : Maximum jobs per minute (default: 250)}
                            ';
     /**
      * The console command description.
@@ -32,23 +31,16 @@ class UpdateAllPlayerStats extends Command
     {
         $season = $this->option('season');
         $seasonType = $this->option('season-type');
-        $rateLimit = (int) $this->option('rate-limit');
 
         $players = Player::query()->whereNotNull('player_id')->get();
 
-        $delaySeconds = $rateLimit > 0 ? ceil(60 / $rateLimit) : 0;
-
-        $currentDelay = 0;
         foreach ($players as $player) {
             UpdatePlayerStatsJob::dispatch(
                 $player->player_id,
                 $season,
                 $seasonType,
-                $currentDelay
             )->onQueue('default');
 
-            // Increment delay for next job to maintain rate limiting
-            $currentDelay += $delaySeconds;
         }
     }
 }

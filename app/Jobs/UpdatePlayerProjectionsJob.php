@@ -28,9 +28,7 @@ class UpdatePlayerProjectionsJob implements ShouldQueue
 
     public function handle(): void
     {
-        if ($this->delaySeconds) {
-            sleep($this->delaySeconds);
-        }
+        sleep(1);
 
         Artisan::call('sleeper:player:projections', [
             'player-id' => $this->playerId,

@@ -17,8 +17,6 @@ class PlayerResource extends JsonResource
         return [
             // Core player identification
             'player_id' => $this->player_id,
-            'first_name' => $this->first_name,
-            'last_name' => $this->last_name,
             'full_name' => $this->full_name,
 
             // Position and team information
@@ -41,9 +39,6 @@ class PlayerResource extends JsonResource
             // ADP (Average Draft Position) data
             'adp' => $this->adp,
             'adp_formatted' => $this->adp_formatted,
-            'adp_high' => $this->adp_high,
-            'adp_low' => $this->adp_low,
-            'adp_stdev' => $this->adp_stdev,
 
             // Trending data
             'adds_24h' => $this->adds_24h,
