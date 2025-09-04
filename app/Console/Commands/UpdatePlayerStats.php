@@ -42,15 +42,30 @@ class UpdatePlayerStats extends Command
             'grouping' => 'week',
         ]);
 
+        if (!$response->successful()) {
+            $this->error("Failed to fetch player stats from Sleeper API. HTTP {$response->status()}");
+            return;
+        }
+
         $weeks = $response->json();
 
+        if (empty($weeks)) {
+            $this->info("No stats found for player {$playerId} in {$season} {$seasonType} season");
+            return;
+        }
+
+        $this->info("Found " . count($weeks) . " weeks of stats for player {$playerId}");
+
         foreach($weeks as $week) {
+            if (empty($week) || !isset($week['season'], $week['week'])) {
+                $this->warn("Skipping incomplete week data");
+                continue;
+            }
             $attributes = [
                 'player_id' => $playerId,
                 'season' => $week['season'],
                 'week' => $week['week'],
             ];
-
             $values = [
                 'season_type' => $seasonType,
                 'game_date' => $week['date'],
@@ -64,7 +79,11 @@ class UpdatePlayerStats extends Command
                 'stats' => $week['stats'],
                 'raw' => $week,
             ];
+
             PlayerStats::updateOrCreate($attributes, $values);
+            $this->line("Stored stats for week {$week['week']}");
         }
+
+        $this->info("✅ Successfully updated stats for player {$playerId}");
     }
 }
