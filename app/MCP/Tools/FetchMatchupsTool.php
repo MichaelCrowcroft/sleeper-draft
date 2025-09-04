@@ -2,8 +2,6 @@
 
 namespace App\MCP\Tools;
 
-use App\Http\Resources\PlayerResource;
-use App\Models\Player;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
@@ -25,7 +23,7 @@ class FetchMatchupsTool implements ToolInterface
 
     public function description(): string
     {
-        return 'Fetch matchups for a league for a given week (defaults to current week). Optionally filter by username or user ID to return only that user\'s matchup.';
+        return 'Fetch basic matchup information for a league for a given week (defaults to current week), showing the two users in each matchup and league details. Use the roster tool for detailed team information.';
     }
 
     public function inputSchema(): array
@@ -129,13 +127,13 @@ class FetchMatchupsTool implements ToolInterface
             $filteredMatchups = $userMatchup ? [$userMatchup] : [];
         }
 
-        // Enhance matchups with user/roster details
-        $enhancedMatchups = $this->enhanceMatchupsWithDetails($filteredMatchups, $leagueId);
+        // Get basic matchup information with user details
+        $basicMatchups = $this->getBasicMatchupInfo($filteredMatchups, $leagueId);
 
         $response = [
             'success' => true,
             'data' => [
-                'matchups' => $enhancedMatchups,
+                'matchups' => $basicMatchups,
                 'week' => $week,
                 'league_id' => $leagueId,
                 'filtered_by_user' => $userId !== null,
@@ -144,13 +142,13 @@ class FetchMatchupsTool implements ToolInterface
                     'username' => $username,
                 ] : null,
             ],
-            'count' => count($enhancedMatchups),
+            'count' => count($basicMatchups),
             'metadata' => [
                 'league_id' => $leagueId,
                 'week' => $week,
                 'sport' => $sport,
                 'total_matchups_in_week' => count($matchups),
-                'filtered_matchups' => count($enhancedMatchups),
+                'filtered_matchups' => count($basicMatchups),
                 'executed_at' => now()->toISOString(),
             ],
         ];
@@ -269,116 +267,86 @@ class FetchMatchupsTool implements ToolInterface
         return null;
     }
 
-    private function enhanceMatchupsWithDetails(array $matchups, string $leagueId): array
+    private function getBasicMatchupInfo(array $matchups, string $leagueId): array
     {
         if (empty($matchups)) {
             return [];
         }
 
         try {
-            // Fetch rosters and users for additional context
-            $rostersResponse = Sleeper::leagues()->rosters($leagueId);
+            // Fetch users for the league to get user details
             $usersResponse = Sleeper::leagues()->users($leagueId);
-
-            $rosters = $rostersResponse->successful() ? $rostersResponse->json() : [];
             $users = $usersResponse->successful() ? $usersResponse->json() : [];
 
-            // Create lookup maps
-            $rosterMap = [];
+            // Create user lookup map
             $userMap = [];
-
-            if (is_array($rosters)) {
-                foreach ($rosters as $roster) {
-                    $rosterMap[$roster['roster_id'] ?? null] = $roster;
-                }
-            }
-
             if (is_array($users)) {
                 foreach ($users as $user) {
                     $userMap[$user['user_id'] ?? null] = $user;
                 }
             }
 
-            // Collect all player IDs from matchups to fetch player data
-            $allPlayerIds = [];
-            foreach ($matchups as $matchup) {
-                // Extract player IDs from starters array
-                if (isset($matchup['starters']) && is_array($matchup['starters'])) {
-                    $allPlayerIds = array_merge($allPlayerIds, $matchup['starters']);
-                }
-                // Extract player IDs from players array (full roster)
-                if (isset($matchup['players']) && is_array($matchup['players'])) {
-                    $allPlayerIds = array_merge($allPlayerIds, $matchup['players']);
-                }
-            }
-
-            // Remove duplicates and null values
-            $uniquePlayerIds = array_unique(array_filter($allPlayerIds));
-
-            // Fetch player data from database
-            $playersMap = [];
-            if (! empty($uniquePlayerIds)) {
-                $players = Player::whereIn('player_id', $uniquePlayerIds)->get();
-                foreach ($players as $player) {
-                    $playersMap[$player->player_id] = (new PlayerResource($player))->resolve();
-                }
-            }
-
-            // Enhance matchups with player data
-            $enhancedMatchups = [];
+            // Simplify matchups to basic info only
+            $basicMatchups = [];
             foreach ($matchups as $matchup) {
                 $rosterId = $matchup['roster_id'] ?? null;
-                $roster = $rosterMap[$rosterId] ?? null;
-                $ownerId = $roster['owner_id'] ?? null;
-                $user = $userMap[$ownerId] ?? null;
 
-                $enhancedMatchup = $matchup;
-                $enhancedMatchup['roster_details'] = $roster;
-                $enhancedMatchup['owner_details'] = $user ? [
-                    'user_id' => $user['user_id'] ?? null,
-                    'username' => $user['username'] ?? null,
-                    'display_name' => $user['display_name'] ?? null,
-                    'avatar' => $user['avatar'] ?? null,
-                    'team_name' => $user['metadata']['team_name'] ?? $user['display_name'] ?? $user['username'] ?? 'Team '.$ownerId,
-                ] : null;
-
-                // Enhance starters with filtered player data
-                if (isset($enhancedMatchup['starters']) && is_array($enhancedMatchup['starters'])) {
-                    $enhancedMatchup['starters_data'] = [];
-                    foreach ($enhancedMatchup['starters'] as $playerId) {
-                        if (isset($playersMap[$playerId])) {
-                            $enhancedMatchup['starters_data'][] = $playersMap[$playerId];
-                        } else {
-                            // Keep the original player ID if no data found
-                            $enhancedMatchup['starters_data'][] = ['player_id' => $playerId];
+                // Get user details for this roster (we'll need to fetch rosters to map roster_id to user_id)
+                $user = null;
+                if ($rosterId) {
+                    try {
+                        $rostersResponse = Sleeper::leagues()->rosters($leagueId);
+                        if ($rostersResponse->successful()) {
+                            $rosters = $rostersResponse->json();
+                            foreach ($rosters as $roster) {
+                                if (($roster['roster_id'] ?? null) == $rosterId) {
+                                    $ownerId = $roster['owner_id'] ?? null;
+                                    $user = $userMap[$ownerId] ?? null;
+                                    break;
+                                }
+                            }
                         }
+                    } catch (\Exception $e) {
+                        logger('FetchMatchupsTool: Failed to fetch roster details', [
+                            'roster_id' => $rosterId,
+                            'league_id' => $leagueId,
+                            'error' => $e->getMessage(),
+                        ]);
                     }
                 }
 
-                // Enhance full roster with filtered player data
-                if (isset($enhancedMatchup['players']) && is_array($enhancedMatchup['players'])) {
-                    $enhancedMatchup['players_data'] = [];
-                    foreach ($enhancedMatchup['players'] as $playerId) {
-                        if (isset($playersMap[$playerId])) {
-                            $enhancedMatchup['players_data'][] = $playersMap[$playerId];
-                        } else {
-                            // Keep the original player ID if no data found
-                            $enhancedMatchup['players_data'][] = ['player_id' => $playerId];
-                        }
-                    }
-                }
+                // Create simplified matchup entry
+                $basicMatchup = [
+                    'matchup_id' => $matchup['matchup_id'] ?? null,
+                    'roster_id' => $rosterId,
+                    'points' => $matchup['points'] ?? null,
+                    'user' => $user ? [
+                        'user_id' => $user['user_id'] ?? null,
+                        'username' => $user['username'] ?? null,
+                        'display_name' => $user['display_name'] ?? null,
+                        'team_name' => $user['metadata']['team_name'] ?? $user['display_name'] ?? $user['username'] ?? 'Team '.($user['user_id'] ?? 'Unknown'),
+                    ] : null,
+                ];
 
-                $enhancedMatchups[] = $enhancedMatchup;
+                $basicMatchups[] = $basicMatchup;
             }
 
-            return $enhancedMatchups;
+            return $basicMatchups;
         } catch (\Exception $e) {
-            logger('FetchMatchupsTool: Failed to enhance matchups with details', [
+            logger('FetchMatchupsTool: Failed to get basic matchup info', [
                 'league_id' => $leagueId,
                 'error' => $e->getMessage(),
             ]);
 
-            return $matchups;
+            // Return basic structure even on error
+            return array_map(function ($matchup) {
+                return [
+                    'matchup_id' => $matchup['matchup_id'] ?? null,
+                    'roster_id' => $matchup['roster_id'] ?? null,
+                    'points' => $matchup['points'] ?? null,
+                    'user' => null,
+                ];
+            }, $matchups);
         }
     }
 }
