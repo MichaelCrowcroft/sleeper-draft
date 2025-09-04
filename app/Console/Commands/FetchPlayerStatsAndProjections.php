@@ -38,7 +38,6 @@ class FetchPlayerStatsAndProjections extends Command
         $chunkSize = (int) $this->option('chunk-size');
         $limit = $this->option('limit');
         $dryRun = $this->option('dry-run');
-        $debug = $this->option('debug');
 
         $this->info("Fetching player stats for season {$season}");
 
