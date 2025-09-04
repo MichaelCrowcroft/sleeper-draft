@@ -16,8 +16,7 @@ class UpdateAllPlayerStats extends Command
     protected $signature = 'sleeper:players:stats:update-all
                            {--season=2025 : The season year (default: 2025)}
                            {--season-type=regular : Season type (regular, postseason)}
-                           {--batch-size=50 : Number of players to process per batch (max 250)}
-                           {--delay=12000 : Delay between batches in milliseconds (default: 12000ms = 12s for 50 players/min)}
+                           {--rate-limit=250 : Maximum jobs per minute (default: 250)}
                            ';
     /**
      * The console command description.
@@ -33,32 +32,23 @@ class UpdateAllPlayerStats extends Command
     {
         $season = $this->option('season');
         $seasonType = $this->option('season-type');
-        $batchSize = min((int) $this->option('batch-size'), 250); // Max 250 per batch
-        $delayMs = (int) $this->option('delay');
+        $rateLimit = (int) $this->option('rate-limit');
 
-        // Get all players
-        $query = Player::query()->whereNotNull('player_id');
+        $players = Player::query()->whereNotNull('player_id')->get();
 
-        $players = $query->get();
+        $delaySeconds = $rateLimit > 0 ? ceil(60 / $rateLimit) : 0;
 
-        $totalPlayers = $players->count();
+        $currentDelay = 0;
+        foreach ($players as $player) {
+            UpdatePlayerStatsJob::dispatch(
+                $player->player_id,
+                $season,
+                $seasonType,
+                $currentDelay
+            )->onQueue('default');
 
-        $batches = $players->chunk($batchSize);
-        $processed = 0;
-
-        foreach ($batches as $batch) {
-            foreach ($batch as $player) {
-                UpdatePlayerStatsJob::dispatch(
-                    $player->player_id,
-                    $season,
-                    $seasonType
-                )->onQueue('default');
-            }
-
-            // Rate limiting delay between batches (except for the last batch)
-            if ($processed < $totalPlayers) {
-                usleep($delayMs * 1000); // Convert ms to microseconds
-            }
+            // Increment delay for next job to maintain rate limiting
+            $currentDelay += $delaySeconds;
         }
     }
 }

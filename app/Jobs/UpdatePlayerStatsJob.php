@@ -22,15 +22,22 @@ class UpdatePlayerStatsJob implements ShouldQueue
     public function __construct(
         public string $playerId,
         public string $season = '2025',
-        public string $seasonType = 'regular'
+        public string $seasonType = 'regular',
+        public ?int $delaySeconds = null
     ) {}
 
     public function handle(): void
     {
+        // Apply rate limiting delay if specified
+        if ($this->delaySeconds) {
+            sleep($this->delaySeconds);
+        }
+
         Artisan::call('sleeper:player:stats', [
             'player-id' => $this->playerId,
             '--season' => $this->season,
             '--season-type' => $this->seasonType,
         ]);
+
     }
 }
