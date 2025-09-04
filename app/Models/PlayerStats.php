@@ -9,23 +9,7 @@ class PlayerStats extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = [
-        'player_id',
-        'game_date',
-        'season',
-        'week',
-        'season_type',
-        'sport',
-        'company',
-        'date',
-        'team',
-        'opponent',
-        'game_id',
-        'updated_at_ms',
-        'last_modified_ms',
-        'stats',
-        'raw',
-    ];
+    protected $guarded = [];
 
     protected $casts = [
         'season' => 'integer',
