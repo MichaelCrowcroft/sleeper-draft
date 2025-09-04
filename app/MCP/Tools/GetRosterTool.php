@@ -10,7 +10,7 @@ use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
-class FetchRostersTool implements ToolInterface
+class GetRosterTool implements ToolInterface
 {
     public function isStreaming(): bool
     {
@@ -19,12 +19,12 @@ class FetchRostersTool implements ToolInterface
 
     public function name(): string
     {
-        return 'fetch-rosters';
+        return 'get-roster';
     }
 
     public function description(): string
     {
-        return 'Fetches rosters for a league using the Sleeper SDK. Returns roster data with player information from the database and owner details when available.';
+        return 'Gets a specific roster for a user in a league. Returns roster data with player information from the database and owner details.';
     }
 
     public function inputSchema(): array
@@ -34,7 +34,11 @@ class FetchRostersTool implements ToolInterface
             'properties' => [
                 'league_id' => [
                     'type' => 'string',
-                    'description' => 'Sleeper league ID to fetch rosters for',
+                    'description' => 'Sleeper league ID',
+                ],
+                'user_id' => [
+                    'type' => 'string',
+                    'description' => 'Sleeper user ID whose roster to fetch',
                 ],
                 'include_player_details' => [
                     'type' => 'boolean',
@@ -47,14 +51,14 @@ class FetchRostersTool implements ToolInterface
                     'default' => true,
                 ],
             ],
-            'required' => ['league_id'],
+            'required' => ['league_id', 'user_id'],
         ];
     }
 
     public function annotations(): array
     {
         return [
-            'title' => 'Fetch League Rosters',
+            'title' => 'Get User Roster',
             'readOnlyHint' => true,
             'destructiveHint' => false,
             'idempotentHint' => true,
@@ -72,6 +76,7 @@ class FetchRostersTool implements ToolInterface
         // Validate input arguments
         $validator = Validator::make($arguments, [
             'league_id' => ['required', 'string'],
+            'user_id' => ['required', 'string'],
             'include_player_details' => ['nullable', 'boolean'],
             'include_owner_details' => ['nullable', 'boolean'],
         ]);
@@ -84,35 +89,42 @@ class FetchRostersTool implements ToolInterface
         }
 
         $leagueId = $arguments['league_id'];
+        $userId = $arguments['user_id'];
         $includePlayerDetails = $arguments['include_player_details'] ?? true;
         $includeOwnerDetails = $arguments['include_owner_details'] ?? true;
 
-        // Fetch rosters from Sleeper API
-        $rosters = $this->fetchRosters($leagueId);
+        // Fetch the specific roster
+        $roster = $this->getRoster($leagueId, $userId);
 
-        // Enhance rosters with player and owner details
-        $enhancedRosters = $this->enhanceRosters($leagueId, $rosters, $includePlayerDetails, $includeOwnerDetails);
+        if (! $roster) {
+            throw new JsonRpcErrorException(
+                message: "No roster found for user {$userId} in league {$leagueId}",
+                code: JsonRpcErrorCode::INVALID_REQUEST
+            );
+        }
+
+        // Enhance roster with player and owner details
+        $enhancedRoster = $this->enhanceRoster($leagueId, $roster, $includePlayerDetails, $includeOwnerDetails);
 
         $response = [
             'success' => true,
-            'operation' => 'fetch-rosters',
-            'formattedOutput' => sprintf('Successfully fetched %d rosters for league %s', count($enhancedRosters), $leagueId),
-            'data' => $enhancedRosters,
-            'count' => count($enhancedRosters),
+            'operation' => 'get-roster',
+            'formattedOutput' => sprintf('Successfully fetched roster for user %s in league %s', $userId, $leagueId),
+            'data' => $enhancedRoster,
             'metadata' => [
                 'league_id' => $leagueId,
+                'user_id' => $userId,
                 'include_player_details' => $includePlayerDetails,
                 'include_owner_details' => $includeOwnerDetails,
                 'executed_at' => now()->toISOString(),
                 'mode' => 'formatted',
-                'rosters' => count($enhancedRosters),
             ],
         ];
 
         return json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 
-    private function fetchRosters(string $leagueId): array
+    private function getRoster(string $leagueId, string $userId): ?array
     {
         $response = Sleeper::leagues()->rosters($leagueId);
 
@@ -132,25 +144,29 @@ class FetchRostersTool implements ToolInterface
             );
         }
 
-        return $rosters;
+        // Find the specific roster for the user
+        foreach ($rosters as $roster) {
+            if (($roster['owner_id'] ?? null) === $userId) {
+                return $roster;
+            }
+        }
+
+        return null;
     }
 
-    private function enhanceRosters(string $leagueId, array $rosters, bool $includePlayerDetails, bool $includeOwnerDetails): array
+    private function enhanceRoster(string $leagueId, array $roster, bool $includePlayerDetails, bool $includeOwnerDetails): array
     {
-        $enhancedRosters = [];
+        $enhancedRoster = $roster;
 
-        // Get all unique player IDs for batch database lookup
+        // Get all player IDs from this roster for batch database lookup
         $allPlayerIds = [];
         if ($includePlayerDetails) {
-            foreach ($rosters as $roster) {
-                $players = array_merge(
-                    $roster['players'] ?? [],
-                    $roster['starters'] ?? [],
-                    $roster['bench'] ?? []
-                );
-                $allPlayerIds = array_merge($allPlayerIds, $players);
-            }
-            $allPlayerIds = array_unique($allPlayerIds);
+            $players = array_merge(
+                $roster['players'] ?? [],
+                $roster['starters'] ?? [],
+                $roster['bench'] ?? []
+            );
+            $allPlayerIds = array_unique($players);
         }
 
         // Fetch player data from database in a single query and prepare resources
@@ -164,43 +180,19 @@ class FetchRostersTool implements ToolInterface
                 ->all();
         }
 
-        // Get all unique owner IDs for batch user lookup
-        $ownerIds = [];
-        if ($includeOwnerDetails) {
-            foreach ($rosters as $roster) {
-                if (! empty($roster['owner_id'])) {
-                    $ownerIds[] = $roster['owner_id'];
-                }
-            }
-            $ownerIds = array_unique($ownerIds);
+        // Add owner details if available
+        if ($includeOwnerDetails && ! empty($roster['owner_id'])) {
+            $enhancedRoster['owner'] = $this->getOwnerDetails($leagueId, $roster['owner_id']);
         }
 
-        // Fetch owner details from Sleeper API
-        $ownerDetails = [];
-        if (! empty($ownerIds) && $includeOwnerDetails) {
-            $ownerDetails = $this->fetchOwnerDetails($leagueId, $ownerIds);
+        // Enhance player arrays with database information
+        if ($includePlayerDetails) {
+            $enhancedRoster['players_detailed'] = $this->enhancePlayerArray($roster['players'] ?? [], $playersFromDb);
+            $enhancedRoster['starters_detailed'] = $this->enhancePlayerArray($roster['starters'] ?? [], $playersFromDb);
+            $enhancedRoster['bench_detailed'] = $this->enhancePlayerArray($roster['bench'] ?? [], $playersFromDb);
         }
 
-        // Process each roster
-        foreach ($rosters as $roster) {
-            $enhancedRoster = $roster;
-
-            // Add owner details if available
-            if ($includeOwnerDetails && ! empty($roster['owner_id'])) {
-                $enhancedRoster['owner'] = $ownerDetails[$roster['owner_id']] ?? null;
-            }
-
-            // Enhance player arrays with database information
-            if ($includePlayerDetails) {
-                $enhancedRoster['players_detailed'] = $this->enhancePlayerArray($roster['players'] ?? [], $playersFromDb);
-                $enhancedRoster['starters_detailed'] = $this->enhancePlayerArray($roster['starters'] ?? [], $playersFromDb);
-                $enhancedRoster['bench_detailed'] = $this->enhancePlayerArray($roster['bench'] ?? [], $playersFromDb);
-            }
-
-            $enhancedRosters[] = $enhancedRoster;
-        }
-
-        return $enhancedRosters;
+        return $enhancedRoster;
     }
 
     private function enhancePlayerArray(array $playerIds, array $playersFromDb): array
@@ -211,10 +203,8 @@ class FetchRostersTool implements ToolInterface
         ], $playerIds);
     }
 
-    private function fetchOwnerDetails(string $leagueId, array $ownerIds): array
+    private function getOwnerDetails(string $leagueId, string $ownerId): ?array
     {
-        $ownerDetails = [];
-
         try {
             $response = Sleeper::leagues()->users($leagueId);
 
@@ -224,8 +214,8 @@ class FetchRostersTool implements ToolInterface
                 if (is_array($users)) {
                     foreach ($users as $user) {
                         $userId = $user['user_id'] ?? null;
-                        if ($userId && in_array($userId, $ownerIds)) {
-                            $ownerDetails[$userId] = [
+                        if ($userId === $ownerId) {
+                            return [
                                 'user_id' => $userId,
                                 'username' => $user['username'] ?? null,
                                 'display_name' => $user['display_name'] ?? null,
@@ -240,31 +230,25 @@ class FetchRostersTool implements ToolInterface
                     }
                 }
             } else {
-                logger('FetchRostersTool: Failed to fetch league users', [
+                logger('GetRosterTool: Failed to fetch league users', [
                     'league_id' => $leagueId,
                 ]);
             }
         } catch (\Exception $e) {
-            logger('FetchRostersTool: Exception fetching league users', [
+            logger('GetRosterTool: Exception fetching league users', [
                 'league_id' => $leagueId,
                 'error' => $e->getMessage(),
             ]);
         }
 
-        // Ensure every requested owner ID has an entry
-        foreach ($ownerIds as $ownerId) {
-            if (! isset($ownerDetails[$ownerId])) {
-                $ownerDetails[$ownerId] = [
-                    'user_id' => $ownerId,
-                    'username' => null,
-                    'display_name' => null,
-                    'avatar' => null,
-                    'metadata' => [],
-                    'team_name' => 'Team '.$ownerId,
-                ];
-            }
-        }
-
-        return $ownerDetails;
+        // Return basic owner info if API call fails
+        return [
+            'user_id' => $ownerId,
+            'username' => null,
+            'display_name' => null,
+            'avatar' => null,
+            'metadata' => [],
+            'team_name' => 'Team '.$ownerId,
+        ];
     }
 }

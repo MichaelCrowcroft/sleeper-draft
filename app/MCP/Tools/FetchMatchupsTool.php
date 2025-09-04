@@ -42,20 +42,6 @@ class FetchMatchupsTool implements ToolInterface
                     ],
                     'description' => 'Week number to fetch matchups for (defaults to current week)',
                 ],
-                'user_id' => [
-                    'anyOf' => [
-                        ['type' => 'string'],
-                        ['type' => 'null'],
-                    ],
-                    'description' => 'Optional: Sleeper user ID to filter matchups for a specific user',
-                ],
-                'username' => [
-                    'anyOf' => [
-                        ['type' => 'string'],
-                        ['type' => 'null'],
-                    ],
-                    'description' => 'Optional: Username to filter matchups for a specific user (alternative to user_id)',
-                ],
                 'sport' => [
                     'type' => 'string',
                     'description' => 'Sport type (default: nfl)',
@@ -88,8 +74,6 @@ class FetchMatchupsTool implements ToolInterface
         $validator = Validator::make($arguments, [
             'league_id' => ['required', 'string'],
             'week' => ['nullable', 'integer', 'min:1', 'max:18'],
-            'user_id' => ['nullable', 'string'],
-            'username' => ['nullable', 'string'],
             'sport' => ['nullable', 'string'],
         ]);
 
@@ -102,8 +86,6 @@ class FetchMatchupsTool implements ToolInterface
 
         $leagueId = $arguments['league_id'];
         $week = $arguments['week'] ?? null;
-        $userId = $arguments['user_id'] ?? null;
-        $username = $arguments['username'] ?? null;
         $sport = $arguments['sport'] ?? 'nfl';
 
         // Get current week if not provided
@@ -114,21 +96,8 @@ class FetchMatchupsTool implements ToolInterface
         // Fetch matchups from Sleeper API
         $matchups = $this->fetchMatchups($leagueId, $week);
 
-        // If username is provided but not user_id, resolve the user_id
-        if ($username && ! $userId) {
-            $userId = $this->resolveUsernameToUserId($username, $sport);
-        }
-
-        // Filter matchups by user if specified
-        $filteredMatchups = $matchups;
-        $userMatchup = null;
-        if ($userId) {
-            $userMatchup = $this->filterMatchupsByUser($matchups, $leagueId, $userId);
-            $filteredMatchups = $userMatchup ? [$userMatchup] : [];
-        }
-
         // Get basic matchup information with user details
-        $basicMatchups = $this->getBasicMatchupInfo($filteredMatchups, $leagueId);
+        $basicMatchups = $this->getBasicMatchupInfo($matchups, $leagueId);
 
         $response = [
             'success' => true,
@@ -136,11 +105,6 @@ class FetchMatchupsTool implements ToolInterface
                 'matchups' => $basicMatchups,
                 'week' => $week,
                 'league_id' => $leagueId,
-                'filtered_by_user' => $userId !== null,
-                'user_filter' => $userId ? [
-                    'user_id' => $userId,
-                    'username' => $username,
-                ] : null,
             ],
             'count' => count($basicMatchups),
             'metadata' => [
@@ -148,7 +112,6 @@ class FetchMatchupsTool implements ToolInterface
                 'week' => $week,
                 'sport' => $sport,
                 'total_matchups_in_week' => count($matchups),
-                'filtered_matchups' => count($basicMatchups),
                 'executed_at' => now()->toISOString(),
             ],
         ];
@@ -203,69 +166,6 @@ class FetchMatchupsTool implements ToolInterface
         return $matchups;
     }
 
-    private function resolveUsernameToUserId(string $username, string $sport): ?string
-    {
-        try {
-            $response = Sleeper::users()->get($username);
-
-            if ($response->successful()) {
-                $userData = $response->json();
-
-                return $userData['user_id'] ?? null;
-            }
-        } catch (\Exception $e) {
-            logger('FetchMatchupsTool: Failed to resolve username to user_id', [
-                'username' => $username,
-                'error' => $e->getMessage(),
-            ]);
-        }
-
-        return null;
-    }
-
-    private function filterMatchupsByUser(array $matchups, string $leagueId, string $userId): ?array
-    {
-        // First, get all rosters for the league to find which roster_id belongs to the user
-        try {
-            $rostersResponse = Sleeper::leagues()->rosters($leagueId);
-            if (! $rostersResponse->successful()) {
-                return null;
-            }
-
-            $rosters = $rostersResponse->json();
-            if (! is_array($rosters)) {
-                return null;
-            }
-
-            // Find the roster_id for this user
-            $userRosterId = null;
-            foreach ($rosters as $roster) {
-                if (($roster['owner_id'] ?? null) === $userId) {
-                    $userRosterId = $roster['roster_id'] ?? null;
-                    break;
-                }
-            }
-
-            if ($userRosterId === null) {
-                return null;
-            }
-
-            // Find the matchup containing this roster_id
-            foreach ($matchups as $matchup) {
-                if (($matchup['roster_id'] ?? null) == $userRosterId) {
-                    return $matchup;
-                }
-            }
-        } catch (\Exception $e) {
-            logger('FetchMatchupsTool: Failed to filter matchups by user', [
-                'user_id' => $userId,
-                'league_id' => $leagueId,
-                'error' => $e->getMessage(),
-            ]);
-        }
-
-        return null;
-    }
 
     private function getBasicMatchupInfo(array $matchups, string $leagueId): array
     {
