@@ -19,7 +19,6 @@ return new class extends Migration
             $table->string('season_type');
             $table->string('sport')->nullable();
             $table->string('company')->nullable();
-            $table->datetime('date')->nullable();
             $table->string('team')->nullable();
             $table->string('opponent')->nullable();
             $table->string('game_id')->nullable();
