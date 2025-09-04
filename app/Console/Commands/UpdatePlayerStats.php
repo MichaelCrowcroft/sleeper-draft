@@ -42,125 +42,29 @@ class UpdatePlayerStats extends Command
             'grouping' => 'week',
         ]);
 
-        if (! $response->successful()) {
-            $this->error('Failed to fetch data from Sleeper: HTTP '.$response->status());
+        $weeks = $response->json();
 
-            return;
-        }
-
-        $payload = $response->json();
-
-        if (! is_array($payload)) {
-            $this->error('Unexpected API response shape.');
-
-            return;
-        }
-
-        $records = [];
-
-        foreach ($payload as $week => $weekData) {
-            if (! is_numeric($week) || ! is_array($weekData)) {
-                continue;
-            }
-
-            $records[] = $this->mapWeekToDatabaseRow(
-                $playerId,
-                (int) $season,
-                (int) $week,
-                $seasonType,
-                $weekData
-            );
-        }
-
-        if (empty($records)) {
-            $this->warn('No weekly records to upsert.');
-
-            return;
-        }
-
-        $created = 0;
-        $updated = 0;
-
-        foreach ($records as $row) {
-            // game_date is NOT NULL in the migration; skip if missing to avoid DB errors
-            if (empty($row['game_date'])) {
-                $this->warn('Skipping week '.$row['week'].' due to missing game_date');
-
-                continue;
-            }
-
+        foreach($weeks as $week) {
             $attributes = [
-                'player_id' => $row['player_id'],
-                'season' => $row['season'],
-                'week' => $row['week'],
-                'season_type' => $row['season_type'],
+                'player_id' => $playerId,
+                'season' => $week['season'],
+                'week' => $week['week'],
             ];
 
             $values = [
-                'sport' => $row['sport'] ?? 'nfl',
-                'game_date' => $row['game_date'],
-                'date' => $row['date'] ?? null,
-                'team' => $row['team'] ?? null,
-                'opponent' => $row['opponent'] ?? null,
-                'game_id' => $row['game_id'] ?? null,
-                'company' => $row['company'] ?? 'sportradar',
-                'updated_at_ms' => $row['updated_at_ms'] ?? null,
-                'last_modified_ms' => $row['last_modified_ms'] ?? null,
-                'stats' => $row['stats'] ?? null,
-                'raw' => $row['raw'] ?? null,
+                'season_type' => $seasonType,
+                'game_date' => $week['date'],
+                'sport' => $week['sport'],
+                'company' => $week['company'],
+                'team' => $week['team'],
+                'opponent' => $week['opponent'],
+                'game_id' => $week['game_id'],
+                'updated_at_ms' => $week['updated_at'],
+                'last_modified_ms' => $week['last_modified'],
+                'stats' => $week['stats'],
+                'raw' => $week,
             ];
-
-            $model = PlayerStats::updateOrCreate($attributes, $values);
-            if ($model->wasRecentlyCreated) {
-                $created++;
-            } else {
-                $updated++;
-            }
+            PlayerStats::updateOrCreate($attributes, $values);
         }
-
-        $this->info('Player '.$playerId.' weekly stats synced. Created: '.$created.', Updated: '.$updated.'.');
-    }
-
-    /**
-     * Upsert player stats data to the database.
-     */
-    /**
-     * Map a weekly API payload into a database row that matches the schema.
-     */
-    private function mapWeekToDatabaseRow(string $playerId, int $season, int $week, string $seasonType, array $weekData): array
-    {
-        $dateString = $weekData['date'] ?? null;
-        $date = null;
-        $gameDate = null;
-
-        if (is_string($dateString) && $dateString !== '') {
-            try {
-                $date = Carbon::parse($dateString);
-                $gameDate = $date->toDateString();
-            } catch (\Throwable $e) {
-                // Ignore parse errors, keep nulls
-            }
-        }
-
-        $opponent = $weekData['opponent'] ?? ($weekData['opponent_team'] ?? null);
-        $statsPayload = $weekData['stats'] ?? $weekData; // Some responses embed stats directly
-
-        return [
-            'player_id' => $playerId,
-            'sport' => $weekData['sport'] ?? 'nfl',
-            'season' => $season,
-            'week' => $week,
-            'season_type' => $seasonType,
-            'game_date' => $gameDate,
-            'date' => $date,
-            'team' => $weekData['team'] ?? null,
-            'opponent' => $opponent,
-            'game_id' => $weekData['game_id'] ?? null,
-            'company' => $weekData['company'] ?? 'sportradar',
-            'updated_at_ms' => isset($weekData['updated_at']) ? (int) $weekData['updated_at'] : null,
-            'last_modified_ms' => isset($weekData['last_modified']) ? (int) $weekData['last_modified'] : null,
-            'stats' => is_array($statsPayload) ? $statsPayload : null,
-            'raw' => $weekData,
-        ];
     }
 }
