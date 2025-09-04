@@ -170,7 +170,6 @@ return new class extends Migration
             // Additional snap counts
             $table->decimal('def_snp')->nullable();
 
-
             // Indexes for performance (only add new ones)
             $table->index(['player_id', 'season', 'week']);
             $table->index('game_date');

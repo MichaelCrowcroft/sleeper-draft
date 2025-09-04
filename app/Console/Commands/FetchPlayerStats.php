@@ -16,7 +16,7 @@ class FetchPlayerStats extends Command
      */
     protected $signature = 'sleeper:player:stats
                            {player_id : The Sleeper player ID (e.g., 6794)}
-                           {--season=2024 : The season year (default: 2024)}
+                           {--season=2025 : The season year (default: 2025)}
                            {--grouping=week : The grouping type (week, season)}
                            ';
     /**
