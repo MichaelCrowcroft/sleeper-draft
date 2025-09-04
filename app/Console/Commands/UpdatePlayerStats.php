@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Models\PlayerStats;
 use Illuminate\Console\Command;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 
 class UpdatePlayerStats extends Command
@@ -15,7 +14,7 @@ class UpdatePlayerStats extends Command
      * @var string
      */
     protected $signature = 'sleeper:player:stats
-                           {player_id : The Sleeper player ID (e.g., 6794)}
+                           {player-id : The Sleeper player ID (e.g., 6794)}
                            {--season=2025 : The season year (default: 2025)}
                            {--season-type=regular : Season type (regular, postseason)}
                            ';
@@ -32,7 +31,7 @@ class UpdatePlayerStats extends Command
      */
     public function handle(): void
     {
-        $playerId = (string) $this->argument('player_id');
+        $playerId = (string) $this->argument('player-id');
         $season = (string) $this->option('season');
         $seasonType = (string) $this->option('season-type');
 
