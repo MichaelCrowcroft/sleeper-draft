@@ -193,22 +193,42 @@ CREATE INDEX "api_analytics_tool_name_created_at_index" on "api_analytics"(
   "created_at"
 );
 CREATE TABLE IF NOT EXISTS "player_stats"(
-  "id" integer primary key autoincrement not null,
   "player_id" varchar not null,
-  "sport" varchar not null default 'nfl',
-  "season" varchar not null,
+  "game_date" date not null,
+  "season" integer not null,
   "week" integer not null,
-  "season_type" varchar not null default 'regular',
-  "date" date,
+  "season_type" varchar not null,
+  "sport" varchar,
+  "company" varchar,
+  "date" datetime,
   "team" varchar,
   "opponent" varchar,
   "game_id" varchar,
-  "company" varchar,
-  "raw" text,
   "updated_at_ms" integer,
   "last_modified_ms" integer,
-  "created_at" datetime,
-  "updated_at" datetime,
+  "raw" text,
+  "stats" text
+);
+CREATE INDEX "player_stats_player_id_season_week_index" on "player_stats"(
+  "player_id",
+  "season",
+  "week"
+);
+CREATE INDEX "player_stats_game_date_index" on "player_stats"("game_date");
+CREATE TABLE IF NOT EXISTS "player_projections"(
+  "player_id" varchar not null,
+  "game_date" date not null,
+  "season" integer not null,
+  "week" integer not null,
+  "season_type" varchar not null,
+  "sport" varchar,
+  "company" varchar,
+  "date" datetime,
+  "team" varchar,
+  "opponent" varchar,
+  "game_id" varchar,
+  "updated_at_ms" integer,
+  "last_modified_ms" integer,
   "pts_half_ppr" numeric,
   "pts_ppr" numeric,
   "pts_std" numeric,
@@ -222,91 +242,113 @@ CREATE TABLE IF NOT EXISTS "player_stats"(
   "tm_off_snp" integer,
   "tm_def_snp" integer,
   "tm_st_snp" integer,
-  "rec" numeric,
-  "rec_tgt" numeric,
-  "rec_yd" numeric,
-  "rec_td" numeric,
-  "rec_fd" numeric,
-  "rec_air_yd" numeric,
-  "rec_rz_tgt" numeric,
-  "rec_lng" integer,
-  "rush_att" numeric,
-  "rush_yd" numeric,
-  "rush_td" numeric,
-  "fum" numeric,
+  "st_snp" integer,
+  "pass_cmp" numeric,
+  "pass_att" numeric,
+  "pass_yd" numeric,
+  "pass_td" numeric,
+  "pass_int" numeric,
+  "pass_sacked" numeric,
+  "pass_sacked_yd" numeric,
+  "pass_rtg" numeric,
+  "cmp_pct" numeric,
+  "pass_ypa" numeric,
+  "pass_ypc" numeric,
+  "pass_lng" numeric,
+  "pass_fd" numeric,
+  "pass_air_yd" numeric,
+  "pass_rush_yd" numeric,
+  "pass_td_lng" numeric,
+  "pass_inc" numeric,
+  "pass_rz_att" numeric,
+  "rush_lng" numeric,
+  "rush_ypa" numeric,
+  "rush_fd" numeric,
+  "rush_td_lng" numeric,
+  "rush_rz_att" numeric,
+  "rush_tkl_loss" numeric,
+  "rush_tkl_loss_yd" numeric,
+  "rush_yac" numeric,
+  "rec_ypr" numeric,
+  "rec_ypt" numeric,
+  "rec_yar" numeric,
+  "rec_drop" numeric,
+  "rec_0_4" numeric,
+  "rec_5_9" numeric,
+  "rec_10_19" numeric,
+  "rec_20_29" numeric,
+  "rec_30_39" numeric,
+  "rec_40p" numeric,
+  "rec_td_lng" numeric,
+  "rec_td_40p" numeric,
+  "rec_td_50p" numeric,
+  "rush_rec_yd" numeric,
   "fum_lost" numeric,
-  foreign key("player_id") references "players"("player_id") on delete cascade
+  "to" numeric,
+  "penalty" numeric,
+  "penalty_yd" numeric,
+  "def_int" numeric,
+  "def_int_yd" numeric,
+  "def_int_td" numeric,
+  "def_sack" numeric,
+  "def_sack_yd" numeric,
+  "def_ff" numeric,
+  "def_fr" numeric,
+  "def_fr_yd" numeric,
+  "def_fr_td" numeric,
+  "def_td" numeric,
+  "def_sfty" numeric,
+  "idp_tkl" numeric,
+  "idp_tkl_solo" numeric,
+  "st_td" numeric,
+  "st_ff" numeric,
+  "st_fr" numeric,
+  "st_fum_rec" numeric,
+  "xpm" numeric,
+  "xpa" numeric,
+  "fgm" numeric,
+  "fga" numeric,
+  "fgm_0_19" numeric,
+  "fgm_20_29" numeric,
+  "fgm_30_39" numeric,
+  "fgm_40_49" numeric,
+  "fgm_50p" numeric,
+  "fga_0_19" numeric,
+  "fga_20_29" numeric,
+  "fga_30_39" numeric,
+  "fga_40_49" numeric,
+  "fga_50p" numeric,
+  "punt" numeric,
+  "punt_yd" numeric,
+  "punt_lng" numeric,
+  "punt_tb" numeric,
+  "punt_in_20" numeric,
+  "bonus_fd_wr" numeric,
+  "bonus_rec_wr" numeric,
+  "bonus_rush_wr" numeric,
+  "bonus_fd_qb" numeric,
+  "bonus_fd_rb" numeric,
+  "bonus_fd_te" numeric,
+  "bonus_rec_yd_100" numeric,
+  "bonus_rush_rec_yd_100" numeric,
+  "bonus_rec_yd_200" numeric,
+  "bonus_rush_rec_yd_200" numeric,
+  "anytime_tds" numeric,
+  "def_snp" numeric
 );
-CREATE UNIQUE INDEX "uniq_player_week_source" on "player_stats"(
+CREATE INDEX "player_projections_player_id_season_week_index" on "player_projections"(
   "player_id",
   "season",
-  "week",
-  "season_type",
-  "company",
-  "sport"
+  "week"
 );
-CREATE INDEX "player_stats_player_id_index" on "player_stats"("player_id");
-CREATE INDEX "player_stats_sport_index" on "player_stats"("sport");
-CREATE INDEX "player_stats_season_index" on "player_stats"("season");
-CREATE INDEX "player_stats_week_index" on "player_stats"("week");
-CREATE INDEX "player_stats_season_type_index" on "player_stats"("season_type");
-CREATE INDEX "player_stats_team_index" on "player_stats"("team");
-CREATE INDEX "player_stats_opponent_index" on "player_stats"("opponent");
-CREATE TABLE IF NOT EXISTS "player_projections"(
-  "id" integer primary key autoincrement not null,
-  "player_id" varchar not null,
-  "sport" varchar not null default 'nfl',
-  "season" varchar not null,
-  "week" integer not null,
-  "season_type" varchar not null default 'regular',
-  "date" date,
-  "team" varchar,
-  "opponent" varchar,
-  "game_id" varchar,
-  "company" varchar,
-  "raw" text,
-  "updated_at_ms" integer,
-  "last_modified_ms" integer,
-  "created_at" datetime,
-  "updated_at" datetime,
-  "pts_half_ppr" numeric,
-  "pts_ppr" numeric,
-  "pts_std" numeric,
-  "adp_dd_ppr" integer,
-  "pos_adp_dd_ppr" integer,
-  "rec" numeric,
-  "rec_tgt" numeric,
-  "rec_yd" numeric,
-  "rec_td" numeric,
-  "rec_fd" numeric,
-  "rush_att" numeric,
-  "rush_yd" numeric,
-  "fum" numeric,
-  "fum_lost" numeric,
-  foreign key("player_id") references "players"("player_id") on delete cascade
+CREATE INDEX "player_projections_game_date_index" on "player_projections"(
+  "game_date"
 );
-CREATE UNIQUE INDEX "uniq_proj_player_week_source" on "player_projections"(
-  "player_id",
-  "season",
-  "week",
-  "season_type",
-  "company",
-  "sport"
-);
-CREATE INDEX "player_projections_player_id_index" on "player_projections"(
-  "player_id"
-);
-CREATE INDEX "player_projections_sport_index" on "player_projections"("sport");
-CREATE INDEX "player_projections_season_index" on "player_projections"(
-  "season"
-);
-CREATE INDEX "player_projections_week_index" on "player_projections"("week");
-CREATE INDEX "player_projections_season_type_index" on "player_projections"(
-  "season_type"
-);
-CREATE INDEX "player_projections_team_index" on "player_projections"("team");
-CREATE INDEX "player_projections_opponent_index" on "player_projections"(
-  "opponent"
+CREATE UNIQUE INDEX unique_player_week_stats ON player_stats(
+  player_id,
+  season,
+  week,
+  season_type
 );
 
 INSERT INTO migrations VALUES(1,'0001_01_01_000000_create_users_table',1);
@@ -324,3 +366,10 @@ INSERT INTO migrations VALUES(29,'2025_09_03_210100_update_player_stats_flat_col
 INSERT INTO migrations VALUES(30,'2025_09_03_210110_update_player_projections_flat_columns',6);
 INSERT INTO migrations VALUES(31,'2025_09_03_224309_add_missing_columns_to_player_stats_table',7);
 INSERT INTO migrations VALUES(32,'2025_09_03_224322_add_missing_columns_to_player_projections_table',7);
+INSERT INTO migrations VALUES(37,'2025_09_03_225332_create_player_stats_table',8);
+INSERT INTO migrations VALUES(38,'2025_09_03_225335_create_player_projections_table',9);
+INSERT INTO migrations VALUES(39,'2025_09_04_023937_add_raw_column_to_player_stats_table',10);
+INSERT INTO migrations VALUES(40,'2025_09_04_024006_add_rec_column_to_player_stats_table',11);
+INSERT INTO migrations VALUES(41,'2025_09_04_024037_add_rec_air_yd_column_to_player_stats_table',12);
+INSERT INTO migrations VALUES(42,'2025_09_04_024111_add_rec_fd_column_to_player_stats_table',13);
+INSERT INTO migrations VALUES(43,'2025_09_04_024958_alter_player_stats_table_to_json_structure',14);
