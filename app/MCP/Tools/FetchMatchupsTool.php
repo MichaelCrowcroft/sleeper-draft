@@ -92,10 +92,13 @@ class FetchMatchupsTool implements ToolInterface
         // Supplement with user info (via league users and rosters)
         $supplemented = $this->supplementWithUsers($leagueId, $matchups);
 
+        // Group into head-to-head matchups with two teams per matchup_id
+        $paired = $this->pairByMatchupId($supplemented);
+
         return [
             'league_id' => $leagueId,
             'week' => (int) $week,
-            'matchups' => $supplemented,
+            'matchups' => $paired,
         ];
     }
 
@@ -236,22 +239,14 @@ class FetchMatchupsTool implements ToolInterface
         // Supplement matchups
         $result = [];
         foreach ($matchups as $matchup) {
-            $starters = (array) ($matchup['starters'] ?? []);
-            $players = (array) ($matchup['players'] ?? []);
-            $bench = array_values(array_diff($players, $starters));
-
             $rosterId = $matchup['roster_id'] ?? null;
             $ownerId = $rosterId !== null ? ($ownerIdByRosterId[$rosterId] ?? null) : null;
             $user = $ownerId !== null ? ($userById[$ownerId] ?? null) : null;
 
             $result[] = [
                 'matchup_id' => $matchup['matchup_id'] ?? null,
-                'roster_id' => $rosterId,
                 'points' => $matchup['points'] ?? null,
                 'custom_points' => $matchup['custom_points'] ?? null,
-                'starters' => $starters,
-                'players' => $players,
-                'bench' => $bench,
                 'user' => $user ? [
                     'user_id' => $user['user_id'] ?? null,
                     'username' => $user['username'] ?? null,
@@ -265,5 +260,47 @@ class FetchMatchupsTool implements ToolInterface
         }
 
         return $result;
+    }
+
+    private function pairByMatchupId(array $entries): array
+    {
+        if ($entries === []) {
+            return [];
+        }
+
+        $byMatchupId = [];
+        foreach ($entries as $entry) {
+            $mid = $entry['matchup_id'] ?? null;
+            if ($mid === null) {
+                // Skip entries without a matchup_id
+                continue;
+            }
+            if (! isset($byMatchupId[$mid])) {
+                $byMatchupId[$mid] = [];
+            }
+            $byMatchupId[$mid][] = $entry;
+        }
+
+        $formatted = [];
+        foreach ($byMatchupId as $mid => $teams) {
+            $formattedTeams = [];
+            foreach ($teams as $team) {
+                $formattedTeams[] = [
+                    'points' => $team['points'] ?? null,
+                    'custom_points' => $team['custom_points'] ?? null,
+                    'user' => $team['user'] ?? null,
+                ];
+            }
+
+            $formatted[] = [
+                'matchup_id' => $mid,
+                'teams' => array_values($formattedTeams),
+            ];
+        }
+
+        // Ensure consistent ordering by matchup_id for predictability
+        usort($formatted, fn ($a, $b) => ($a['matchup_id'] ?? 0) <=> ($b['matchup_id'] ?? 0));
+
+        return $formatted;
     }
 }
