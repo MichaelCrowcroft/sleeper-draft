@@ -202,7 +202,8 @@ new class extends Component
                         }
 
                         if ($matchingRoster) {
-                            $team['roster'] = $matchingRoster['players'] ?? [];
+                            // Prefer starters; fallback to all players
+                            $team['roster'] = $matchingRoster['starters'] ?? ($matchingRoster['players'] ?? []);
                         }
                     }
                 }
@@ -328,8 +329,17 @@ new class extends Component
                 ->where('week', $week)
                 ->first();
 
-            if ($actualStat && isset($actualStat->stats['pts_ppr'])) {
-                $actualPoints += (float) $actualStat->stats['pts_ppr'];
+            if ($actualStat) {
+                $actualPts = null;
+                if (isset($actualStat->stats) && is_array($actualStat->stats) && array_key_exists('pts_ppr', $actualStat->stats)) {
+                    $actualPts = $actualStat->stats['pts_ppr'];
+                } elseif (isset($actualStat->pts_ppr)) {
+                    $actualPts = $actualStat->pts_ppr;
+                }
+
+                if ($actualPts !== null) {
+                    $actualPoints += (float) $actualPts;
+                }
                 $playersPlayed++;
             } else {
                 // Get projected points for players who haven't played
@@ -338,8 +348,17 @@ new class extends Component
                     ->where('week', $week)
                     ->first();
 
-                if ($projection && isset($projection->stats['pts_ppr'])) {
-                    $projectedPoints += (float) $projection->stats['pts_ppr'];
+                if ($projection) {
+                    $projPts = null;
+                    if (isset($projection->stats) && is_array($projection->stats) && array_key_exists('pts_ppr', $projection->stats)) {
+                        $projPts = $projection->stats['pts_ppr'];
+                    } elseif (isset($projection->pts_ppr)) {
+                        $projPts = $projection->pts_ppr;
+                    }
+
+                    if ($projPts !== null) {
+                        $projectedPoints += (float) $projPts;
+                    }
                 }
             }
         }
