@@ -34,7 +34,6 @@ class McpActionController extends Controller
 
             'api.mcp.fetch-players-season-data' => \App\MCP\Tools\FetchPlayersSeasonDataTool::class,
             'api.mcp.fetch-player-season-data' => \App\MCP\Tools\FetchPlayerSeasonDataTool::class,
-            'api.mcp.fetch-free-agents-players-season-data' => \App\MCP\Tools\FetchFreeAgentsPlayersSeasonDataTool::class,
         ];
 
         $toolClass = $routeToToolClassMap[$routeName] ?? null;
@@ -193,7 +192,6 @@ class McpActionController extends Controller
             'fetch-matchups',
             'fetch-players-season-data',
             'fetch-player-season-data',
-            'fetch-free-agents-players-season-data',
         ];
     }
 
@@ -214,7 +212,6 @@ class McpActionController extends Controller
             'fetch-matchups' => 'fetch-matchups',
             'fetch-players-season-data' => 'fetch-players-season-data',
             'fetch-player-season-data' => 'fetch-player-season-data',
-            'fetch-free-agents-players-season-data' => 'fetch-free-agents-players-season-data',
         ];
 
         return $mapping[$tool] ?? $tool;

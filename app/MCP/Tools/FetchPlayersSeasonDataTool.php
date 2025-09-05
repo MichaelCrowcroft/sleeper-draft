@@ -4,6 +4,7 @@ namespace App\MCP\Tools;
 
 use App\Http\Resources\PlayerResource;
 use App\Models\Player;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
@@ -31,24 +32,28 @@ class FetchPlayersSeasonDataTool implements ToolInterface
         return [
             'type' => 'object',
             'properties' => [
+                'league_id' => [
+                    'type' => 'string',
+                    'description' => 'Optional Sleeper league ID. When provided, each player will include league team info or Free Agent.',
+                ],
                 'position' => [
                     'type' => 'string',
-                    'description' => 'Optional position filter (e.g., QB, RB, WR, TE, K, DEF)'
+                    'description' => 'Optional position filter (e.g., QB, RB, WR, TE, K, DEF)',
                 ],
                 'limit' => [
                     'type' => 'integer',
                     'minimum' => 1,
                     'maximum' => 1000,
-                    'description' => 'Optional limit of players to return (default 10)'
+                    'description' => 'Optional limit of players to return (default 10)',
                 ],
                 'offset' => [
                     'type' => 'integer',
                     'minimum' => 0,
-                    'description' => 'Optional offset for pagination (default 0)'
+                    'description' => 'Optional offset for pagination (default 0)',
                 ],
                 'cursor' => [
                     'type' => 'string',
-                    'description' => 'Opaque cursor for pagination per MCP spec. If provided, overrides offset/limit.'
+                    'description' => 'Opaque cursor for pagination per MCP spec. If provided, overrides offset/limit.',
                 ],
             ],
         ];
@@ -87,6 +92,7 @@ class FetchPlayersSeasonDataTool implements ToolInterface
 
         $position = $arguments['position'] ?? null;
         $cursor = $arguments['cursor'] ?? null;
+        $leagueId = $arguments['league_id'] ?? null;
 
         // Determine paging from cursor or fallback to limit/offset
         $defaultPageSize = 10;
@@ -105,6 +111,9 @@ class FetchPlayersSeasonDataTool implements ToolInterface
             // Position in cursor (if present) takes precedence
             if (isset($decoded['position'])) {
                 $position = $decoded['position'];
+            }
+            if (isset($decoded['league_id'])) {
+                $leagueId = $decoded['league_id'];
             }
         }
 
@@ -134,6 +143,18 @@ class FetchPlayersSeasonDataTool implements ToolInterface
         // Transform using PlayerResource which includes season summaries
         $data = $players->map(fn ($player) => (new PlayerResource($player))->resolve())->all();
 
+        // If a league_id was provided, annotate each player with league team name or Free Agent
+        if (is_string($leagueId) && $leagueId !== '') {
+            $playerIdToTeam = $this->buildPlayerLeagueTeamMap($leagueId);
+            foreach ($data as &$playerArr) {
+                $pid = $playerArr['player_id'] ?? null;
+                $playerArr['league_team_name'] = ($pid !== null && isset($playerIdToTeam[(string) $pid]))
+                    ? $playerIdToTeam[(string) $pid]
+                    : 'Free Agent';
+            }
+            unset($playerArr);
+        }
+
         $nextCursor = null;
         if ($hasMore) {
             $nextCursor = $this->encodeCursor([
@@ -160,6 +181,7 @@ class FetchPlayersSeasonDataTool implements ToolInterface
                     'projections' => 2025,
                 ],
                 'executed_at' => now()->toISOString(),
+                'league_id' => $leagueId,
             ],
             'count' => count($data),
             'players' => $data,
@@ -204,6 +226,7 @@ class FetchPlayersSeasonDataTool implements ToolInterface
         $aliases = [
             'pos' => 'position',
             'c' => 'cursor',
+            'leagueId' => 'league_id',
         ];
         $normalized = [];
         foreach ($arguments as $key => $value) {
@@ -218,6 +241,9 @@ class FetchPlayersSeasonDataTool implements ToolInterface
         }
         if (isset($normalized['cursor'])) {
             $normalized['cursor'] = (string) $normalized['cursor'];
+        }
+        if (isset($normalized['league_id'])) {
+            $normalized['league_id'] = (string) $normalized['league_id'];
         }
 
         return $normalized;
@@ -236,9 +262,71 @@ class FetchPlayersSeasonDataTool implements ToolInterface
                 return null;
             }
             $arr = json_decode($decoded, true);
+
             return is_array($arr) ? $arr : null;
         } catch (\Throwable $e) {
             return null;
+        }
+    }
+
+    /**
+     * Build a mapping of player_id => league team name for a given Sleeper league.
+     */
+    private function buildPlayerLeagueTeamMap(string $leagueId): array
+    {
+        try {
+            $rostersResponse = Http::get("https://api.sleeper.app/v1/league/{$leagueId}/rosters");
+            $usersResponse = Http::get("https://api.sleeper.app/v1/league/{$leagueId}/users");
+
+            if (! $rostersResponse->successful() || ! $usersResponse->successful()) {
+                return [];
+            }
+
+            $rosters = $rostersResponse->json();
+            $users = $usersResponse->json();
+            if (! is_array($rosters) || ! is_array($users)) {
+                return [];
+            }
+
+            $ownerIdByRosterId = [];
+            foreach ($rosters as $roster) {
+                $rid = $roster['roster_id'] ?? null;
+                if ($rid !== null) {
+                    $ownerIdByRosterId[$rid] = $roster['owner_id'] ?? null;
+                }
+            }
+
+            $userById = [];
+            foreach ($users as $user) {
+                $uid = $user['user_id'] ?? null;
+                if ($uid !== null) {
+                    $userById[$uid] = $user;
+                }
+            }
+
+            $playerIdToTeam = [];
+            foreach ($rosters as $roster) {
+                $rid = $roster['roster_id'] ?? null;
+                $ownerId = $rid !== null ? ($ownerIdByRosterId[$rid] ?? null) : null;
+                $user = $ownerId !== null ? ($userById[$ownerId] ?? null) : null;
+                $teamName = $user['metadata']['team_name']
+                    ?? ($user['display_name'] ?? ($user['username'] ?? ($ownerId ? 'Team '.$ownerId : null)));
+
+                $playerIds = array_unique(array_values(array_merge(
+                    (array) ($roster['players'] ?? []),
+                    (array) ($roster['starters'] ?? [])
+                )));
+
+                foreach ($playerIds as $pid) {
+                    if (is_string($pid) || is_int($pid)) {
+                        $playerIdToTeam[(string) $pid] = $teamName ?? 'Team';
+                    }
+                }
+            }
+
+            return $playerIdToTeam;
+        } catch (\Throwable $e) {
+            return [];
         }
     }
 }

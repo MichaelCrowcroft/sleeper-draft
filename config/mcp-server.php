@@ -258,7 +258,6 @@ return [
         \App\MCP\Tools\FetchTransactionsTool::class,
         \App\MCP\Tools\FetchPlayersSeasonDataTool::class,
         \App\MCP\Tools\FetchPlayerSeasonDataTool::class,
-        \App\MCP\Tools\FetchFreeAgentsPlayersSeasonDataTool::class,
 
         // ===== REGISTER YOUR CUSTOM TOOLS BELOW =====
         // App\MCP\Tools\Database\Your::class,
