@@ -7,6 +7,27 @@
             </div>
         </div>
 
+        @php
+            // Attempt to resolve current NFL week via Sleeper state, swallow errors if offline
+            $resolvedWeek = null;
+            try {
+                $resp = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::state()->current('nfl');
+                if ($resp->successful()) {
+                    $state = $resp->json();
+                    $w = isset($state['week']) ? (int) $state['week'] : null;
+                    $resolvedWeek = ($w && $w >= 1 && $w <= 18) ? $w : null;
+                }
+            } catch (\Throwable $e) {
+                $resolvedWeek = null;
+            }
+        @endphp
+
+        @if ($resolvedWeek)
+            <flux:callout>
+                NFL Week {{ $resolvedWeek }}
+            </flux:callout>
+        @endif
+
         <!-- Summary Statistics -->
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <flux:callout>

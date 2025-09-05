@@ -2,6 +2,7 @@
 
 use App\MCP\Tools\FetchUserLeaguesTool;
 use App\MCP\Tools\FetchMatchupsTool;
+use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
@@ -10,6 +11,7 @@ new class extends Component {
     public array $leagueDetails = [];
     public bool $loading = true;
     public string $error = '';
+    public ?int $resolvedWeek = null;
 
     public function mount(): void
     {
@@ -26,6 +28,9 @@ new class extends Component {
                 $this->loading = false;
                 return;
             }
+
+            // Resolve current NFL week
+            $this->resolveCurrentWeek();
 
             // Determine user identifier (username takes priority if both exist)
             $userIdentifier = $user->sleeper_username ?: $user->sleeper_user_id;
@@ -64,6 +69,20 @@ new class extends Component {
             $this->error = 'Failed to load dashboard data: ' . $e->getMessage();
         } finally {
             $this->loading = false;
+        }
+    }
+
+    private function resolveCurrentWeek(): void
+    {
+        try {
+            $response = Sleeper::state()->current('nfl');
+            if ($response->successful()) {
+                $state = $response->json();
+                $week = isset($state['week']) ? (int) $state['week'] : null;
+                $this->resolvedWeek = ($week && $week >= 1 && $week <= 18) ? $week : null;
+            }
+        } catch (\Throwable $e) {
+            $this->resolvedWeek = null;
         }
     }
 
@@ -183,6 +202,12 @@ new class extends Component {
             <p class="text-muted-foreground mt-1">Your Sleeper Fantasy Football Leagues</p>
         </div>
     </div>
+
+    @if ($resolvedWeek)
+        <flux:callout class="mt-2">
+            NFL Week {{ $resolvedWeek }}
+        </flux:callout>
+    @endif
 
     @if ($loading)
         <div class="flex items-center justify-center py-12">

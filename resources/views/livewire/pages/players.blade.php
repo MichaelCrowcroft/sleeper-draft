@@ -3,6 +3,7 @@
 use App\Models\Player;
 use App\MCP\Tools\FetchUserLeaguesTool;
 use App\MCP\Tools\FetchRosterTool;
+use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Volt\Component;
@@ -18,6 +19,7 @@ new class extends Component {
     public array $leagues = [];
     public array $leagueRosters = [];
     public bool $loadingLeagues = false;
+    public ?int $resolvedWeek = null;
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -28,6 +30,7 @@ new class extends Component {
 
     public function mount(): void
     {
+        $this->resolveCurrentWeek();
         $this->loadUserLeagues();
     }
 
@@ -129,6 +132,20 @@ new class extends Component {
         }
     }
 
+    private function resolveCurrentWeek(): void
+    {
+        try {
+            $response = Sleeper::state()->current('nfl');
+            if ($response->successful()) {
+                $state = $response->json();
+                $week = isset($state['week']) ? (int) $state['week'] : null;
+                $this->resolvedWeek = ($week && $week >= 1 && $week <= 18) ? $week : null;
+            }
+        } catch (\Throwable $e) {
+            $this->resolvedWeek = null;
+        }
+    }
+
     private function getPlayerLeagueStatus(string $playerId): array
     {
         if (empty($this->selectedLeagueId) || empty($this->leagueRosters)) {
@@ -207,6 +224,12 @@ new class extends Component {
             <p class="text-muted-foreground mt-1">Browse and filter fantasy football players</p>
         </div>
     </div>
+
+    @if ($resolvedWeek)
+        <flux:callout class="mt-2">
+            NFL Week {{ $resolvedWeek }}
+        </flux:callout>
+    @endif
 
     <!-- Filters -->
     <div class="space-y-4">
