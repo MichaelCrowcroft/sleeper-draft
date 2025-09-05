@@ -24,6 +24,10 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 
+    // Players section
+    Route::get('players', [\App\Http\Controllers\PlayerController::class, 'index'])->name('players.index');
+    Route::get('players/{playerId}', [\App\Http\Controllers\PlayerController::class, 'show'])->name('players.show');
+
     // Analytics routes
     Route::get('analytics', [\App\Http\Controllers\AnalyticsController::class, 'index'])->name('analytics.index');
     Route::get('analytics/filter', [\App\Http\Controllers\AnalyticsController::class, 'filter'])->name('analytics.filter');
