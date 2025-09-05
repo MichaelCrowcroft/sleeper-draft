@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Resources\PlayerResource;
 use App\Models\Player;
+use App\Models\PlayerProjections;
 use App\Models\PlayerStats;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -57,6 +58,44 @@ it('aggregates season stats by summing weekly numeric metrics', function () {
         ->and($totals['rec_yd'] ?? null)->toBe(150.0)
         ->and($totals['rush_td'] ?? null)->toBe(3.0)
         ->and(isset($totals['note']))->toBeFalse();
+});
+
+it('includes season_2025_projection_summary in PlayerResource when relation is loaded', function () {
+    /** @var Player $player */
+    $player = Player::factory()->create([
+        'full_name' => 'Proj Player',
+    ]);
+
+    $season = 2025;
+
+    PlayerProjections::factory()->create([
+        'player_id' => $player->player_id,
+        'season' => $season,
+        'week' => 1,
+        'pts_ppr' => 10.0,
+        'gms_active' => 1,
+    ]);
+
+    PlayerProjections::factory()->create([
+        'player_id' => $player->player_id,
+        'season' => $season,
+        'week' => 2,
+        'pts_ppr' => 20.0,
+        'gms_active' => 1,
+    ]);
+
+    // Eager-load projections2025 relation
+    $player->load('projections2025');
+    $request = Request::create('/', 'GET');
+    $resource = (new PlayerResource($player))->toArray($request);
+
+    expect($resource)
+        ->toHaveKey('season_2025_projection_summary')
+        ->and($resource['season_2025_projection_summary']['total_points'] ?? null)->toBe(30.0)
+        ->and($resource['season_2025_projection_summary']['min_points'] ?? null)->toBe(10.0)
+        ->and($resource['season_2025_projection_summary']['max_points'] ?? null)->toBe(20.0)
+        ->and($resource['season_2025_projection_summary']['games'] ?? null)->toBe(2)
+        ->and($resource['season_2025_projection_summary']['average_points_per_game'] ?? null)->toBe(15.0);
 });
 
 it('includes season_2024_summary in PlayerResource when relation is loaded', function () {

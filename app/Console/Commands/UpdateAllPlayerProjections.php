@@ -33,7 +33,10 @@ class UpdateAllPlayerProjections extends Command
         $season = $this->option('season');
         $seasonType = $this->option('season-type');
 
-        $players = Player::query()->whereNotNull('player_id')->get();
+        $players = Player::query()
+            ->whereNotNull('player_id')
+            ->where('active', true)
+            ->get();
 
         foreach ($players as $player) {
             UpdatePlayerProjectionsJob::dispatch(

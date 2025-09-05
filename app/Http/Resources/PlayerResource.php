@@ -54,6 +54,11 @@ class PlayerResource extends JsonResource
             $data['season_2024_summary'] = $this->resource->getSeason2024Summary();
         }
 
+        // Append 2025 projections PPR summary if available
+        if (method_exists($this->resource, 'getSeason2025ProjectionSummary')) {
+            $data['season_2025_projection_summary'] = $this->resource->getSeason2025ProjectionSummary();
+        }
+
         return $data;
     }
 }

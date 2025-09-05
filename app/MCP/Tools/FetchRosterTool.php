@@ -254,7 +254,7 @@ class FetchRosterTool implements ToolInterface
         $playersFromDb = [];
         if (! empty($allPlayerIds) && $includePlayerDetails) {
             $playersFromDb = Player::whereIn('player_id', $allPlayerIds)
-                ->with('stats2024')
+                ->with(['stats2024', 'projections2025'])
                 ->get()
                 ->mapWithKeys(fn ($player) => [
                     $player->player_id => (new PlayerResource($player))->resolve(),

@@ -88,6 +88,90 @@ class Player extends Model
     }
 
     /**
+     * Relationship for projections limited to the 2025 season.
+     */
+    public function projections2025(): HasMany
+    {
+        return $this->projections()->where('season', 2025);
+    }
+
+    /**
+     * Compute PPR projection summary for 2025 season: totals/min/max/avg/stddev.
+     */
+    public function getSeason2025ProjectionSummary(): array
+    {
+        if ($this->relationLoaded('projections2025')) {
+            $collection = $this->getRelation('projections2025');
+        } else {
+            $collection = $this->projections2025()->get();
+        }
+
+        $points = [];
+        $totalProjectedGames = 0;
+
+        foreach ($collection as $weeklyProjection) {
+            // Support both JSON stats schema and flattened columns
+            $stats = is_array($weeklyProjection->stats ?? null) ? $weeklyProjection->stats : null;
+            $ppr = null;
+            $gms = null;
+
+            if ($stats) {
+                $ppr = isset($stats['pts_ppr']) && is_numeric($stats['pts_ppr']) ? (float) $stats['pts_ppr'] : null;
+                $gms = isset($stats['gms_active']) && is_numeric($stats['gms_active']) ? (int) $stats['gms_active'] : null;
+            }
+
+            if ($ppr === null && isset($weeklyProjection->pts_ppr) && is_numeric($weeklyProjection->pts_ppr)) {
+                $ppr = (float) $weeklyProjection->pts_ppr;
+            }
+
+            if ($gms === null && isset($weeklyProjection->gms_active) && is_numeric($weeklyProjection->gms_active)) {
+                $gms = (int) $weeklyProjection->gms_active;
+            }
+
+            if ($ppr !== null) {
+                $points[] = $ppr;
+                $totalProjectedGames += max(0, (int) ($gms ?? 1));
+            }
+        }
+
+        if (empty($points)) {
+            return [
+                'total_points' => 0.0,
+                'min_points' => 0.0,
+                'max_points' => 0.0,
+                'average_points_per_game' => 0.0,
+                'stddev_below' => 0.0,
+                'stddev_above' => 0.0,
+                'games' => 0,
+            ];
+        }
+
+        $total = array_sum($points);
+        $min = min($points);
+        $max = max($points);
+        $games = $totalProjectedGames > 0 ? $totalProjectedGames : count($points);
+        $avg = $games > 0 ? $total / $games : 0.0;
+
+        $n = count($points);
+        $variance = 0.0;
+        foreach ($points as $p) {
+            $variance += ($p - $avg) * ($p - $avg);
+        }
+        $variance = $n > 0 ? $variance / $n : 0.0;
+        $stddev = sqrt($variance);
+
+        return [
+            'total_points' => $total,
+            'min_points' => $min,
+            'max_points' => $max,
+            'average_points_per_game' => $avg,
+            'stddev_below' => $avg - $stddev,
+            'stddev_above' => $avg + $stddev,
+            'games' => $games,
+        ];
+    }
+
+    /**
      * Calculate aggregated season totals by summing all numeric values in the weekly 'stats' arrays.
      */
     public function calculateSeasonStatTotals(int $season): array
