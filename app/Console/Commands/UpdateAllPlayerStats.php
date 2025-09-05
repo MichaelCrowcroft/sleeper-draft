@@ -33,7 +33,11 @@ class UpdateAllPlayerStats extends Command
         $season = $this->option('season');
         $seasonType = $this->option('season-type');
 
-        $players = Player::query()->whereNotNull('player_id')->get();
+        $players = Player::query()
+            ->whereNotNull('player_id')
+            ->where('active', true)
+            ->whereJsonContains('fantasy_positions', ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'])
+            ->get();
 
         foreach ($players as $player) {
             UpdatePlayerStatsJob::dispatch(

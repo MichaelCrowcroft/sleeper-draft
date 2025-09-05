@@ -36,6 +36,7 @@ class UpdateAllPlayerProjections extends Command
         $players = Player::query()
             ->whereNotNull('player_id')
             ->where('active', true)
+            ->whereJsonContains('fantasy_positions', ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'])
             ->get();
 
         foreach ($players as $player) {

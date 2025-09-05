@@ -173,6 +173,7 @@ new class extends Component {
     public function getPlayersQuery()
     {
         return Player::query()
+            ->whereIn('position', ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'])
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('first_name', 'like', '%' . $this->search . '%')
@@ -192,15 +193,7 @@ new class extends Component {
 
     public function getAvailablePositions(): array
     {
-        return Cache::remember('player_positions', now()->addHours(1), function () {
-            return Player::whereNotNull('position')
-                ->where('active', true)
-                ->distinct()
-                ->pluck('position')
-                ->sort()
-                ->values()
-                ->toArray();
-        });
+        return ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
     }
 
     public function getAvailableTeams(): array
