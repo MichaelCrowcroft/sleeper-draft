@@ -40,7 +40,7 @@
 
         <!-- Filters -->
         <flux:callout>
-            <form method="GET" action="{{ route('players.index') }}" class="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <form method="GET" action="{{ route('players.index') }}" class="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
                 <!-- Search -->
                 <div>
                     <flux:input
@@ -81,6 +81,14 @@
                     </flux:select>
                 </div>
 
+                <!-- Free Agents Only (visible when league selected) -->
+                <div>
+                    <label class="flex items-center gap-2 text-sm">
+                        <input type="checkbox" name="fa_only" value="1" {{ !empty($selectedLeagueId) && !empty(request('fa_only')) ? 'checked' : '' }} {{ empty($selectedLeagueId) ? 'disabled' : '' }} />
+                        <span>Free agents only</span>
+                    </label>
+                </div>
+
                 <!-- Submit Button -->
                 <div>
                     <flux:button type="submit" variant="primary">Filter</flux:button>
@@ -89,7 +97,7 @@
         </flux:callout>
 
         <!-- Active Filters Summary -->
-        @if ($search || $position || $team || $selectedLeagueId)
+        @if ($search || $position || $team || $selectedLeagueId || (!empty($selectedLeagueId) && !empty(request('fa_only'))))
             <div class="flex flex-wrap gap-2">
                 @if ($search)
                     <flux:badge variant="outline">
@@ -116,6 +124,13 @@
                     <flux:badge variant="outline">
                         League: {{ $selectedLeague['name'] ?? 'Unknown' }}
                         <a href="{{ route('players.index', array_filter(request()->query(), fn($v, $k) => $k !== 'league_id', ARRAY_FILTER_USE_BOTH)) }}" class="ml-1 hover:text-destructive">×</a>
+                    </flux:badge>
+                @endif
+
+                @if (!empty($selectedLeagueId) && !empty(request('fa_only')))
+                    <flux:badge variant="outline">
+                        Free Agents Only
+                        <a href="{{ route('players.index', array_filter(request()->query(), fn($v, $k) => $k !== 'fa_only', ARRAY_FILTER_USE_BOTH)) }}" class="ml-1 hover:text-destructive">×</a>
                     </flux:badge>
                 @endif
             </div>

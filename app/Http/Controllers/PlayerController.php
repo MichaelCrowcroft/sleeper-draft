@@ -20,6 +20,7 @@ class PlayerController extends Controller
         $position = $request->get('position');
         $team = $request->get('team');
         $selectedLeagueId = $request->get('league_id');
+        $faOnly = (bool) $request->boolean('fa_only');
 
         // Build query
         $query = Player::query()
@@ -38,6 +39,30 @@ class PlayerController extends Controller
             })
             ->where('active', true);
 
+        // If filtering free agents for a selected league, exclude rostered players at the query level
+        $leagueRosters = [];
+        if ($selectedLeagueId && $faOnly) {
+            $leagueRosters = $this->getLeagueRosters($selectedLeagueId);
+
+            // Build a set of owned player IDs across all rosters
+            $ownedIds = [];
+            foreach ($leagueRosters as $roster) {
+                $playersInRoster = array_merge(
+                    (array) ($roster['starters'] ?? []),
+                    (array) ($roster['players'] ?? [])
+                );
+                foreach ($playersInRoster as $pid) {
+                    if (! empty($pid)) {
+                        $ownedIds[$pid] = true;
+                    }
+                }
+            }
+
+            if (! empty($ownedIds)) {
+                $query->whereNotIn('player_id', array_keys($ownedIds));
+            }
+        }
+
         // Get players for current page with relationships, ordered by ADP (ascending - lower is better)
         $players = $query->with(['stats2024', 'projections2025'])
             ->orderByRaw('adp IS NULL, adp ASC')
@@ -52,12 +77,14 @@ class PlayerController extends Controller
 
         // Get user's leagues if authenticated
         $leagues = [];
-        $leagueRosters = [];
+        // $leagueRosters may already be populated above when filtering free agents
 
         if (Auth::check()) {
             $leagues = $this->getUserLeagues();
             if ($selectedLeagueId) {
-                $leagueRosters = $this->getLeagueRosters($selectedLeagueId);
+                if (empty($leagueRosters)) {
+                    $leagueRosters = $this->getLeagueRosters($selectedLeagueId);
+                }
             }
         }
 
@@ -82,6 +109,7 @@ class PlayerController extends Controller
             'position',
             'team',
             'selectedLeagueId',
+            'faOnly',
             'availablePositions',
             'availableTeams',
             'leagues'
