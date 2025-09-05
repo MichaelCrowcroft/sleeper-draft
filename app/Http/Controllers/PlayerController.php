@@ -24,7 +24,14 @@ class PlayerController extends Controller
 
         // Build query
         $query = Player::query()
-            ->whereJsonContains('fantasy_positions', ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'])
+            ->where(function ($q) {
+                $q->whereJsonContains('fantasy_positions', 'QB')
+                    ->orWhereJsonContains('fantasy_positions', 'RB')
+                    ->orWhereJsonContains('fantasy_positions', 'WR')
+                    ->orWhereJsonContains('fantasy_positions', 'TE')
+                    ->orWhereJsonContains('fantasy_positions', 'K')
+                    ->orWhereJsonContains('fantasy_positions', 'DEF');
+            })
             ->when($search, function ($q) use ($search) {
                 $q->where(function ($query) use ($search) {
                     $query->where('first_name', 'like', '%'.$search.'%')
