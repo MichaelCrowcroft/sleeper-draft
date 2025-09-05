@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\MCP\Tools\FetchRosterTool;
 use App\MCP\Tools\FetchUserLeaguesTool;
 use App\Models\Player;
 use Illuminate\Http\Request;
@@ -225,14 +224,46 @@ class PlayerController extends Controller
     {
         return Cache::remember("league_rosters_{$leagueId}", now()->addMinutes(10), function () use ($leagueId) {
             try {
-                $rostersTool = app(FetchRosterTool::class);
-                $result = $rostersTool->execute([
-                    'league_id' => $leagueId,
-                    'include_player_details' => false,
-                    'include_owner_details' => true,
-                ]);
+                // Use Sleeper facade to get all rosters for the league
+                $response = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::leagues()->rosters($leagueId);
 
-                return $result['success'] ? $result['data'] : [];
+                if (! $response->successful()) {
+                    return [];
+                }
+
+                $rosters = $response->json();
+
+                if (! is_array($rosters)) {
+                    return [];
+                }
+
+                // Enhance rosters with owner details
+                $enhancedRosters = [];
+                foreach ($rosters as $roster) {
+                    if (! empty($roster['owner_id'])) {
+                        // Get owner details from league users
+                        $usersResponse = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::leagues()->users($leagueId);
+
+                        if ($usersResponse->successful()) {
+                            $users = $usersResponse->json();
+                            foreach ($users as $user) {
+                                if (($user['user_id'] ?? null) === $roster['owner_id']) {
+                                    $roster['owner'] = [
+                                        'user_id' => $user['user_id'],
+                                        'username' => $user['username'] ?? null,
+                                        'display_name' => $user['display_name'] ?? null,
+                                        'team_name' => $user['metadata']['team_name'] ?? ($user['display_name'] ?? 'Unknown Team'),
+                                    ];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    $enhancedRosters[] = $roster;
+                }
+
+                return $enhancedRosters;
             } catch (\Exception $e) {
                 return [];
             }
@@ -247,8 +278,8 @@ class PlayerController extends Controller
         foreach ($leagueRosters as $roster) {
             $players = array_merge(
                 $roster['starters'] ?? [],
-                $roster['reserve'] ?? [],
-                $roster['taxi'] ?? []
+                $roster['players'] ?? [],
+                $roster['bench'] ?? []
             );
 
             if (in_array($playerId, $players)) {
