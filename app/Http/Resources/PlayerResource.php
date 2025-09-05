@@ -49,9 +49,9 @@ class PlayerResource extends JsonResource
             'bye_week' => $this->bye_week,
         ];
 
-        // Append 2024 season stats if the relation is available (or load on demand)
-        if (method_exists($this->resource, 'getSeason2024Totals')) {
-            $data['season_2024_stats'] = $this->resource->getSeason2024Totals();
+        // Append 2024 season PPR summary if available
+        if (method_exists($this->resource, 'getSeason2024Summary')) {
+            $data['season_2024_summary'] = $this->resource->getSeason2024Summary();
         }
 
         return $data;

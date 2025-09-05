@@ -59,7 +59,7 @@ it('aggregates season stats by summing weekly numeric metrics', function () {
         ->and(isset($totals['note']))->toBeFalse();
 });
 
-it('includes season_2024_stats in PlayerResource when relation is loaded', function () {
+it('includes season_2024_summary in PlayerResource when relation is loaded', function () {
     /** @var Player $player */
     $player = Player::factory()->create([
         'full_name' => 'Test Player',
@@ -73,6 +73,8 @@ it('includes season_2024_stats in PlayerResource when relation is loaded', funct
         'week' => 1,
         'stats' => [
             'rec' => 2,
+            'pts_ppr' => 2.0,
+            'gms_active' => 1,
         ],
     ]);
 
@@ -82,6 +84,8 @@ it('includes season_2024_stats in PlayerResource when relation is loaded', funct
         'week' => 2,
         'stats' => [
             'rec' => 3,
+            'pts_ppr' => 3.0,
+            'gms_active' => 1,
         ],
     ]);
 
@@ -91,6 +95,12 @@ it('includes season_2024_stats in PlayerResource when relation is loaded', funct
     $resource = (new PlayerResource($player))->toArray($request);
 
     expect($resource)
-        ->toHaveKey('season_2024_stats')
-        ->and($resource['season_2024_stats']['rec'] ?? null)->toBe(5.0);
+        ->toHaveKey('season_2024_summary')
+        ->and($resource['season_2024_summary']['total_points'] ?? null)->toBe(5.0)
+        ->and($resource['season_2024_summary']['min_points'] ?? null)->toBe(2.0)
+        ->and($resource['season_2024_summary']['max_points'] ?? null)->toBe(3.0)
+        ->and($resource['season_2024_summary']['games_active'] ?? null)->toBe(2)
+        ->and($resource['season_2024_summary']['average_points_per_game'] ?? null)->toBe(2.5)
+        ->and($resource['season_2024_summary']['stddev_below'] ?? null)->toBe(2.0)
+        ->and($resource['season_2024_summary']['stddev_above'] ?? null)->toBe(3.0);
 });

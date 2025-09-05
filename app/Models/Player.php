@@ -139,4 +139,69 @@ class Player extends Model
 
         return $totals;
     }
+
+    /**
+     * Compute PPR summary for 2024 season: totals/min/max/avg/stddev.
+     */
+    public function getSeason2024Summary(): array
+    {
+        if ($this->relationLoaded('stats2024')) {
+            $collection = $this->getRelation('stats2024');
+        } else {
+            $collection = $this->stats2024()->get();
+        }
+
+        $points = [];
+        $totalGamesActive = 0;
+
+        foreach ($collection as $weeklyStats) {
+            $stats = $weeklyStats->stats ?? [];
+            $ppr = isset($stats['pts_ppr']) && is_numeric($stats['pts_ppr']) ? (float) $stats['pts_ppr'] : null;
+            $gmsActive = isset($stats['gms_active']) && is_numeric($stats['gms_active']) ? (int) $stats['gms_active'] : null;
+
+            // Consider a game active if gms_active >= 1, otherwise if pts exist assume 1
+            $isActive = ($gmsActive !== null ? $gmsActive >= 1 : ($ppr !== null));
+
+            if ($isActive && $ppr !== null) {
+                $points[] = $ppr;
+                $totalGamesActive += ($gmsActive !== null ? max(0, (int) $gmsActive) : 1);
+            }
+        }
+
+        if (empty($points)) {
+            return [
+                'total_points' => 0.0,
+                'min_points' => 0.0,
+                'max_points' => 0.0,
+                'average_points_per_game' => 0.0,
+                'stddev_below' => 0.0,
+                'stddev_above' => 0.0,
+                'games_active' => 0,
+            ];
+        }
+
+        $total = array_sum($points);
+        $min = min($points);
+        $max = max($points);
+        $games = $totalGamesActive > 0 ? $totalGamesActive : count($points);
+        $avg = $games > 0 ? $total / $games : 0.0;
+
+        $n = count($points);
+        $variance = 0.0;
+        foreach ($points as $p) {
+            $variance += ($p - $avg) * ($p - $avg);
+        }
+        $variance = $n > 0 ? $variance / $n : 0.0; // population variance
+        $stddev = sqrt($variance);
+
+        return [
+            'total_points' => $total,
+            'min_points' => $min,
+            'max_points' => $max,
+            'average_points_per_game' => $avg,
+            'stddev_below' => $avg - $stddev,
+            'stddev_above' => $avg + $stddev,
+            'games_active' => $games,
+        ];
+    }
 }
