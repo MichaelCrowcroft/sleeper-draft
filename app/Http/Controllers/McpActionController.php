@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class McpActionController extends Controller
 {
@@ -19,21 +19,23 @@ class McpActionController extends Controller
         // Extract tool name from the route
         $routeName = $request->route()->getName();
 
-        // Map route names to tool class names
+        // Map route names to tool class names (support new and legacy routes)
         $routeToToolClassMap = [
             'api.mcp.fetch-trending-players' => \App\MCP\Tools\FetchTrendingPlayersTool::class,
             'api.mcp.fetch-adp-players' => \App\MCP\Tools\FetchADPPlayersTool::class,
             'api.mcp.fetch-user-leagues' => \App\MCP\Tools\FetchUserLeaguesTool::class,
             'api.mcp.draft-picks' => \App\MCP\Tools\DraftPicksTool::class,
-            'api.mcp.get-league' => \App\MCP\Tools\GetLeagueTool::class,
-            'api.mcp.fetch-rosters' => \App\MCP\Tools\FetchRostersTool::class,
+            // New names
+            'api.mcp.fetch-league' => \App\MCP\Tools\FetchLeagueTool::class,
+            'api.mcp.fetch-roster' => \App\MCP\Tools\FetchRosterTool::class,
+            'api.mcp.fetch-transactions' => \App\MCP\Tools\FetchTransactionsTool::class,
+            // Unchanged
             'api.mcp.fetch-matchups' => \App\MCP\Tools\FetchMatchupsTool::class,
-            'api.mcp.fetch-trades' => \App\MCP\Tools\FetchTradesTool::class,
         ];
 
         $toolClass = $routeToToolClassMap[$routeName] ?? null;
 
-        if (!$toolClass) {
+        if (! $toolClass) {
             return response()->json([
                 'error' => 'Invalid route',
                 'message' => 'Could not determine tool class from route',
@@ -79,12 +81,13 @@ class McpActionController extends Controller
 
             // Validate that the tool is available
             $availableTools = $this->getAvailableTools();
-            if (!in_array($tool, $availableTools)) {
+            if (! in_array($tool, $availableTools)) {
                 Log::warning('Unknown MCP tool requested', ['tool' => $tool]);
+
                 return response()->json([
                     'error' => 'Unknown tool',
                     'message' => "Tool '{$tool}' is not available",
-                    'available_tools' => $availableTools
+                    'available_tools' => $availableTools,
                 ], 404);
             }
 
@@ -102,7 +105,7 @@ class McpActionController extends Controller
             ];
 
             // Get MCP server configuration
-            $mcpUrl = env('APP_URL') . '/mcp';
+            $mcpUrl = env('APP_URL').'/mcp';
             $timeout = 60;
 
             // Make request to MCP server
@@ -135,13 +138,13 @@ class McpActionController extends Controller
             if (isset($mcpResponse['error'])) {
                 Log::warning('MCP tool returned error', [
                     'tool' => $tool,
-                    'error' => $mcpResponse['error']
+                    'error' => $mcpResponse['error'],
                 ]);
 
                 return response()->json([
                     'error' => 'Tool execution failed',
                     'message' => $mcpResponse['error']['message'] ?? 'Unknown error',
-                    'mcp_error' => $mcpResponse['error']
+                    'mcp_error' => $mcpResponse['error'],
                 ], 400);
             }
 
@@ -150,7 +153,7 @@ class McpActionController extends Controller
 
             Log::info('MCP Action completed successfully', [
                 'tool' => $tool,
-                'has_result' => !is_null($result),
+                'has_result' => ! is_null($result),
             ]);
 
             // Return the tool result in a format suitable for GPT Actions
@@ -180,10 +183,10 @@ class McpActionController extends Controller
             'fetch-adp-players',
             'fetch-user-leagues',
             'draft-picks',
-            'get-league',
-            'fetch-rosters',
+            'fetch-league',
+            'fetch-roster',
+            'fetch-transactions',
             'fetch-matchups',
-            'fetch-trades',
         ];
     }
 
@@ -197,10 +200,11 @@ class McpActionController extends Controller
             'fetch-adp-players' => 'fetch-adp-players',
             'fetch-user-leagues' => 'fetch-user-leagues',
             'draft-picks' => 'draft-picks',
-            'get-league' => 'get-league',
-            'fetch-rosters' => 'fetch-rosters',
+            // New names
+            'fetch-league' => 'fetch-league',
+            'fetch-roster' => 'fetch-roster',
+            'fetch-transactions' => 'fetch-transactions',
             'fetch-matchups' => 'fetch-matchups',
-            'fetch-trades' => 'fetch-trades',
         ];
 
         return $mapping[$tool] ?? $tool;

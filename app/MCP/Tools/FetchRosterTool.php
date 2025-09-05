@@ -267,11 +267,18 @@ class FetchRosterTool implements ToolInterface
             $enhancedRoster['owner'] = $this->getOwnerDetails($leagueId, $roster['owner_id']);
         }
 
-        // Enhance player arrays with database information
+        // Remove duplicated/raw arrays first to simplify payload
+        unset($enhancedRoster['bench'], $enhancedRoster['reserve'], $enhancedRoster['players_detailed'], $enhancedRoster['starters_detailed'], $enhancedRoster['bench_detailed']);
+
+        // Simplify: only return player data and starter data
         if ($includePlayerDetails) {
-            $enhancedRoster['players_detailed'] = $this->enhancePlayerArray($roster['players'] ?? [], $playersFromDb);
-            $enhancedRoster['starters_detailed'] = $this->enhancePlayerArray($roster['starters'] ?? [], $playersFromDb);
-            $enhancedRoster['bench_detailed'] = $this->enhancePlayerArray($roster['bench'] ?? [], $playersFromDb);
+            // Overwrite players/starters arrays with detailed objects
+            $enhancedRoster['players'] = $this->enhancePlayerArray($roster['players'] ?? [], $playersFromDb);
+            $enhancedRoster['starters'] = $this->enhancePlayerArray($roster['starters'] ?? [], $playersFromDb);
+        } else {
+            // Keep only raw ids for players and starters, omit bench to reduce size
+            $enhancedRoster['players'] = array_values($roster['players'] ?? []);
+            $enhancedRoster['starters'] = array_values($roster['starters'] ?? []);
         }
 
         return $enhancedRoster;

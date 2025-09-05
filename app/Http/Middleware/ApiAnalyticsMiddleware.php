@@ -2,10 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\ApiAnalytics;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use App\Models\ApiAnalytics;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -15,12 +15,19 @@ class ApiAnalyticsMiddleware
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  \Closure(\Illuminate\Http\Request): (\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse)  $next
      * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
      */
     public function handle(Request $request, Closure $next)
     {
+        // Prevent double-logging when middleware is both global and on the route group
+        $isDuplicateInvocation = false;
+        if ($request->attributes->get('api_analytics_in_progress')) {
+            $isDuplicateInvocation = true;
+        } else {
+            $request->attributes->set('api_analytics_in_progress', true);
+        }
+
         // Start timing
         $startTime = now();
         $startMemory = memory_get_peak_usage(true);
@@ -55,6 +62,11 @@ class ApiAnalyticsMiddleware
 
         // Determine endpoint category
         $endpointCategory = $this->determineEndpointCategory($request);
+
+        // If this is an inner invocation (duplicate), do not record again
+        if ($isDuplicateInvocation) {
+            return $response;
+        }
 
         // Collect analytics data
         $analyticsData = [
@@ -124,6 +136,7 @@ class ApiAnalyticsMiddleware
         if ($response->headers->get('Content-Type') === 'application/json') {
             try {
                 $data = json_decode($content, true);
+
                 return is_array($data) ? $data : ['content' => $content];
             } catch (\Exception $e) {
                 return ['content' => $content];
@@ -140,7 +153,7 @@ class ApiAnalyticsMiddleware
     private function getRequestPayload(Request $request): ?array
     {
         // Only capture payload for POST/PUT/PATCH requests
-        if (!in_array($request->method(), ['POST', 'PUT', 'PATCH'])) {
+        if (! in_array($request->method(), ['POST', 'PUT', 'PATCH'])) {
             return null;
         }
 
@@ -191,7 +204,7 @@ class ApiAnalyticsMiddleware
      */
     private function determineErrorType($response, bool $isError): ?string
     {
-        if (!$isError) {
+        if (! $isError) {
             return null;
         }
 
@@ -236,33 +249,29 @@ class ApiAnalyticsMiddleware
         $routeName = $request->route() ? $request->route()->getName() : null;
         $path = $request->path();
 
-        // Handle API MCP routes
-        if (!$routeName) {
-            return null;
-        }
-
-        // Extract tool name from route names like 'api.mcp.fetch-trending-players'
-        if (str_starts_with($routeName, 'api.mcp.')) {
+        // Extract from specific API MCP tool route names like 'api.mcp.fetch-trending-players'
+        if ($routeName && str_starts_with($routeName, 'api.mcp.')) {
             $toolName = str_replace('api.mcp.', '', $routeName);
-            return 'mcp_fantasy-football-mcp_' . $toolName;
+
+            return 'mcp_fantasy-football-mcp_'.$toolName;
         }
 
-        // Check if it's a generic MCP route with tool parameter
+        // Generic invoke route with {tool} parameter (if present in the app)
         if ($routeName === 'api.mcp.invoke' && $request->route('tool')) {
-            return 'mcp_fantasy-football-mcp_' . $request->route('tool');
+            return 'mcp_fantasy-football-mcp_'.$request->route('tool');
         }
 
         // Handle direct MCP endpoint with JSON-RPC payload
         if ($path === 'mcp') {
             try {
-                $payload = $request->json();
-                if ($payload && isset($payload['method']) && $payload['method'] === 'tools/call') {
-                    if (isset($payload['params']['name'])) {
-                        return 'mcp_fantasy-football-mcp_' . $payload['params']['name'];
+                $method = (string) $request->input('method', '');
+                if ($method === 'tools/call') {
+                    $name = $request->input('params.name');
+                    if (is_string($name) && $name !== '') {
+                        return 'mcp_fantasy-football-mcp_'.$name;
                     }
                 }
             } catch (\Exception $e) {
-                // If JSON parsing fails, return null
                 return null;
             }
         }

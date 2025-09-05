@@ -17,34 +17,27 @@ Route::middleware('api.analytics')->group(function () {
         ->name('api.mcp.fetch-user-leagues');
     Route::post('/mcp/tools/draft-picks', [McpActionController::class, 'invokeTool'])
         ->name('api.mcp.draft-picks');
-    Route::post('/mcp/tools/get-league', [McpActionController::class, 'invokeTool'])
-        ->name('api.mcp.get-league');
-    Route::post('/mcp/tools/fetch-rosters', [McpActionController::class, 'invokeTool'])
-        ->name('api.mcp.fetch-rosters');
-    Route::post('/mcp/tools/fetch-matchups', [McpActionController::class, 'invokeTool'])
-        ->name('api.mcp.fetch-matchups');
-    Route::post('/mcp/tools/fetch-trades', [McpActionController::class, 'invokeTool'])
-        ->name('api.mcp.fetch-trades');
-
-    // Legacy generic endpoint for backward compatibility
-    Route::post('/mcp/tools/{tool}', [McpActionController::class, 'invoke'])
-        ->where('tool', 'fetch-trending-players|fetch-adp-players|fetch-user-leagues|draft-picks|get-league|fetch-rosters|fetch-matchups|fetch-trades')
-        ->name('api.mcp.invoke');
+    Route::post('/mcp/tools/fetch-league', [McpActionController::class, 'invokeTool'])
+        ->name('api.mcp.fetch-league');
+    Route::post('/mcp/tools/fetch-roster', [McpActionController::class, 'invokeTool'])
+        ->name('api.mcp.fetch-roster');
+    Route::post('/mcp/tools/fetch-transactions', [McpActionController::class, 'invokeTool'])
+        ->name('api.mcp.fetch-transactions');
 
     // OpenAPI endpoint
     Route::get('/openapi.yaml', function () {
         $path = public_path('openapi.yaml');
 
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             return response()->json([
                 'error' => 'OpenAPI specification not found',
-                'message' => 'The OpenAPI specification file is not available'
+                'message' => 'The OpenAPI specification file is not available',
             ], 404);
         }
 
         return response()->file($path, [
             'Content-Type' => 'application/yaml',
-            'Content-Disposition' => 'inline; filename="openapi.yaml"'
+            'Content-Disposition' => 'inline; filename="openapi.yaml"',
         ]);
     })->name('api.openapi');
 
@@ -55,25 +48,25 @@ Route::middleware('api.analytics')->group(function () {
             'fetch-adp-players',
             'fetch-user-leagues',
             'draft-picks',
-            'get-league',
-            'fetch-rosters',
+            'fetch-league',
+            'fetch-roster',
+            'fetch-transactions',
             'fetch-matchups',
-            'fetch-trades',
         ];
 
         return response()->json([
             'tools' => array_map(function ($tool) {
                 return [
                     'name' => $tool,
-                    'description' => match($tool) {
+                    'description' => match ($tool) {
                         'fetch-trending-players' => 'Fetches trending players from the database based on adds or drops within the last 24 hours',
                         'fetch-adp-players' => 'Fetches top players by Average Draft Position (ADP) from the database',
                         'fetch-user-leagues' => 'Fetches all leagues for a given Sleeper user',
                         'draft-picks' => 'Provides intelligent draft pick suggestions by analyzing draft state and player ADP values',
-                        'get-league' => 'Get league information and users for a specific league',
-                        'fetch-rosters' => 'Fetches rosters for all users in a league',
+                        'fetch-league' => 'Get a specific league and users with team summaries',
+                        'fetch-roster' => 'Get a specific user roster enriched with player and owner details',
+                        'fetch-transactions' => 'Fetches league transactions with expanded player details',
                         'fetch-matchups' => 'Fetches matchups and scores for a league in a specific week',
-                        'fetch-trades' => 'Fetches trades in a league with expanded player details',
                     },
                     'endpoint' => "/api/mcp/tools/{$tool}",
                     'method' => 'POST',
@@ -83,7 +76,6 @@ Route::middleware('api.analytics')->group(function () {
             'openapi_spec_url' => route('api.openapi'),
             'version' => '1.0.0',
             'documentation' => 'See OpenAPI spec for detailed parameter schemas and examples',
-            'note' => 'Both individual endpoints (/api/mcp/tools/{tool}) and legacy generic endpoint (/api/mcp/tools/{tool}) are supported',
         ]);
     })->name('api.mcp.tools');
 
