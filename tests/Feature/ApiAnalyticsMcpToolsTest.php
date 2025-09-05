@@ -29,7 +29,7 @@ it('logs tool_name for direct MCP JSON-RPC call', function () {
 
     $jsonRpc = [
         'jsonrpc' => '2.0',
-        'id' => (string) Str::uuid(),
+        'id' => 1,
         'method' => 'tools/call',
         'params' => [
             'name' => 'fetch-adp-players',
