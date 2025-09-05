@@ -39,8 +39,10 @@ class PlayerController extends Controller
             })
             ->where('active', true);
 
-        // Get players for current page with relationships
-        $players = $query->with(['stats2024', 'projections2025'])->paginate(25);
+        // Get players for current page with relationships, ordered by ADP (ascending - lower is better)
+        $players = $query->with(['stats2024', 'projections2025'])
+            ->orderByRaw('adp IS NULL, adp ASC')
+            ->paginate(25);
 
         // Get summary statistics
         $stats = $this->getPlayerStats();
