@@ -28,18 +28,19 @@ class UpdatePlayerTrending extends Command
         $this->info("Fetching {$type} trending data for the last {$lookback} hours...");
 
         // Use the request directly since the resource method has a bug
-        $sleeper = new SleeperConnector();
+        $sleeper = new SleeperConnector;
         $request = new GetTrendingPlayers($sport, $type, $lookback, $limit);
         $response = $sleeper->send($request);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             $this->error("Failed to fetch trending data: HTTP {$response->status()}");
+
             return;
         }
 
         $trendingPlayers = $response->json();
 
-        $this->info("Found " . count($trendingPlayers) . " {$type} trending players");
+        $this->info('Found '.count($trendingPlayers)." {$type} trending players");
 
         $updatedCount = 0;
         foreach ($trendingPlayers as $trendingPlayer) {

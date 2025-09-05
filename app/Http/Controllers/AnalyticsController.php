@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApiAnalytics;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class AnalyticsController extends Controller
 {

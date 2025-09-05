@@ -1,9 +1,7 @@
 <?php
 
-use App\Models\User;
 use App\MCP\Tools\FetchUserLeaguesTool;
-use App\MCP\Tools\FetchRostersTool;
-use App\MCP\Tools\FetchMatchupsTool;
+use App\Models\User;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 

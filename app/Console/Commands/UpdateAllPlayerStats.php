@@ -17,6 +17,7 @@ class UpdateAllPlayerStats extends Command
                            {--season=2025 : The season year (default: 2025)}
                            {--season-type=regular : Season type (regular, postseason)}
                            ';
+
     /**
      * The console command description.
      *

@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Models\ApiAnalytics;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 class BackfillAnalyticsData extends Command
 {
@@ -68,11 +67,13 @@ class BackfillAnalyticsData extends Command
 
         if ($totalRecords === 0) {
             $this->info('No records need updating. All data is already up to date.');
+
             return self::SUCCESS;
         }
 
-        if (!$this->confirm('Continue with backfilling?', true)) {
+        if (! $this->confirm('Continue with backfilling?', true)) {
             $this->info('Operation cancelled.');
+
             return self::SUCCESS;
         }
 
@@ -126,22 +127,22 @@ class BackfillAnalyticsData extends Command
         return ApiAnalytics::where(function ($query) {
             // Records with old tool names that need prefixing
             $query->whereNotNull('tool_name')
-                  ->where('tool_name', 'not like', 'mcp_fantasy-football-mcp_%');
+                ->where('tool_name', 'not like', 'mcp_fantasy-football-mcp_%');
 
             // OR records with old categorization that need updating
             $query->orWhere(function ($subQuery) {
                 $subQuery->where('endpoint_category', 'mcp')
-                         ->where('endpoint', 'like', 'api/mcp%');
+                    ->where('endpoint', 'like', 'api/mcp%');
             });
 
             // OR records that are MCP-related but missing tool_name
             $query->orWhere(function ($subQuery) {
                 $subQuery->where(function ($innerQuery) {
                     $innerQuery->where('endpoint_category', 'mcp')
-                              ->orWhere('endpoint_category', 'mcp_tools_api')
-                              ->orWhere('endpoint', 'like', 'api/mcp%')
-                              ->orWhere('endpoint', '=', 'mcp')
-                              ->orWhere('route_name', 'like', 'api.mcp%');
+                        ->orWhere('endpoint_category', 'mcp_tools_api')
+                        ->orWhere('endpoint', 'like', 'api/mcp%')
+                        ->orWhere('endpoint', '=', 'mcp')
+                        ->orWhere('route_name', 'like', 'api.mcp%');
                 })->whereNull('tool_name');
             });
         })->count();
@@ -159,7 +160,7 @@ class BackfillAnalyticsData extends Command
         // Update tool name if needed (both existing and missing tool names)
         $newToolName = $this->determineToolName($record);
         if ($newToolName !== $record->tool_name) {
-            if (!$isDryRun) {
+            if (! $isDryRun) {
                 $record->tool_name = $newToolName;
             }
             $wasUpdated = true;
@@ -168,14 +169,14 @@ class BackfillAnalyticsData extends Command
         // Update category if needed
         $newCategory = $this->determineCorrectCategory($record);
         if ($newCategory !== $record->endpoint_category) {
-            if (!$isDryRun) {
+            if (! $isDryRun) {
                 $record->endpoint_category = $newCategory;
             }
             $wasUpdated = true;
         }
 
         // Save the record if not a dry run
-        if ($wasUpdated && !$isDryRun) {
+        if ($wasUpdated && ! $isDryRun) {
             $record->save();
         }
 
@@ -247,7 +248,7 @@ class BackfillAnalyticsData extends Command
     private function extractToolNameFromRecord(ApiAnalytics $record): ?string
     {
         // Only process MCP-related records
-        if (!$this->isMcpRelatedRecord($record)) {
+        if (! $this->isMcpRelatedRecord($record)) {
             return null;
         }
 

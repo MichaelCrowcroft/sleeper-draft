@@ -43,7 +43,6 @@ class UpdatePlayerProjections extends Command
 
         $weeks = $response->json();
 
-
         foreach ($weeks as $week) {
             $attributes = [
                 'player_id' => $playerId,

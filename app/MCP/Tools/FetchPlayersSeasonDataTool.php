@@ -6,6 +6,7 @@ use App\Http\Resources\PlayerResource;
 use App\Models\Player;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
+use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
@@ -24,7 +25,7 @@ class FetchPlayersSeasonDataTool implements ToolInterface
 
     public function description(): string
     {
-        return 'Returns all players with last season stats + summary and current season projections + summary. Optionally filter by position.';
+        return 'Returns all players with last season stats + summary, current season projections + summary, and full projection data for the upcoming matchweek. Optionally filter by position.';
     }
 
     public function inputSchema(): array
@@ -121,6 +122,9 @@ class FetchPlayersSeasonDataTool implements ToolInterface
         $limit = max(1, min(1000, $limit));
         $offset = max(0, $offset);
 
+        // Get the upcoming matchweek for projections
+        $upcomingWeek = $this->getUpcomingWeek();
+
         $query = Player::query();
 
         if ($position) {
@@ -128,7 +132,14 @@ class FetchPlayersSeasonDataTool implements ToolInterface
         }
 
         // Eager-load last season stats and current season projections
-        $query->with(['stats2024', 'projections2025']);
+        $query->with([
+            'stats2024',
+            'projections2025',
+            'projections' => function ($query) use ($upcomingWeek) {
+                $query->where('season', 2025)
+                    ->where('week', $upcomingWeek);
+            },
+        ]);
 
         // Fetch one extra to detect if there is a next page
         $pagePlusOne = $limit + 1;
@@ -180,6 +191,7 @@ class FetchPlayersSeasonDataTool implements ToolInterface
                     'stats' => 2024,
                     'projections' => 2025,
                 ],
+                'upcoming_week' => $upcomingWeek,
                 'executed_at' => now()->toISOString(),
                 'league_id' => $leagueId,
             ],
@@ -266,6 +278,33 @@ class FetchPlayersSeasonDataTool implements ToolInterface
             return is_array($arr) ? $arr : null;
         } catch (\Throwable $e) {
             return null;
+        }
+    }
+
+    /**
+     * Get the upcoming matchweek (current week + 1) using Sleeper API.
+     */
+    private function getUpcomingWeek(): int
+    {
+        try {
+            $response = Sleeper::state()->current('nfl');
+
+            if (! $response->successful()) {
+                throw new \RuntimeException('Failed to fetch current state from Sleeper API');
+            }
+
+            $state = $response->json();
+            $currentWeek = (int) ($state['week'] ?? 1);
+
+            // Return the upcoming week (current week + 1)
+            return $currentWeek + 1;
+        } catch (\Exception $e) {
+            // Fallback to week 2 if we can't get the current week
+            logger('FetchPlayersSeasonDataTool: Failed to fetch current week, defaulting to week 2', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return 2;
         }
     }
 

@@ -43,6 +43,7 @@ class TestPlayerStatsQueue extends Command
 
         if ($players->isEmpty()) {
             $this->error('No active players found in database. Make sure you have imported players first.');
+
             return;
         }
 

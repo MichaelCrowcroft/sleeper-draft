@@ -33,11 +33,11 @@ class FetchPlayerSeasonDataTool implements ToolInterface
             'properties' => [
                 'player_id' => [
                     'type' => 'string',
-                    'description' => 'Sleeper player ID to search for (exact match)'
+                    'description' => 'Sleeper player ID to search for (exact match)',
                 ],
                 'name' => [
                     'type' => 'string',
-                    'description' => 'Player name to search (case-insensitive partial match)'
+                    'description' => 'Player name to search (case-insensitive partial match)',
                 ],
             ],
         ];

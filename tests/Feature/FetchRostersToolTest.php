@@ -98,7 +98,7 @@ test('enhance player array works correctly', function () {
     $method->setAccessible(true);
 
     $playersFromDb = Player::all()
-        ->mapWithKeys(fn($player) => [
+        ->mapWithKeys(fn ($player) => [
             $player->player_id => (new \App\Http\Resources\PlayerResource($player))->resolve(),
         ])
         ->toArray();

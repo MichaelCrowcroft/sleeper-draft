@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\Carbon;
 
 class ApiAnalytics extends Model
 {
@@ -99,7 +99,7 @@ class ApiAnalytics extends Model
     public function scopeSuccessful($query)
     {
         return $query->where('has_error', false)
-                     ->whereBetween('status_code', [200, 299]);
+            ->whereBetween('status_code', [200, 299]);
     }
 
     /**
@@ -108,10 +108,10 @@ class ApiAnalytics extends Model
     public function getFormattedDurationAttribute(): string
     {
         if ($this->duration_ms < 1000) {
-            return $this->duration_ms . 'ms';
+            return $this->duration_ms.'ms';
         }
 
-        return round($this->duration_ms / 1000, 2) . 's';
+        return round($this->duration_ms / 1000, 2).'s';
     }
 
     /**
@@ -119,20 +119,20 @@ class ApiAnalytics extends Model
      */
     public function getFormattedResponseSizeAttribute(): string
     {
-        if (!$this->response_size_bytes) {
+        if (! $this->response_size_bytes) {
             return 'Unknown';
         }
 
         $size = $this->response_size_bytes;
 
         if ($size < 1024) {
-            return $size . ' B';
+            return $size.' B';
         } elseif ($size < 1048576) {
-            return round($size / 1024, 2) . ' KB';
+            return round($size / 1024, 2).' KB';
         } elseif ($size < 1073741824) {
-            return round($size / 1048576, 2) . ' MB';
+            return round($size / 1048576, 2).' MB';
         } else {
-            return round($size / 1073741824, 2) . ' GB';
+            return round($size / 1073741824, 2).' GB';
         }
     }
 
@@ -157,7 +157,7 @@ class ApiAnalytics extends Model
      */
     public function getCategoryBadgeColor(): string
     {
-        return match($this->endpoint_category) {
+        return match ($this->endpoint_category) {
             'mcp' => 'bg-blue-100 text-blue-800', // Direct MCP server endpoint
             'mcp_tools_api' => 'bg-cyan-100 text-cyan-800', // REST API MCP tools endpoints
             'openapi' => 'bg-green-100 text-green-800',
@@ -171,7 +171,7 @@ class ApiAnalytics extends Model
      */
     public function getToolBadgeColor(): string
     {
-        if (!$this->tool_name) {
+        if (! $this->tool_name) {
             return 'bg-gray-100 text-gray-800';
         }
 
@@ -183,7 +183,7 @@ class ApiAnalytics extends Model
             $toolName = str_replace('mcp_fantasy-football-mcp_', '', $toolName);
         }
 
-        return match($toolName) {
+        return match ($toolName) {
             'fetch-trending-players',
             'fetch-adp-players' => 'bg-orange-100 text-orange-800',
             'fetch-user-leagues',
@@ -201,7 +201,7 @@ class ApiAnalytics extends Model
      */
     public function getFormattedUserAgentAttribute(): string
     {
-        if (!$this->user_agent) {
+        if (! $this->user_agent) {
             return 'Unknown';
         }
 
@@ -235,7 +235,7 @@ class ApiAnalytics extends Model
         }
 
         // If no match found, return a truncated version
-        return strlen($userAgent) > 30 ? substr($userAgent, 0, 27) . '...' : $userAgent;
+        return strlen($userAgent) > 30 ? substr($userAgent, 0, 27).'...' : $userAgent;
     }
 
     /**

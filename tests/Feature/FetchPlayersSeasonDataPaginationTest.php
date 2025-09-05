@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Models\{Player, PlayerProjections, PlayerStats};
+use App\Models\Player;
+use App\Models\PlayerProjections;
+use App\Models\PlayerStats;
 use Illuminate\Support\Str;
 
 it('paginates using cursor with nextCursor present until end', function () {

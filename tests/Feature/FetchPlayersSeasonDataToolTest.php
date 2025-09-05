@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Models\{Player, PlayerProjections, PlayerStats, ApiAnalytics};
+use App\Models\ApiAnalytics;
+use App\Models\Player;
+use App\Models\PlayerProjections;
+use App\Models\PlayerStats;
 use Illuminate\Support\Str;
 
 it('returns players with 2024 stats summary and 2025 projections summary', function () {
@@ -86,9 +89,9 @@ it('returns players with 2024 stats summary and 2025 projections summary', funct
 
     $first = $json['players'][0];
     expect($first)->toHaveKey('season_2024_summary');
-    expect($first['season_2024_summary'])->toHaveKeys(['total_points','average_points_per_game']);
+    expect($first['season_2024_summary'])->toHaveKeys(['total_points', 'average_points_per_game']);
     expect($first)->toHaveKey('season_2025_projection_summary');
-    expect($first['season_2025_projection_summary'])->toHaveKeys(['total_points','average_points_per_game']);
+    expect($first['season_2025_projection_summary'])->toHaveKeys(['total_points', 'average_points_per_game']);
 
     $record = ApiAnalytics::query()
         ->where('endpoint', 'api/mcp/tools/fetch-players-season-data')

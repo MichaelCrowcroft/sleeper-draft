@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Models\{Player, PlayerProjections, PlayerStats, ApiAnalytics};
+use App\Models\ApiAnalytics;
+use App\Models\Player;
+use App\Models\PlayerProjections;
+use App\Models\PlayerStats;
 use Illuminate\Support\Str;
 
 it('returns a single player by player_id with summaries', function () {

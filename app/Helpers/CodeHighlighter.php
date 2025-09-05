@@ -11,7 +11,7 @@ class CodeHighlighter
     public static function getHighlighter(): Highlighter
     {
         if (self::$highlighter === null) {
-            self::$highlighter = new Highlighter();
+            self::$highlighter = new Highlighter;
         }
 
         return self::$highlighter;

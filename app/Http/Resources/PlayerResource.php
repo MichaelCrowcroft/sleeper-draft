@@ -59,6 +59,25 @@ class PlayerResource extends JsonResource
             $data['season_2025_projection_summary'] = $this->resource->getSeason2025ProjectionSummary();
         }
 
+        // Append upcoming week's projection data if available
+        if ($this->resource->relationLoaded('projections')) {
+            $upcomingProjections = $this->resource->getRelation('projections');
+            if ($upcomingProjections->isNotEmpty()) {
+                $upcomingProjection = $upcomingProjections->first();
+                $data['upcoming_week_projection'] = [
+                    'season' => $upcomingProjection->season,
+                    'week' => $upcomingProjection->week,
+                    'game_date' => $upcomingProjection->game_date,
+                    'opponent' => $upcomingProjection->opponent,
+                    'pts_ppr' => $upcomingProjection->pts_ppr ?? ($upcomingProjection->stats['pts_ppr'] ?? null),
+                    'gms_active' => $upcomingProjection->gms_active ?? ($upcomingProjection->stats['gms_active'] ?? null),
+                    'stats' => $upcomingProjection->stats,
+                    'source' => $upcomingProjection->source,
+                    'season_type' => $upcomingProjection->season_type,
+                ];
+            }
+        }
+
         return $data;
     }
 }

@@ -11,7 +11,7 @@ use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->tool = new FetchTradesTool();
+    $this->tool = new FetchTradesTool;
 });
 
 it('has correct tool properties', function () {
