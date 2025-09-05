@@ -222,48 +222,54 @@ class PlayerController extends Controller
      */
     private function getLeagueRosters(string $leagueId): array
     {
-        return Cache::remember("league_rosters_{$leagueId}", now()->addMinutes(10), function () use ($leagueId) {
+        // Bump cache key version to avoid stale data from previous implementation
+        return Cache::remember("league_rosters_v2_{$leagueId}", now()->addMinutes(10), function () use ($leagueId) {
             try {
-                // Use Sleeper facade to get all rosters for the league
-                $response = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::leagues()->rosters($leagueId);
-
-                if (! $response->successful()) {
+                $rostersResponse = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::leagues()->rosters($leagueId);
+                if (! $rostersResponse->successful()) {
                     return [];
                 }
 
-                $rosters = $response->json();
-
+                $rosters = $rostersResponse->json();
                 if (! is_array($rosters)) {
                     return [];
                 }
 
-                // Enhance rosters with owner details
-                $enhancedRosters = [];
-                foreach ($rosters as $roster) {
-                    if (! empty($roster['owner_id'])) {
-                        // Get owner details from league users
-                        $usersResponse = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::leagues()->users($leagueId);
-
-                        if ($usersResponse->successful()) {
-                            $users = $usersResponse->json();
-                            foreach ($users as $user) {
-                                if (($user['user_id'] ?? null) === $roster['owner_id']) {
-                                    $roster['owner'] = [
-                                        'user_id' => $user['user_id'],
-                                        'username' => $user['username'] ?? null,
-                                        'display_name' => $user['display_name'] ?? null,
-                                        'team_name' => $user['metadata']['team_name'] ?? ($user['display_name'] ?? 'Unknown Team'),
-                                    ];
-                                    break;
-                                }
-                            }
+                // Fetch league users once to map owner details
+                $usersMap = [];
+                $usersResponse = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::leagues()->users($leagueId);
+                if ($usersResponse->successful()) {
+                    $users = $usersResponse->json();
+                    if (is_array($users)) {
+                        foreach ($users as $user) {
+                            $usersMap[$user['user_id'] ?? ''] = [
+                                'user_id' => $user['user_id'] ?? null,
+                                'username' => $user['username'] ?? null,
+                                'display_name' => $user['display_name'] ?? null,
+                                'team_name' => $user['metadata']['team_name'] ?? ($user['display_name'] ?? 'Unknown Team'),
+                            ];
                         }
                     }
-
-                    $enhancedRosters[] = $roster;
                 }
 
-                return $enhancedRosters;
+                // Enhance rosters with sanitize players and owner details
+                foreach ($rosters as &$roster) {
+                    // Attach owner details if available
+                    if (! empty($roster['owner_id']) && isset($usersMap[$roster['owner_id']])) {
+                        $roster['owner'] = $usersMap[$roster['owner_id']];
+                    }
+
+                    // Ensure player arrays are present and sanitized
+                    $starters = array_values(array_filter((array) ($roster['starters'] ?? [])));
+                    $players = array_values(array_filter((array) ($roster['players'] ?? [])));
+
+                    // Some Sleeper responses may include placeholder values; filter falsy values
+                    $roster['starters'] = $starters;
+                    $roster['players'] = $players;
+                }
+                unset($roster);
+
+                return $rosters;
             } catch (\Exception $e) {
                 return [];
             }
@@ -276,11 +282,13 @@ class PlayerController extends Controller
     private function getPlayerLeagueStatus(string $playerId, array $leagueRosters): array
     {
         foreach ($leagueRosters as $roster) {
+            // Sleeper provides 'players' (entire roster) and 'starters' arrays
             $players = array_merge(
-                $roster['starters'] ?? [],
-                $roster['players'] ?? [],
-                $roster['bench'] ?? []
+                (array) ($roster['starters'] ?? []),
+                (array) ($roster['players'] ?? [])
             );
+            // Sanitize values and remove empties
+            $players = array_values(array_filter($players, fn ($v) => ! empty($v)));
 
             if (in_array($playerId, $players)) {
                 return [
