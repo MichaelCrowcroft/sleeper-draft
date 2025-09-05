@@ -364,18 +364,20 @@ class PlayerController extends Controller
      */
     private function getCurrentNFLWeek(): int
     {
-        // This is a simplified implementation
-        // In a real application, you'd want to use an NFL API or calculate based on season start
-        $now = now();
-        $seasonStart = now()->setMonth(9)->setDay(1); // Approximate NFL season start
-
-        if ($now < $seasonStart) {
-            return 1; // Preseason
+        try {
+            $response = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::state()->current('nfl');
+            if ($response->successful()) {
+                $state = $response->json();
+                $week = (int) ($state['week'] ?? 1);
+                if ($week >= 1 && $week <= 18) {
+                    return $week;
+                }
+            }
+        } catch (\Throwable $e) {
+            // ignore and fall back
         }
 
-        $weeksSinceStart = $seasonStart->diffInWeeks($now);
-
-        // NFL regular season is 18 weeks, plus preseason
-        return min(max(1, $weeksSinceStart + 1), 18);
+        // Fallback to Week 1 if API fails or returns unexpected data
+        return 1;
     }
 }

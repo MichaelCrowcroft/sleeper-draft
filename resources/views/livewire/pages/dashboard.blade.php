@@ -1,7 +1,6 @@
 <?php
 
 use App\MCP\Tools\FetchUserLeaguesTool;
-use App\MCP\Tools\FetchRostersTool;
 use App\MCP\Tools\FetchMatchupsTool;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
@@ -76,21 +75,8 @@ new class extends Component {
             try {
                 $leagueId = $league['id'];
 
-                // Fetch rosters for this league
+                // Rosters are not required for displaying current week matchups
                 $rosters = [];
-                try {
-                    $rostersTool = app(FetchRostersTool::class);
-                    $rostersResult = $rostersTool->execute([
-                        'league_id' => $leagueId,
-                        'include_player_details' => true,
-                        'include_owner_details' => true,
-                    ]);
-                    $rosters = $rostersResult['success'] ? $rostersResult['data'] : [];
-                } catch (\Exception $e) {
-                    logger('Failed to load rosters for league ' . $leagueId, [
-                        'error' => $e->getMessage(),
-                    ]);
-                }
 
                 // Fetch current week matchups
                 $matchups = [];
@@ -148,44 +134,41 @@ new class extends Component {
         return null;
     }
 
-    private function getUserMatchup(array $matchups): ?array
+    private function getUserMatchup(array $pairedMatchups): ?array
     {
         $user = Auth::user();
-        $userId = $user->sleeper_user_id ?: $user->sleeper_username;
+        $userId = $user->sleeper_user_id ?? null;
+        $username = $user->sleeper_username ?? null;
 
-        foreach ($matchups as $matchup) {
-            if (($matchup['owner_details']['user_id'] ?? null) === $userId ||
-                ($matchup['owner_details']['username'] ?? null) === $user->sleeper_username) {
-
-                // Find the opponent matchup (same matchup_id)
-                $matchupId = $matchup['matchup_id'] ?? null;
-                $opponentMatchup = null;
-
-                if ($matchupId) {
-                    foreach ($matchups as $otherMatchup) {
-                        if (($otherMatchup['matchup_id'] ?? null) === $matchupId &&
-                            ($otherMatchup['roster_id'] ?? null) !== ($matchup['roster_id'] ?? null)) {
-                            $opponentMatchup = $otherMatchup;
-                            break;
-                        }
-                    }
+        foreach ($pairedMatchups as $pair) {
+            $teams = $pair['teams'] ?? [];
+            foreach ($teams as $index => $team) {
+                $teamUser = $team['user'] ?? null;
+                if (! $teamUser) {
+                    continue;
                 }
 
-                // Add opponent details to the matchup
-                $matchup['opponent_details'] = $opponentMatchup ? [
-                    'team_name' => $opponentMatchup['owner_details']['team_name'] ?? 'Opponent Team',
-                    'points' => $opponentMatchup['points'] ?? 0,
-                    'starters' => $opponentMatchup['starters_data'] ?? [],
-                ] : [
-                    'team_name' => 'Opponent Team',
-                    'points' => '?',
-                    'starters' => [],
-                ];
+                $matchesUser = false;
+                if ($userId && (($teamUser['user_id'] ?? null) === $userId)) {
+                    $matchesUser = true;
+                }
+                if (! $matchesUser && $username && (($teamUser['username'] ?? null) === $username)) {
+                    $matchesUser = true;
+                }
 
-                // Add opponent starters to the matchup for easy access in template
-                $matchup['opponent_starters'] = $opponentMatchup['starters_data'] ?? [];
-
-                return $matchup;
+                if ($matchesUser) {
+                    $opponent = $teams[$index === 0 ? 1 : 0] ?? null;
+                    $oppUser = $opponent['user'] ?? null;
+                    return [
+                        'matchup_id' => $pair['matchup_id'] ?? null,
+                        'team_name' => $teamUser['team_name'] ?? ($teamUser['display_name'] ?? ($teamUser['username'] ?? 'Your Team')),
+                        'points' => $team['points'] ?? 0,
+                        'opponent_details' => [
+                            'team_name' => $oppUser['team_name'] ?? ($oppUser['display_name'] ?? ($oppUser['username'] ?? 'Opponent Team')),
+                            'points' => $opponent['points'] ?? 0,
+                        ],
+                    ];
+                }
             }
         }
 
@@ -365,105 +348,7 @@ new class extends Component {
                                         <span>{{ $userMatchup['opponent_points'] ?? '?' }}</span>
                                     </div>
 
-                                    <!-- Your Starters -->
-                                    @if (!empty($userMatchup['starters_data']))
-                                        <div class="mt-3 pt-2 border-t">
-                                            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Your Starters</p>
-                                            <div class="space-y-1">
-                                                @foreach ($userMatchup['starters_data'] as $starter)
-                                                    @if ($starter && isset($starter['first_name']))
-                                                        <div class="space-y-1">
-                                                            <div class="flex justify-between items-center text-xs">
-                                                                <div class="flex flex-col">
-                                                                    <span>{{ $starter['first_name'] }} {{ $starter['last_name'] }}</span>
-                                                                    @if($starter['injury_status'] && $starter['injury_status'] !== 'Healthy')
-                                                                        <span class="text-xs text-red-500 font-medium">{{ $starter['injury_status'] }}
-                                                                            @if($starter['injury_body_part'])
-                                                                                ({{ $starter['injury_body_part'] }})
-                                                                            @endif
-                                                                        </span>
-                                                                    @endif
-                                                                </div>
-                                                                <div class="flex flex-col items-end text-muted-foreground">
-                                                                    <span>{{ $starter['position'] ?? 'N/A' }} • {{ $starter['team'] ?? 'FA' }}</span>
-                                                                    @if($starter['bye_week'] && $details['current_week'] && $starter['bye_week'] == $details['current_week'])
-                                                                        <span class="text-xs text-orange-500 font-medium">BYE</span>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                            <div class="flex justify-between items-center text-xs text-muted-foreground">
-                                                                <span>
-                                                                    @if($starter['adp_formatted'])
-                                                                        ADP: {{ $starter['adp_formatted'] }}
-                                                                    @elseif($starter['adp'])
-                                                                        ADP: {{ number_format($starter['adp'], 1) }}
-                                                                    @endif
-                                                                </span>
-                                                                <div class="flex gap-2">
-                                                                    @if($starter['adds_24h'] !== null && $starter['adds_24h'] > 0)
-                                                                        <span class="text-green-600">+{{ $starter['adds_24h'] }}</span>
-                                                                    @endif
-                                                                    @if($starter['drops_24h'] !== null && $starter['drops_24h'] > 0)
-                                                                        <span class="text-red-600">−{{ $starter['drops_24h'] }}</span>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    @endif
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @endif
-
-                                    <!-- Opponent Starters -->
-                                    @if (!empty($userMatchup['opponent_starters']))
-                                        <div class="mt-3 pt-2 border-t">
-                                            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Opponent Starters</p>
-                                            <div class="space-y-1">
-                                                @foreach ($userMatchup['opponent_starters'] as $starter)
-                                                    @if ($starter && isset($starter['first_name']))
-                                                        <div class="space-y-1">
-                                                            <div class="flex justify-between items-center text-xs">
-                                                                <div class="flex flex-col">
-                                                                    <span>{{ $starter['first_name'] }} {{ $starter['last_name'] }}</span>
-                                                                    @if($starter['injury_status'] && $starter['injury_status'] !== 'Healthy')
-                                                                        <span class="text-xs text-red-500 font-medium">{{ $starter['injury_status'] }}
-                                                                            @if($starter['injury_body_part'])
-                                                                                ({{ $starter['injury_body_part'] }})
-                                                                            @endif
-                                                                        </span>
-                                                                    @endif
-                                                                </div>
-                                                                <div class="flex flex-col items-end text-muted-foreground">
-                                                                    <span>{{ $starter['position'] ?? 'N/A' }} • {{ $starter['team'] ?? 'FA' }}</span>
-                                                                    @if($starter['bye_week'] && $details['current_week'] && $starter['bye_week'] == $details['current_week'])
-                                                                        <span class="text-xs text-orange-500 font-medium">BYE</span>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                            <div class="flex justify-between items-center text-xs text-muted-foreground">
-                                                                <span>
-                                                                    @if($starter['adp_formatted'])
-                                                                        ADP: {{ $starter['adp_formatted'] }}
-                                                                    @elseif($starter['adp'])
-                                                                        ADP: {{ number_format($starter['adp'], 1) }}
-                                                                    @endif
-                                                                </span>
-                                                                <div class="flex gap-2">
-                                                                    @if($starter['adds_24h'] !== null && $starter['adds_24h'] > 0)
-                                                                        <span class="text-green-600">+{{ $starter['adds_24h'] }}</span>
-                                                                    @endif
-                                                                    @if($starter['drops_24h'] !== null && $starter['drops_24h'] > 0)
-                                                                        <span class="text-red-600">−{{ $starter['drops_24h'] }}</span>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    @endif
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @endif
+                                    <!-- Lineups not shown here; focusing on current matchup scores -->
                                 </div>
                             </div>
                         @else
