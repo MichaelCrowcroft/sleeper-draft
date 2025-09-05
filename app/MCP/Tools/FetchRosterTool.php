@@ -62,7 +62,7 @@ class FetchRosterTool implements ToolInterface
             'readOnlyHint' => true,
             'destructiveHint' => false,
             'idempotentHint' => true,
-            'openWorldHint' => true, // Makes API calls to Sleeper
+            'openWorldHint' => true,
 
             // Custom annotations
             'category' => 'fantasy-sports',

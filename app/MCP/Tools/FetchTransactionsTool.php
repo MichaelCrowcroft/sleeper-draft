@@ -10,7 +10,7 @@ use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
-class FetchTradesTool implements ToolInterface
+class FetchTransactionsTool implements ToolInterface
 {
     public function isStreaming(): bool
     {
@@ -19,12 +19,12 @@ class FetchTradesTool implements ToolInterface
 
     public function name(): string
     {
-        return 'fetch-trades';
+        return 'fetch-transactions';
     }
 
     public function description(): string
     {
-        return 'Fetches trades for a league and returns trade details with expanded player information. Set `pending_only` to true to limit results to pending trades.';
+        return 'Fetches transactions for a league and returns transaction details with expanded player information. Set `pending_only` to true to limit results to pending transactions.';
     }
 
     public function inputSchema(): array
@@ -34,7 +34,7 @@ class FetchTradesTool implements ToolInterface
             'properties' => [
                 'league_id' => [
                     'type' => 'string',
-                    'description' => 'Sleeper league ID to fetch trades for',
+                    'description' => 'Sleeper league ID to fetch transactions for',
                 ],
                 'round' => [
                     'anyOf' => [
@@ -49,12 +49,7 @@ class FetchTradesTool implements ToolInterface
                         ['type' => 'integer'],
                         ['type' => 'null'],
                     ],
-                    'description' => 'Optional: filter trades involving this roster ID',
-                ],
-                'pending_only' => [
-                    'type' => 'boolean',
-                    'description' => 'If true, only include trades with status pending',
-                    'default' => false,
+                    'description' => 'Optional: filter transactions involving this roster ID',
                 ],
             ],
             'required' => ['league_id'],
@@ -64,7 +59,7 @@ class FetchTradesTool implements ToolInterface
     public function annotations(): array
     {
         return [
-            'title' => 'Fetch League Trades',
+            'title' => 'Fetch League Transactions',
             'readOnlyHint' => true,
             'destructiveHint' => false,
             'idempotentHint' => true,
@@ -81,7 +76,6 @@ class FetchTradesTool implements ToolInterface
             'league_id' => ['required', 'string'],
             'round' => ['nullable', 'integer', 'min:1'],
             'roster_id' => ['nullable', 'integer'],
-            'pending_only' => ['boolean'],
         ]);
 
         if ($validator->fails()) {
@@ -94,13 +88,12 @@ class FetchTradesTool implements ToolInterface
         $leagueId = $arguments['league_id'];
         $round = $arguments['round'] ?? 1;
         $filterRoster = $arguments['roster_id'] ?? null;
-        $pendingOnly = $arguments['pending_only'] ?? false;
 
         $response = Http::get("https://api.sleeper.app/v1/league/{$leagueId}/transactions/{$round}");
 
         if (! $response->successful()) {
             throw new JsonRpcErrorException(
-                message: 'Failed to fetch transactions from Sleeper API',
+                message: 'Failed to fetch transactions',
                 code: JsonRpcErrorCode::INTERNAL_ERROR
             );
         }
@@ -109,17 +102,13 @@ class FetchTradesTool implements ToolInterface
 
         if (! is_array($transactions)) {
             throw new JsonRpcErrorException(
-                message: 'Invalid transaction data received from API',
+                message: 'Invalid transaction data received',
                 code: JsonRpcErrorCode::INTERNAL_ERROR
             );
         }
 
-        $trades = array_filter($transactions, function ($tx) use ($filterRoster, $pendingOnly) {
+        $trades = array_filter($transactions, function ($tx) use ($filterRoster) {
             if (($tx['type'] ?? null) !== 'trade') {
-                return false;
-            }
-
-            if ($pendingOnly && ($tx['status'] ?? null) !== 'pending') {
                 return false;
             }
 
@@ -156,7 +145,7 @@ class FetchTradesTool implements ToolInterface
         foreach ($trades as $trade) {
             $resultTrades[] = [
                 'transaction_id' => $trade['transaction_id'] ?? null,
-                'status' => $trade['status'] ?? null,
+                'type' => $trade['type'] ?? null,
                 'roster_ids' => $trade['roster_ids'] ?? [],
                 'adds' => $this->transformPlayers($trade['adds'] ?? [], $playersFromDb, 'to_roster_id'),
                 'drops' => $this->transformPlayers($trade['drops'] ?? [], $playersFromDb, 'from_roster_id'),
@@ -173,7 +162,6 @@ class FetchTradesTool implements ToolInterface
                 'league_id' => $leagueId,
                 'round' => $round,
                 'filtered_roster_id' => $filterRoster,
-                'pending_only' => $pendingOnly,
                 'executed_at' => now()->toISOString(),
             ],
         ];
