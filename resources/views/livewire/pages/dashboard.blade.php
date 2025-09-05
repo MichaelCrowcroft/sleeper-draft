@@ -106,8 +106,9 @@ new class extends Component {
                         'league_id' => $leagueId,
                         'sport' => 'nfl',
                     ]);
-                    $matchups = $matchupsResult['success'] ? $matchupsResult['data']['matchups'] : [];
-                    $currentWeek = $matchupsResult['success'] ? $matchupsResult['data']['week'] : null;
+                    // Tool returns direct array: ['league_id' => ..., 'week' => int, 'matchups' => [...]]
+                    $matchups = is_array($matchupsResult) ? ($matchupsResult['matchups'] ?? []) : [];
+                    $currentWeek = is_array($matchupsResult) ? ($matchupsResult['week'] ?? null) : null;
                 } catch (\Exception $e) {
                     logger('Failed to load matchups for league ' . $leagueId, [
                         'error' => $e->getMessage(),
@@ -364,13 +365,13 @@ new class extends Component {
                                 <div class="text-sm space-y-2">
                                     <!-- Score Header -->
                                     <div class="flex justify-between items-center font-medium">
-                                        <span>{{ $userMatchup['owner_details']['team_name'] ?? 'Your Team' }}</span>
+                                        <span>{{ $userMatchup['team_name'] ?? 'Your Team' }}</span>
                                         <span>{{ $userMatchup['points'] ?? 0 }}</span>
                                     </div>
                                     <div class="text-muted-foreground text-center text-xs">vs</div>
                                     <div class="flex justify-between items-center font-medium">
                                         <span>{{ $userMatchup['opponent_details']['team_name'] ?? 'Opponent Team' }}</span>
-                                        <span>{{ $userMatchup['opponent_points'] ?? '?' }}</span>
+                                        <span>{{ $userMatchup['opponent_details']['points'] ?? '?' }}</span>
                                     </div>
 
                                     <!-- Lineups not shown here; focusing on current matchup scores -->

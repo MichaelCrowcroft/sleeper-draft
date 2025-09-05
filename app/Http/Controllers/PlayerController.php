@@ -334,13 +334,28 @@ class PlayerController extends Controller
      */
     private function getNextMatchupProjection(Player $player): ?array
     {
-        // Get the next week (current NFL week + 1, or week 1 if preseason)
         $currentWeek = $this->getCurrentNFLWeek();
+
+        // Prefer current week projection
+        $currentWeekProjection = $player->getProjectionsForWeek(2025, $currentWeek);
+        if ($currentWeekProjection && isset($currentWeekProjection->stats)) {
+            $stats = $currentWeekProjection->stats;
+
+            return [
+                'week' => $currentWeek,
+                'projected_points' => isset($stats['pts_ppr']) ? round((float) $stats['pts_ppr'], 1) : null,
+                'passing_yds' => $stats['pass_yd'] ?? null,
+                'passing_tds' => $stats['pass_td'] ?? null,
+                'rushing_yds' => $stats['rush_yd'] ?? null,
+                'rushing_tds' => $stats['rush_td'] ?? null,
+                'receiving_yds' => $stats['rec_yd'] ?? null,
+                'receiving_tds' => $stats['rec_td'] ?? null,
+            ];
+        }
+
+        // Fallback to next week if current week projection is missing
         $nextWeek = $currentWeek + 1;
-
-        // Get projection for next week
         $nextWeekProjection = $player->getProjectionsForWeek(2025, $nextWeek);
-
         if ($nextWeekProjection && isset($nextWeekProjection->stats)) {
             $stats = $nextWeekProjection->stats;
 
