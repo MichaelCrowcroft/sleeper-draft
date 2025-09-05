@@ -12,6 +12,8 @@ new class extends Component {
     public bool $loading = true;
     public string $error = '';
     public ?int $resolvedWeek = null;
+    public array $actualPointsSummary = [];
+    public array $projectedTotalsSummary = [];
 
     public function mount(): void
     {
@@ -70,6 +72,99 @@ new class extends Component {
         } finally {
             $this->loading = false;
         }
+
+        // Calculate actual points and projected totals
+        $this->calculateActualPointsSummary();
+        $this->calculateProjectedTotalsSummary();
+    }
+
+    private function calculateActualPointsSummary(): void
+    {
+        $currentSeason = 2024; // NFL season
+        $this->actualPointsSummary = [];
+
+        // Get all players with stats for current season
+        $playersWithStats = \App\Models\Player::with(['stats' => function($query) use ($currentSeason) {
+            $query->where('season', $currentSeason)->where('week', '<=', $this->resolvedWeek ?? 1);
+        }])->get();
+
+        $totalActualPoints = 0;
+        $playersPlayed = 0;
+        $playersYetToPlay = 0;
+
+        foreach ($playersWithStats as $player) {
+            $playerTotal = 0;
+            $hasPlayed = false;
+
+            foreach ($player->stats as $stat) {
+                if (isset($stat->stats['pts_ppr']) && is_numeric($stat->stats['pts_ppr'])) {
+                    $playerTotal += (float) $stat->stats['pts_ppr'];
+                    $hasPlayed = true;
+                }
+            }
+
+            if ($hasPlayed) {
+                $totalActualPoints += $playerTotal;
+                $playersPlayed++;
+            } else {
+                $playersYetToPlay++;
+            }
+        }
+
+        $this->actualPointsSummary = [
+            'total_points' => $totalActualPoints,
+            'players_played' => $playersPlayed,
+            'players_yet_to_play' => $playersYetToPlay,
+            'average_per_player' => $playersPlayed > 0 ? $totalActualPoints / $playersPlayed : 0,
+        ];
+    }
+
+    private function calculateProjectedTotalsSummary(): void
+    {
+        $currentSeason = 2024; // NFL season
+        $this->projectedTotalsSummary = [];
+
+        // Get all players with both stats and projections
+        $players = \App\Models\Player::with([
+            'stats' => function($query) use ($currentSeason) {
+                $query->where('season', $currentSeason)->where('week', '<=', $this->resolvedWeek ?? 1);
+            },
+            'projections' => function($query) use ($currentSeason) {
+                $query->where('season', $currentSeason)->where('week', '>', $this->resolvedWeek ?? 1);
+            }
+        ])->get();
+
+        $totalProjectedPoints = 0;
+        $playersWithData = 0;
+
+        foreach ($players as $player) {
+            $playerTotal = 0;
+
+            // Add actual points from games played
+            foreach ($player->stats as $stat) {
+                if (isset($stat->stats['pts_ppr']) && is_numeric($stat->stats['pts_ppr'])) {
+                    $playerTotal += (float) $stat->stats['pts_ppr'];
+                }
+            }
+
+            // Add projected points for remaining games
+            foreach ($player->projections as $projection) {
+                if (isset($projection->stats['pts_ppr']) && is_numeric($projection->stats['pts_ppr'])) {
+                    $playerTotal += (float) $projection->stats['pts_ppr'];
+                }
+            }
+
+            if ($playerTotal > 0) {
+                $totalProjectedPoints += $playerTotal;
+                $playersWithData++;
+            }
+        }
+
+        $this->projectedTotalsSummary = [
+            'total_projected_points' => $totalProjectedPoints,
+            'players_with_data' => $playersWithData,
+            'average_per_player' => $playersWithData > 0 ? $totalProjectedPoints / $playersWithData : 0,
+        ];
     }
 
     private function resolveCurrentWeek(): void
@@ -208,6 +303,64 @@ new class extends Component {
         <flux:callout class="mt-2">
             NFL Week {{ $resolvedWeek }}
         </flux:callout>
+    @endif
+
+    <!-- Points Summary Section -->
+    @if (!$loading && !$error && (!empty($actualPointsSummary) || !empty($projectedTotalsSummary)))
+        <div class="grid gap-4 md:grid-cols-2">
+            <!-- Actual Points -->
+            @if (!empty($actualPointsSummary))
+                <flux:callout>
+                    <div class="space-y-2">
+                        <flux:heading size="md" class="font-semibold">Actual Points (Week 1)</flux:heading>
+                        <div class="space-y-1">
+                            <div class="flex justify-between">
+                                <span class="text-sm text-muted-foreground">Total Points Scored:</span>
+                                <span class="font-medium">{{ number_format($actualPointsSummary['total_points'], 1) }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-muted-foreground">Players Who Played:</span>
+                                <span class="font-medium">{{ $actualPointsSummary['players_played'] }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-muted-foreground">Players Yet to Play:</span>
+                                <span class="font-medium">{{ $actualPointsSummary['players_yet_to_play'] }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-muted-foreground">Average per Player:</span>
+                                <span class="font-medium">{{ number_format($actualPointsSummary['average_per_player'], 1) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </flux:callout>
+            @endif
+
+            <!-- Projected Totals -->
+            @if (!empty($projectedTotalsSummary))
+                <flux:callout>
+                    <div class="space-y-2">
+                        <flux:heading size="md" class="font-semibold">Projected Season Totals</flux:heading>
+                        <div class="space-y-1">
+                            <div class="flex justify-between">
+                                <span class="text-sm text-muted-foreground">Total Projected Points:</span>
+                                <span class="font-medium">{{ number_format($projectedTotalsSummary['total_projected_points'], 1) }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-muted-foreground">Players with Data:</span>
+                                <span class="font-medium">{{ $projectedTotalsSummary['players_with_data'] }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-muted-foreground">Average per Player:</span>
+                                <span class="font-medium">{{ number_format($projectedTotalsSummary['average_per_player'], 1) }}</span>
+                            </div>
+                        </div>
+                        <div class="text-xs text-muted-foreground mt-2">
+                            Combines actual points scored with projected points for remaining games
+                        </div>
+                    </div>
+                </flux:callout>
+            @endif
+        </div>
     @endif
 
     @if ($loading)
