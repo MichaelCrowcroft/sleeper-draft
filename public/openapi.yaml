@@ -831,19 +831,24 @@ components:
 
     Roster:
       type: object
-      properties:
+      description: Raw roster object from Sleeper
+      properties: {}
+      additionalProperties: true
     RosterEnhanced:
       type: object
       properties:
         roster_id:
           type: integer
+          description: Roster ID
           example: 1
         owner_id:
           type: string
+          description: Owner user ID
           example: "123456789"
         owner:
           type: object
           nullable: true
+          description: Owner details when include_owner_details=true
           properties:
             user_id:
               type: string
@@ -855,76 +860,32 @@ components:
               type: string
         players:
           type: array
+          description: Players on this roster. When include_player_details=true, items include player_data.
           items:
-            type: string
+            oneOf:
+              - type: object
+                properties:
+                  player_id:
+                    type: string
+                  player_data:
+                    oneOf:
+                      - $ref: '#/components/schemas/Player'
+                      - type: 'null'
+              - type: string
         starters:
           type: array
+          description: Starting lineup. Same typing as players.
           items:
-            type: string
-        bench:
-          type: array
-          items:
-            type: string
-        players_detailed:
-          type: array
-          items:
-            type: object
-            properties:
-              player_id:
-                type: string
-              player_data:
-                $ref: '#/components/schemas/Player'
-        starters_detailed:
-          type: array
-          items:
-            type: object
-            properties:
-              player_id:
-                type: string
-              player_data:
-                $ref: '#/components/schemas/Player'
-        bench_detailed:
-          type: array
-          items:
-            type: object
-            properties:
-              player_id:
-                type: string
-              player_data:
-                $ref: '#/components/schemas/Player'
-        roster_id:
-          type: integer
-          description: Roster ID
-          example: 1
-        owner_id:
-          type: string
-          description: Owner user ID
-          example: "123456789"
-        owner_username:
-          type: string
-          description: Owner username
-          example: "fantasyexpert"
-        owner_display_name:
-          type: string
-          description: Owner display name
-          example: "Fantasy Expert"
-        players:
-          type: array
-          description: Players on this roster
-          items:
-            $ref: '#/components/schemas/Player'
-        starters:
-          type: array
-          description: Starting lineup player IDs
-          items:
-            type: string
-          example: ["1234", "5678", "9012"]
-        reserve:
-          type: array
-          description: Reserve/bench player IDs
-          items:
-            type: string
-          example: ["3456", "7890"]
+            oneOf:
+              - type: object
+                properties:
+                  player_id:
+                    type: string
+                  player_data:
+                    oneOf:
+                      - $ref: '#/components/schemas/Player'
+                      - type: 'null'
+              - type: string
 
     Matchup:
       type: object
