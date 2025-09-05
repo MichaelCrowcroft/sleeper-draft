@@ -1,19 +1,24 @@
 <?php
 
-use App\MCP\Tools\FetchUserLeaguesTool;
 use App\MCP\Tools\FetchMatchupsTool;
-use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
+use App\MCP\Tools\FetchUserLeaguesTool;
+use App\Models\PlayerProjections;
+use App\Models\PlayerStats;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
+use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 
-new class extends Component {
+new class extends Component
+{
     public array $leagues = [];
+
     public array $leagueDetails = [];
+
     public bool $loading = true;
+
     public string $error = '';
+
     public ?int $resolvedWeek = null;
-    public array $actualPointsSummary = [];
-    public array $projectedTotalsSummary = [];
 
     public function mount(): void
     {
@@ -25,9 +30,10 @@ new class extends Component {
         try {
             $user = Auth::user();
 
-            if (!$user || (!$user->sleeper_username && !$user->sleeper_user_id)) {
+            if (! $user || (! $user->sleeper_username && ! $user->sleeper_user_id)) {
                 $this->error = 'Please set up your Sleeper username in your profile settings to view your leagues.';
                 $this->loading = false;
+
                 return;
             }
 
@@ -45,15 +51,17 @@ new class extends Component {
                     'sport' => 'nfl',
                 ]);
 
-                if (!$leaguesResult['success']) {
+                if (! $leaguesResult['success']) {
                     $this->error = 'Unable to connect to Sleeper API. Please check your username and try again.';
                     $this->loading = false;
+
                     return;
                 }
 
                 if (empty($leaguesResult['data'])) {
                     $this->error = 'No leagues found for your Sleeper account.';
                     $this->loading = false;
+
                     return;
                 }
 
@@ -64,107 +72,15 @@ new class extends Component {
             } catch (\Exception $e) {
                 $this->error = 'Unable to connect to Sleeper API. Please check your username and try again.';
                 $this->loading = false;
+
                 return;
             }
 
         } catch (\Exception $e) {
-            $this->error = 'Failed to load dashboard data: ' . $e->getMessage();
+            $this->error = 'Failed to load dashboard data: '.$e->getMessage();
         } finally {
             $this->loading = false;
         }
-
-        // Calculate actual points and projected totals
-        $this->calculateActualPointsSummary();
-        $this->calculateProjectedTotalsSummary();
-    }
-
-    private function calculateActualPointsSummary(): void
-    {
-        $currentSeason = 2024; // NFL season
-        $this->actualPointsSummary = [];
-
-        // Get all players with stats for current season
-        $playersWithStats = \App\Models\Player::with(['stats' => function($query) use ($currentSeason) {
-            $query->where('season', $currentSeason)->where('week', '<=', $this->resolvedWeek ?? 1);
-        }])->get();
-
-        $totalActualPoints = 0;
-        $playersPlayed = 0;
-        $playersYetToPlay = 0;
-
-        foreach ($playersWithStats as $player) {
-            $playerTotal = 0;
-            $hasPlayed = false;
-
-            foreach ($player->stats as $stat) {
-                if (isset($stat->stats['pts_ppr']) && is_numeric($stat->stats['pts_ppr'])) {
-                    $playerTotal += (float) $stat->stats['pts_ppr'];
-                    $hasPlayed = true;
-                }
-            }
-
-            if ($hasPlayed) {
-                $totalActualPoints += $playerTotal;
-                $playersPlayed++;
-            } else {
-                $playersYetToPlay++;
-            }
-        }
-
-        $this->actualPointsSummary = [
-            'total_points' => $totalActualPoints,
-            'players_played' => $playersPlayed,
-            'players_yet_to_play' => $playersYetToPlay,
-            'average_per_player' => $playersPlayed > 0 ? $totalActualPoints / $playersPlayed : 0,
-        ];
-    }
-
-    private function calculateProjectedTotalsSummary(): void
-    {
-        $currentSeason = 2024; // NFL season
-        $this->projectedTotalsSummary = [];
-
-        // Get all players with both stats and projections
-        $players = \App\Models\Player::with([
-            'stats' => function($query) use ($currentSeason) {
-                $query->where('season', $currentSeason)->where('week', '<=', $this->resolvedWeek ?? 1);
-            },
-            'projections' => function($query) use ($currentSeason) {
-                $query->where('season', $currentSeason)->where('week', '>', $this->resolvedWeek ?? 1);
-            }
-        ])->get();
-
-        $totalProjectedPoints = 0;
-        $playersWithData = 0;
-
-        foreach ($players as $player) {
-            $playerTotal = 0;
-
-            // Add actual points from games played
-            foreach ($player->stats as $stat) {
-                if (isset($stat->stats['pts_ppr']) && is_numeric($stat->stats['pts_ppr'])) {
-                    $playerTotal += (float) $stat->stats['pts_ppr'];
-                }
-            }
-
-            // Add projected points for remaining games
-            foreach ($player->projections as $projection) {
-                if (isset($projection->stats['pts_ppr']) && is_numeric($projection->stats['pts_ppr'])) {
-                    $playerTotal += (float) $projection->stats['pts_ppr'];
-                }
-            }
-
-            if ($playerTotal > 0) {
-                $totalProjectedPoints += $playerTotal;
-                $playersWithData++;
-            }
-        }
-
-        $this->projectedTotalsSummary = [
-            'total_projected_points' => $totalProjectedPoints,
-            'players_with_data' => $playersWithData,
-            'average_per_player' => $playersWithData > 0 ? $totalProjectedPoints / $playersWithData : 0,
-        ];
     }
 
     private function resolveCurrentWeek(): void
@@ -189,8 +105,8 @@ new class extends Component {
             try {
                 $leagueId = $league['id'];
 
-                // Rosters are not required for displaying current week matchups
-                $rosters = [];
+                // Fetch all rosters for the league
+                $rosters = $this->fetchLeagueRosters($leagueId);
 
                 // Fetch current week matchups
                 $matchups = [];
@@ -205,10 +121,13 @@ new class extends Component {
                     $matchups = is_array($matchupsResult) ? ($matchupsResult['matchups'] ?? []) : [];
                     $currentWeek = is_array($matchupsResult) ? ($matchupsResult['week'] ?? null) : null;
                 } catch (\Exception $e) {
-                    logger('Failed to load matchups for league ' . $leagueId, [
+                    logger('Failed to load matchups for league '.$leagueId, [
                         'error' => $e->getMessage(),
                     ]);
                 }
+
+                // Enhance matchups with roster data
+                $matchups = $this->enhanceMatchupsWithRosters($matchups, $rosters);
 
                 $this->leagueDetails[$leagueId] = [
                     'league' => $league,
@@ -219,7 +138,7 @@ new class extends Component {
 
             } catch (\Exception $e) {
                 // Log error but continue with other leagues
-                logger('Failed to load details for league ' . $league['id'], [
+                logger('Failed to load details for league '.$league['id'], [
                     'error' => $e->getMessage(),
                 ]);
 
@@ -232,6 +151,65 @@ new class extends Component {
                 ];
             }
         }
+    }
+
+    private function fetchLeagueRosters(string $leagueId): array
+    {
+        try {
+            $response = Sleeper::leagues()->rosters($leagueId);
+            if ($response->successful()) {
+                return $response->json();
+            }
+        } catch (\Exception $e) {
+            logger('Failed to fetch rosters for league '.$leagueId, [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return [];
+    }
+
+    private function enhanceMatchupsWithRosters(array $matchups, array $rosters): array
+    {
+        $rosterMap = [];
+        foreach ($rosters as $roster) {
+            $ownerId = $roster['owner_id'] ?? null;
+            if ($ownerId) {
+                $rosterMap[$ownerId] = $roster;
+            }
+        }
+
+        foreach ($matchups as &$matchup) {
+            if (isset($matchup['teams'])) {
+                foreach ($matchup['teams'] as &$team) {
+                    $user = $team['user'] ?? null;
+                    if ($user) {
+                        $userId = $user['user_id'] ?? null;
+                        $username = $user['username'] ?? null;
+
+                        // Find roster by user_id or username
+                        $matchingRoster = null;
+                        if ($userId && isset($rosterMap[$userId])) {
+                            $matchingRoster = $rosterMap[$userId];
+                        } elseif ($username) {
+                            foreach ($rosterMap as $roster) {
+                                $rosterOwner = $roster['owner'] ?? null;
+                                if ($rosterOwner && ($rosterOwner['username'] ?? null) === $username) {
+                                    $matchingRoster = $roster;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if ($matchingRoster) {
+                            $team['roster'] = $matchingRoster['players'] ?? [];
+                        }
+                    }
+                }
+            }
+        }
+
+        return $matchups;
     }
 
     private function getUserRoster(array $rosters): ?array
@@ -274,6 +252,10 @@ new class extends Component {
                 if ($matchesUser) {
                     $opponent = $teams[$index === 0 ? 1 : 0] ?? null;
                     $oppUser = $opponent['user'] ?? null;
+
+                    // Get detailed matchup info with actual vs projected points
+                    $detailedMatchup = $this->getDetailedMatchupInfo($pair, $team, $opponent);
+
                     return [
                         'matchup_id' => $pair['matchup_id'] ?? null,
                         'team_name' => $teamUser['team_name'] ?? ($teamUser['display_name'] ?? ($teamUser['username'] ?? 'Your Team')),
@@ -282,12 +264,93 @@ new class extends Component {
                             'team_name' => $oppUser['team_name'] ?? ($oppUser['display_name'] ?? ($oppUser['username'] ?? 'Opponent Team')),
                             'points' => $opponent['points'] ?? 0,
                         ],
+                        'detailed_info' => $detailedMatchup,
                     ];
                 }
             }
         }
 
         return null;
+    }
+
+    private function getDetailedMatchupInfo(array $pair, array $userTeam, array $opponentTeam): array
+    {
+        $currentWeek = $pair['week'] ?? null;
+        $season = $pair['season'] ?? date('Y');
+
+        if (! $currentWeek) {
+            return [
+                'user_actual_points' => 0,
+                'user_projected_points' => 0,
+                'user_total_projected' => 0,
+                'user_players_played' => 0,
+                'user_total_players' => 0,
+                'opponent_actual_points' => 0,
+                'opponent_projected_points' => 0,
+                'opponent_total_projected' => 0,
+                'opponent_players_played' => 0,
+                'opponent_total_players' => 0,
+            ];
+        }
+
+        // Get user team roster
+        $userRoster = $userTeam['roster'] ?? [];
+        $opponentRoster = $opponentTeam['roster'] ?? [];
+
+        // Calculate points for user team
+        $userPoints = $this->calculateTeamPoints($userRoster, $season, $currentWeek);
+        $opponentPoints = $this->calculateTeamPoints($opponentRoster, $season, $currentWeek);
+
+        return array_merge($userPoints, [
+            'opponent_actual_points' => $opponentPoints['actual_points'],
+            'opponent_projected_points' => $opponentPoints['projected_points'],
+            'opponent_total_projected' => $opponentPoints['total_projected'],
+            'opponent_players_played' => $opponentPoints['players_played'],
+            'opponent_total_players' => $opponentPoints['total_players'],
+        ]);
+    }
+
+    private function calculateTeamPoints(array $roster, int $season, int $week): array
+    {
+        $actualPoints = 0;
+        $projectedPoints = 0;
+        $playersPlayed = 0;
+        $totalPlayers = count($roster);
+
+        foreach ($roster as $playerId) {
+            if (! is_string($playerId)) {
+                continue;
+            }
+
+            // Check if player has actual stats for this week
+            $actualStat = PlayerStats::where('player_id', $playerId)
+                ->where('season', $season)
+                ->where('week', $week)
+                ->first();
+
+            if ($actualStat && isset($actualStat->stats['pts_ppr'])) {
+                $actualPoints += (float) $actualStat->stats['pts_ppr'];
+                $playersPlayed++;
+            } else {
+                // Get projected points for players who haven't played
+                $projection = PlayerProjections::where('player_id', $playerId)
+                    ->where('season', $season)
+                    ->where('week', $week)
+                    ->first();
+
+                if ($projection && isset($projection->stats['pts_ppr'])) {
+                    $projectedPoints += (float) $projection->stats['pts_ppr'];
+                }
+            }
+        }
+
+        return [
+            'actual_points' => round($actualPoints, 2),
+            'projected_points' => round($projectedPoints, 2),
+            'total_projected' => round($actualPoints + $projectedPoints, 2),
+            'players_played' => $playersPlayed,
+            'total_players' => $totalPlayers,
+        ];
     }
 }; ?>
 
@@ -303,64 +366,6 @@ new class extends Component {
         <flux:callout class="mt-2">
             NFL Week {{ $resolvedWeek }}
         </flux:callout>
-    @endif
-
-    <!-- Points Summary Section -->
-    @if (!$loading && !$error && (!empty($actualPointsSummary) || !empty($projectedTotalsSummary)))
-        <div class="grid gap-4 md:grid-cols-2">
-            <!-- Actual Points -->
-            @if (!empty($actualPointsSummary))
-                <flux:callout>
-                    <div class="space-y-2">
-                        <flux:heading size="md" class="font-semibold">Actual Points (Week 1)</flux:heading>
-                        <div class="space-y-1">
-                            <div class="flex justify-between">
-                                <span class="text-sm text-muted-foreground">Total Points Scored:</span>
-                                <span class="font-medium">{{ number_format($actualPointsSummary['total_points'], 1) }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-sm text-muted-foreground">Players Who Played:</span>
-                                <span class="font-medium">{{ $actualPointsSummary['players_played'] }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-sm text-muted-foreground">Players Yet to Play:</span>
-                                <span class="font-medium">{{ $actualPointsSummary['players_yet_to_play'] }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-sm text-muted-foreground">Average per Player:</span>
-                                <span class="font-medium">{{ number_format($actualPointsSummary['average_per_player'], 1) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </flux:callout>
-            @endif
-
-            <!-- Projected Totals -->
-            @if (!empty($projectedTotalsSummary))
-                <flux:callout>
-                    <div class="space-y-2">
-                        <flux:heading size="md" class="font-semibold">Projected Season Totals</flux:heading>
-                        <div class="space-y-1">
-                            <div class="flex justify-between">
-                                <span class="text-sm text-muted-foreground">Total Projected Points:</span>
-                                <span class="font-medium">{{ number_format($projectedTotalsSummary['total_projected_points'], 1) }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-sm text-muted-foreground">Players with Data:</span>
-                                <span class="font-medium">{{ $projectedTotalsSummary['players_with_data'] }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-sm text-muted-foreground">Average per Player:</span>
-                                <span class="font-medium">{{ number_format($projectedTotalsSummary['average_per_player'], 1) }}</span>
-                            </div>
-                        </div>
-                        <div class="text-xs text-muted-foreground mt-2">
-                            Combines actual points scored with projected points for remaining games
-                        </div>
-                    </div>
-                </flux:callout>
-            @endif
-        </div>
     @endif
 
     @if ($loading)
@@ -515,7 +520,7 @@ new class extends Component {
                         @if ($userMatchup)
                             <div class="space-y-3">
                                 <flux:heading size="sm" class="font-medium">Week {{ $details['current_week'] }} Matchup</flux:heading>
-                                <div class="text-sm space-y-2">
+                                <div class="text-sm space-y-3">
                                     <!-- Score Header -->
                                     <div class="flex justify-between items-center font-medium">
                                         <span>{{ $userMatchup['team_name'] ?? 'Your Team' }}</span>
@@ -527,7 +532,66 @@ new class extends Component {
                                         <span>{{ $userMatchup['opponent_details']['points'] ?? '?' }}</span>
                                     </div>
 
-                                    <!-- Lineups not shown here; focusing on current matchup scores -->
+                                    <!-- Detailed Points Breakdown -->
+                                    @if(isset($userMatchup['detailed_info']))
+                                        <div class="border-t pt-3 space-y-2">
+                                            <div class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Your Team</div>
+                                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                                <div class="space-y-1">
+                                                    <div class="flex justify-between">
+                                                        <span class="text-muted-foreground">Actual Points:</span>
+                                                        <span class="font-medium">{{ $userMatchup['detailed_info']['user_actual_points'] ?? 0 }}</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-muted-foreground">Projected Remaining:</span>
+                                                        <span class="font-medium text-blue-600">{{ $userMatchup['detailed_info']['user_projected_points'] ?? 0 }}</span>
+                                                    </div>
+                                                    <div class="flex justify-between font-medium border-t pt-1">
+                                                        <span>Total Projected:</span>
+                                                        <span>{{ $userMatchup['detailed_info']['user_total_projected'] ?? 0 }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="space-y-1">
+                                                    <div class="flex justify-between">
+                                                        <span class="text-muted-foreground">Players Played:</span>
+                                                        <span class="font-medium">{{ $userMatchup['detailed_info']['user_players_played'] ?? 0 }}/{{ $userMatchup['detailed_info']['user_total_players'] ?? 0 }}</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-muted-foreground">Yet to Play:</span>
+                                                        <span class="font-medium">{{ ($userMatchup['detailed_info']['user_total_players'] ?? 0) - ($userMatchup['detailed_info']['user_players_played'] ?? 0) }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Opponent</div>
+                                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                                <div class="space-y-1">
+                                                    <div class="flex justify-between">
+                                                        <span class="text-muted-foreground">Actual Points:</span>
+                                                        <span class="font-medium">{{ $userMatchup['detailed_info']['opponent_actual_points'] ?? 0 }}</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-muted-foreground">Projected Remaining:</span>
+                                                        <span class="font-medium text-blue-600">{{ $userMatchup['detailed_info']['opponent_projected_points'] ?? 0 }}</span>
+                                                    </div>
+                                                    <div class="flex justify-between font-medium border-t pt-1">
+                                                        <span>Total Projected:</span>
+                                                        <span>{{ $userMatchup['detailed_info']['opponent_total_projected'] ?? 0 }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="space-y-1">
+                                                    <div class="flex justify-between">
+                                                        <span class="text-muted-foreground">Players Played:</span>
+                                                        <span class="font-medium">{{ $userMatchup['detailed_info']['opponent_players_played'] ?? 0 }}/{{ $userMatchup['detailed_info']['opponent_total_players'] ?? 0 }}</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-muted-foreground">Yet to Play:</span>
+                                                        <span class="font-medium">{{ ($userMatchup['detailed_info']['opponent_total_players'] ?? 0) - ($userMatchup['detailed_info']['opponent_players_played'] ?? 0) }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         @else
