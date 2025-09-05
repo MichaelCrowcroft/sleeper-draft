@@ -23,6 +23,12 @@ Route::middleware('api.analytics')->group(function () {
         ->name('api.mcp.fetch-roster');
     Route::post('/mcp/tools/fetch-transactions', [McpActionController::class, 'invokeTool'])
         ->name('api.mcp.fetch-transactions');
+    Route::post('/mcp/tools/fetch-matchups', [McpActionController::class, 'invokeTool'])
+        ->name('api.mcp.fetch-matchups');
+    Route::post('/mcp/tools/fetch-players-season-data', [McpActionController::class, 'invokeTool'])
+        ->name('api.mcp.fetch-players-season-data');
+    Route::post('/mcp/tools/fetch-player-season-data', [McpActionController::class, 'invokeTool'])
+        ->name('api.mcp.fetch-player-season-data');
 
     // OpenAPI endpoint
     Route::get('/openapi.yaml', function () {
@@ -52,6 +58,8 @@ Route::middleware('api.analytics')->group(function () {
             'fetch-roster',
             'fetch-transactions',
             'fetch-matchups',
+            'fetch-players-season-data',
+            'fetch-player-season-data',
         ];
 
         return response()->json([
@@ -67,6 +75,8 @@ Route::middleware('api.analytics')->group(function () {
                         'fetch-roster' => 'Get a specific user roster enriched with player and owner details',
                         'fetch-transactions' => 'Fetches league transactions with expanded player details',
                         'fetch-matchups' => 'Fetches matchups and scores for a league in a specific week',
+                        'fetch-players-season-data' => 'Returns last season stats + summary and current season projections + summary for players',
+                        'fetch-player-season-data' => 'Returns last season stats + summary and current season projections + summary for a player by id or name (all matches if multiple)',
                     },
                     'endpoint' => "/api/mcp/tools/{$tool}",
                     'method' => 'POST',

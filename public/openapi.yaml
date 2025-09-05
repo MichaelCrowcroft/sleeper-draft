@@ -198,6 +198,58 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /mcp/tools/fetch-players-season-data:
+    post:
+      summary: Fetch players season data
+      description: |
+        Returns players with last season stats + summary and current season projections + summary. Optional position filter and pagination.
+      operationId: fetchPlayersSeasonData
+      tags:
+        - Player Data
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchPlayersSeasonDataRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchPlayersSeasonDataResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/fetch-player-season-data:
+    post:
+      summary: Fetch a player's season data
+      description: |
+        Returns last season stats + summary and current season projections + summary for a specific player by player_id or by name. If name matches multiple, all matches are returned.
+      operationId: fetchPlayerSeasonData
+      tags:
+        - Player Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchPlayerSeasonDataRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchPlayerSeasonDataResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /mcp/tools/fetch-transactions:
     post:
       summary: Fetch league transactions
@@ -352,6 +404,14 @@ components:
           type: string
           description: Sleeper league ID to fetch rosters for
           example: "987654321"
+        league_identifier:
+          type: string
+          description: Alternative to league_id. League name or ID (used with user_id to resolve league_id)
+          example: "SUPER MEGA ENTHUSIAST EXPERT LEAGUE"
+        user_id:
+          type: string
+          description: Sleeper user ID whose roster to fetch (also used to resolve league_id when league_identifier is provided)
+          example: "123456789"
         include_player_details:
           type: boolean
           description: Whether to include detailed player information from database
@@ -363,7 +423,7 @@ components:
           default: true
           example: true
       required:
-        - league_id
+        - user_id
 
     FetchMatchupsRequest:
       type: object
@@ -372,6 +432,14 @@ components:
           type: string
           description: Sleeper league ID to fetch matchups for
           example: "987654321"
+        league_identifier:
+          type: string
+          description: Alternative to league_id. League name or ID (use with user_id to resolve league_id)
+          example: "SUPER MEGA ENTHUSIAST EXPERT LEAGUE"
+        user_id:
+          type: string
+          description: Required when using league_identifier to resolve league_id
+          example: "123456789"
         week:
           anyOf:
             - type: integer
@@ -384,8 +452,48 @@ components:
           description: Sport type
           default: "nfl"
           example: "nfl"
-      required:
-        - league_id
+        season:
+          type: string
+          description: Season year (defaults to current)
+          example: "2024"
+      required: []
+
+    FetchPlayersSeasonDataRequest:
+      type: object
+      properties:
+        position:
+          type: string
+          description: Optional position filter (QB, RB, WR, TE, K, DEF)
+          example: QB
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          description: Optional limit of players to return (default 10)
+          example: 10
+        offset:
+          type: integer
+          minimum: 0
+          description: Optional offset for pagination
+          example: 0
+        cursor:
+          type: string
+          description: Opaque cursor for pagination per MCP spec. If provided, overrides offset/limit.
+
+    FetchPlayerSeasonDataRequest:
+      type: object
+      properties:
+        player_id:
+          type: string
+          description: Sleeper player ID
+          example: "1234"
+        name:
+          type: string
+          description: Player name to search (case-insensitive, partial match)
+          example: "Mahomes"
+      anyOf:
+        - required: [player_id]
+        - required: [name]
 
     # Response Schemas
     FetchTrendingPlayersResponse:
@@ -697,6 +805,149 @@ components:
             pending_only:
               type: boolean
               example: false
+            executed_at:
+              type: string
+              format: date-time
+    PlayerSeasonSummary:
+      type: object
+      properties:
+        total_points:
+          type: number
+          example: 250.5
+        min_points:
+          type: number
+          example: 2.1
+        max_points:
+          type: number
+          example: 42.3
+        average_points_per_game:
+          type: number
+          example: 15.6
+        stddev_below:
+          type: number
+          example: 12.2
+        stddev_above:
+          type: number
+          example: 19.0
+        games:
+          type: integer
+          nullable: true
+          example: 17
+        games_active:
+          type: integer
+          nullable: true
+          example: 16
+    PlayerWithSeasonSummaries:
+      allOf:
+        - $ref: '#/components/schemas/Player'
+        - type: object
+          properties:
+            full_name:
+              type: string
+              example: "Patrick Mahomes"
+            bye_week:
+              type: integer
+              example: 10
+            times_drafted:
+              type: integer
+              example: 1200
+            season_2024_summary:
+              $ref: '#/components/schemas/PlayerSeasonSummary'
+            season_2025_projection_summary:
+              $ref: '#/components/schemas/PlayerSeasonSummary'
+    FetchPlayersSeasonDataResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        operation:
+          type: string
+          example: fetch-players-season-data
+        count:
+          type: integer
+          example: 250
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerWithSeasonSummaries'
+        nextCursor:
+          type: string
+          nullable: true
+          description: Opaque cursor to fetch the next page. When absent, there are no more results.
+        metadata:
+          type: object
+          properties:
+            filters:
+              type: object
+              properties:
+                position:
+                  type: string
+                  nullable: true
+            pagination:
+              type: object
+              properties:
+                limit:
+                  type: integer
+                offset:
+                  type: integer
+                mode:
+                  type: string
+                  example: cursor
+            seasons:
+              type: object
+              properties:
+                stats:
+                  type: integer
+                  example: 2024
+                projections:
+                  type: integer
+                  example: 2025
+            executed_at:
+              type: string
+              format: date-time
+
+    FetchPlayerSeasonDataResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        operation:
+          type: string
+          example: fetch-player-season-data
+        mode:
+          type: string
+          enum: [by_id, by_name]
+          example: by_id
+        count:
+          type: integer
+          example: 1
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerWithSeasonSummaries'
+        metadata:
+          type: object
+          properties:
+            filters:
+              type: object
+              properties:
+                player_id:
+                  type: string
+                  nullable: true
+                name:
+                  type: string
+                  nullable: true
+            seasons:
+              type: object
+              properties:
+                stats:
+                  type: integer
+                  example: 2024
+                projections:
+                  type: integer
+                  example: 2025
             executed_at:
               type: string
               format: date-time
