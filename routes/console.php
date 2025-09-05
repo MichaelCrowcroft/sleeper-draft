@@ -29,7 +29,7 @@ Schedule::command(UpdatePlayerADP::class, [
 Schedule::command(UpdateAllPlayerStats::class, [
     '--season' => 2025,
     '--season-type' => 'regular',
-])->tuesdays()->at('01:00');
+])->daily()->at('01:00');
 
 Schedule::command(UpdateAllPlayerProjections::class, [
     '--season' => 2025,

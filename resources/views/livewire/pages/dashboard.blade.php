@@ -374,19 +374,45 @@ new class extends Component
 }; ?>
 
 <div class="space-y-6">
+    <!-- Header -->
     <div class="flex items-center justify-between">
         <div>
             <flux:heading size="lg">Dashboard</flux:heading>
             <p class="text-muted-foreground mt-1">Your Sleeper Fantasy Football Leagues</p>
         </div>
+
+        @if ($resolvedWeek)
+            <flux:badge variant="secondary" size="sm">
+                NFL Week {{ $resolvedWeek }}
+            </flux:badge>
+        @endif
     </div>
 
-    @if ($resolvedWeek)
-        <flux:callout class="mt-2">
-            NFL Week {{ $resolvedWeek }}
-        </flux:callout>
+    <!-- Quick Stats Row -->
+    @if (!$loading && !empty($leagues))
+        <div class="grid gap-4 md:grid-cols-3">
+            <flux:callout class="text-center">
+                <div class="text-2xl font-bold text-primary">{{ count($leagues) }}</div>
+                <div class="text-sm text-muted-foreground">Active Leagues</div>
+            </flux:callout>
+
+            <flux:callout class="text-center">
+                <div class="text-2xl font-bold text-primary">
+                    {{ collect($leagueDetails)->filter(fn($details) => $this->getUserMatchup($details['matchups'] ?? []))->count() }}
+                </div>
+                <div class="text-sm text-muted-foreground">Matchups This Week</div>
+            </flux:callout>
+
+            <flux:callout class="text-center">
+                <div class="text-2xl font-bold text-primary">
+                    {{ collect($leagueDetails)->sum(fn($details) => count($this->getUserRoster($details['rosters'] ?? [])['starters'] ?? [])) }}
+                </div>
+                <div class="text-sm text-muted-foreground">Total Starters</div>
+            </flux:callout>
+        </div>
     @endif
 
+    <!-- Loading State -->
     @if ($loading)
         <div class="flex items-center justify-center py-12">
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -401,231 +427,24 @@ new class extends Component
             ℹ️ No leagues found. Make sure your Sleeper username is set up in your profile.
         </flux:callout>
     @else
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <!-- Leagues Grid -->
+        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             @foreach ($leagueDetails as $leagueId => $details)
-                <flux:callout class="p-6">
-                    <div class="space-y-4">
-                        <!-- League Header -->
-<div>
-                            <flux:heading size="md" class="font-semibold">{{ $details['league']['name'] }}</flux:heading>
-                            <p class="text-sm text-muted-foreground">League ID: {{ $leagueId }}</p>
-                        </div>
+                @php
+                    $userRoster = $this->getUserRoster($details['rosters']);
+                    $userMatchup = $this->getUserMatchup($details['matchups']);
+                @endphp
 
-                        <!-- User Roster -->
-                        @php
-                            $userRoster = $this->getUserRoster($details['rosters']);
-                        @endphp
-
-                        @if ($userRoster)
-                            <div class="space-y-3">
-                                <flux:heading size="sm" class="font-medium">Your Team</flux:heading>
-                                <div class="text-sm">
-                                    <p class="font-medium">{{ $userRoster['owner']['team_name'] ?? 'Your Team' }}</p>
-
-                                    <!-- Starters -->
-                                    @if (!empty($userRoster['starters_detailed']))
-                                        <div class="mt-2">
-                                            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Starters</p>
-                                            <div class="mt-1 space-y-1">
-                                                @foreach ($userRoster['starters_detailed'] as $starter)
-                                                    @php
-                                                        $player = $starter['player_data'];
-                                                    @endphp
-                                                    @if ($player)
-                                                        <div class="space-y-1">
-                                                            <div class="flex justify-between items-center text-xs">
-                                                                <div class="flex flex-col">
-                                                                    <span class="font-medium">{{ $player['first_name'] }} {{ $player['last_name'] }}</span>
-                                                                    @if(isset($player['injury_status']) && $player['injury_status'] && $player['injury_status'] !== 'Healthy')
-                                                                        <span class="text-xs text-red-500 font-medium">{{ $player['injury_status'] }}
-                                                                            @if(isset($player['injury_body_part']) && $player['injury_body_part'])
-                                                                                ({{ $player['injury_body_part'] }})
-                                                                            @endif
-                                                                        </span>
-                                                                    @endif
-                                                                </div>
-                                                                <div class="flex flex-col items-end text-muted-foreground">
-                                                                    <span>{{ $player['position'] ?? 'N/A' }} • {{ $player['team'] ?? 'FA' }}</span>
-                                                                    @if(isset($player['bye_week']) && $player['bye_week'] && isset($details['current_week']) && $details['current_week'] && $player['bye_week'] == $details['current_week'])
-                                                                        <span class="text-xs text-orange-500 font-medium">BYE</span>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                            <div class="flex justify-between items-center text-xs text-muted-foreground">
-                                                                <span>
-                                                                    @if(isset($player['adp_formatted']) && $player['adp_formatted'])
-                                                                        ADP: {{ $player['adp_formatted'] }}
-                                                                    @elseif(isset($player['adp']) && $player['adp'])
-                                                                        ADP: {{ number_format($player['adp'], 1) }}
-                                                                    @endif
-                                                                </span>
-                                                                <div class="flex gap-2">
-                                                                    @if(isset($player['adds_24h']) && $player['adds_24h'] !== null && $player['adds_24h'] > 0)
-                                                                        <span class="text-green-600">+{{ $player['adds_24h'] }}</span>
-                                                                    @endif
-                                                                    @if(isset($player['drops_24h']) && $player['drops_24h'] !== null && $player['drops_24h'] > 0)
-                                                                        <span class="text-red-600">−{{ $player['drops_24h'] }}</span>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    @endif
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @endif
-
-                                    <!-- Bench -->
-                                    @if (!empty($userRoster['bench_detailed']))
-                                        <div class="mt-2">
-                                            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Bench</p>
-                                            <div class="mt-1 space-y-1">
-                                                @foreach ($userRoster['bench_detailed'] as $benchPlayer)
-                                                    @php
-                                                        $player = $benchPlayer['player_data'];
-                                                    @endphp
-                                                    @if ($player)
-                                                        <div class="space-y-1">
-                                                            <div class="flex justify-between items-center text-xs">
-                                                                <div class="flex flex-col">
-                                                                    <span>{{ $player['first_name'] }} {{ $player['last_name'] }}</span>
-                                                                    @if(isset($player['injury_status']) && $player['injury_status'] && $player['injury_status'] !== 'Healthy')
-                                                                        <span class="text-xs text-red-500 font-medium">{{ $player['injury_status'] }}
-                                                                            @if(isset($player['injury_body_part']) && $player['injury_body_part'])
-                                                                                ({{ $player['injury_body_part'] }})
-                                                                            @endif
-                                                                        </span>
-                                                                    @endif
-                                                                </div>
-                                                                <div class="flex flex-col items-end text-muted-foreground">
-                                                                    <span>{{ $player['position'] ?? 'N/A' }} • {{ $player['team'] ?? 'FA' }}</span>
-                                                                    @if(isset($player['bye_week']) && $player['bye_week'] && isset($details['current_week']) && $details['current_week'] && $player['bye_week'] == $details['current_week'])
-                                                                        <span class="text-xs text-orange-500 font-medium">BYE</span>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                            <div class="flex justify-between items-center text-xs text-muted-foreground">
-                                                                <span>
-                                                                    @if(isset($player['adp_formatted']) && $player['adp_formatted'])
-                                                                        ADP: {{ $player['adp_formatted'] }}
-                                                                    @elseif(isset($player['adp']) && $player['adp'])
-                                                                        ADP: {{ number_format($player['adp'], 1) }}
-                                                                    @endif
-                                                                </span>
-                                                                <div class="flex gap-2">
-                                                                    @if(isset($player['adds_24h']) && $player['adds_24h'] !== null && $player['adds_24h'] > 0)
-                                                                        <span class="text-green-600">+{{ $player['adds_24h'] }}</span>
-                                                                    @endif
-                                                                    @if(isset($player['drops_24h']) && $player['drops_24h'] !== null && $player['drops_24h'] > 0)
-                                                                        <span class="text-red-600">−{{ $player['drops_24h'] }}</span>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    @endif
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @endif
-
-                        <!-- Current Matchup -->
-                        @php
-                            $userMatchup = $this->getUserMatchup($details['matchups']);
-                        @endphp
-
-                        @if ($userMatchup)
-                            <div class="space-y-3">
-                                <flux:heading size="sm" class="font-medium">Week {{ $details['current_week'] }} Matchup</flux:heading>
-                                <div class="text-sm space-y-3">
-                                    <!-- Score Header -->
-                                    <div class="flex justify-between items-center font-medium">
-                                        <span>{{ $userMatchup['team_name'] ?? 'Your Team' }}</span>
-                                        <span>{{ $userMatchup['points'] ?? 0 }}</span>
-                                    </div>
-                                    <div class="text-muted-foreground text-center text-xs">vs</div>
-                                    <div class="flex justify-between items-center font-medium">
-                                        <span>{{ $userMatchup['opponent_details']['team_name'] ?? 'Opponent Team' }}</span>
-                                        <span>{{ $userMatchup['opponent_details']['points'] ?? '?' }}</span>
-                                    </div>
-
-                                    <!-- Detailed Points Breakdown -->
-                                    @if(isset($userMatchup['detailed_info']))
-                                        <div class="border-t pt-3 space-y-2">
-                                            <div class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Your Team</div>
-                                            <div class="grid grid-cols-2 gap-2 text-xs">
-                                                <div class="space-y-1">
-                                                    <div class="flex justify-between">
-                                                        <span class="text-muted-foreground">Actual Points:</span>
-                                                        <span class="font-medium">{{ $userMatchup['detailed_info']['user_actual_points'] ?? 0 }}</span>
-                                                    </div>
-                                                    <div class="flex justify-between">
-                                                        <span class="text-muted-foreground">Projected Remaining:</span>
-                                                        <span class="font-medium text-blue-600">{{ $userMatchup['detailed_info']['user_projected_points'] ?? 0 }}</span>
-                                                    </div>
-                                                    <div class="flex justify-between font-medium border-t pt-1">
-                                                        <span>Total Projected:</span>
-                                                        <span>{{ $userMatchup['detailed_info']['user_total_projected'] ?? 0 }}</span>
-                                                    </div>
-                                                </div>
-                                                <div class="space-y-1">
-                                                    <div class="flex justify-between">
-                                                        <span class="text-muted-foreground">Players Played:</span>
-                                                        <span class="font-medium">{{ $userMatchup['detailed_info']['user_players_played'] ?? 0 }}/{{ $userMatchup['detailed_info']['user_total_players'] ?? 0 }}</span>
-                                                    </div>
-                                                    <div class="flex justify-between">
-                                                        <span class="text-muted-foreground">Yet to Play:</span>
-                                                        <span class="font-medium">{{ ($userMatchup['detailed_info']['user_total_players'] ?? 0) - ($userMatchup['detailed_info']['user_players_played'] ?? 0) }}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Opponent</div>
-                                            <div class="grid grid-cols-2 gap-2 text-xs">
-                                                <div class="space-y-1">
-                                                    <div class="flex justify-between">
-                                                        <span class="text-muted-foreground">Actual Points:</span>
-                                                        <span class="font-medium">{{ $userMatchup['detailed_info']['opponent_actual_points'] ?? 0 }}</span>
-                                                    </div>
-                                                    <div class="flex justify-between">
-                                                        <span class="text-muted-foreground">Projected Remaining:</span>
-                                                        <span class="font-medium text-blue-600">{{ $userMatchup['detailed_info']['opponent_projected_points'] ?? 0 }}</span>
-                                                    </div>
-                                                    <div class="flex justify-between font-medium border-t pt-1">
-                                                        <span>Total Projected:</span>
-                                                        <span>{{ $userMatchup['detailed_info']['opponent_total_projected'] ?? 0 }}</span>
-                                                    </div>
-                                                </div>
-                                                <div class="space-y-1">
-                                                    <div class="flex justify-between">
-                                                        <span class="text-muted-foreground">Players Played:</span>
-                                                        <span class="font-medium">{{ $userMatchup['detailed_info']['opponent_players_played'] ?? 0 }}/{{ $userMatchup['detailed_info']['opponent_total_players'] ?? 0 }}</span>
-                                                    </div>
-                                                    <div class="flex justify-between">
-                                                        <span class="text-muted-foreground">Yet to Play:</span>
-                                                        <span class="font-medium">{{ ($userMatchup['detailed_info']['opponent_total_players'] ?? 0) - ($userMatchup['detailed_info']['opponent_players_played'] ?? 0) }}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @else
-                            <div class="text-sm text-muted-foreground">
-                                No matchup data available for Week {{ $details['current_week'] }}
-                            </div>
-                        @endif
-
-                        @if (isset($details['error']))
-                            <flux:callout variant="danger" class="mt-3">
-                                ⚠️ Failed to load league details: {{ $details['error'] }}
-                            </flux:callout>
-                        @endif
-                    </div>
-                </flux:callout>
+                <x-league-card
+                    :leagueId="$leagueId"
+                    :league="$details['league']"
+                    :rosters="$details['rosters']"
+                    :matchups="$details['matchups']"
+                    :currentWeek="$details['current_week']"
+                    :userMatchup="$userMatchup"
+                    :userRoster="$userRoster"
+                    :error="$details['error'] ?? null"
+                />
             @endforeach
         </div>
     @endif

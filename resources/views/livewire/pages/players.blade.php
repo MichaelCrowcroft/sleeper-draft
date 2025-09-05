@@ -16,6 +16,9 @@ new class extends Component {
     public string $position = '';
     public string $team = '';
     public string $selectedLeagueId = '';
+    public string $adpRange = '';
+    public string $injuryStatus = '';
+    public string $sortBy = 'last_name';
     public array $leagues = [];
     public array $leagueRosters = [];
     public bool $loadingLeagues = false;
@@ -26,6 +29,9 @@ new class extends Component {
         'position' => ['except' => ''],
         'team' => ['except' => ''],
         'selectedLeagueId' => ['except' => ''],
+        'adpRange' => ['except' => ''],
+        'injuryStatus' => ['except' => ''],
+        'sortBy' => ['except' => 'last_name'],
     ];
 
     public function mount(): void
@@ -94,6 +100,21 @@ new class extends Component {
     }
 
     public function updatedTeam(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedAdpRange(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedInjuryStatus(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedSortBy(): void
     {
         $this->resetPage();
     }
@@ -187,8 +208,66 @@ new class extends Component {
             ->when($this->team, function ($query) {
                 $query->where('team', $this->team);
             })
+            ->when($this->adpRange, function ($query) {
+                switch ($this->adpRange) {
+                    case '1-5':
+                        $query->whereBetween('adp', [1, 5]);
+                        break;
+                    case '6-10':
+                        $query->whereBetween('adp', [6, 10]);
+                        break;
+                    case '11-15':
+                        $query->whereBetween('adp', [11, 15]);
+                        break;
+                    case '16-20':
+                        $query->whereBetween('adp', [16, 20]);
+                        break;
+                    case '21-30':
+                        $query->whereBetween('adp', [21, 30]);
+                        break;
+                    case '31-50':
+                        $query->whereBetween('adp', [31, 50]);
+                        break;
+                    case '51-75':
+                        $query->whereBetween('adp', [51, 75]);
+                        break;
+                    case '76-100':
+                        $query->whereBetween('adp', [76, 100]);
+                        break;
+                    case '100+':
+                        $query->where('adp', '>=', 100);
+                        break;
+                }
+            })
+            ->when($this->injuryStatus, function ($query) {
+                switch ($this->injuryStatus) {
+                    case 'healthy':
+                        $query->where(function ($q) {
+                            $q->whereNull('injury_status')
+                              ->orWhere('injury_status', 'Healthy');
+                        });
+                        break;
+                    case 'injured':
+                        $query->whereNotNull('injury_status')
+                              ->where('injury_status', '!=', 'Healthy');
+                        break;
+                    case 'questionable':
+                        $query->where('injury_status', 'Questionable');
+                        break;
+                    case 'doubtful':
+                        $query->where('injury_status', 'Doubtful');
+                        break;
+                    case 'out':
+                        $query->where('injury_status', 'Out');
+                        break;
+                }
+            })
             ->where('active', true)
-            ->orderBy('last_name');
+            ->when($this->sortBy === 'adp', function ($query) {
+                $query->orderBy('adp', 'asc')->orderBy('last_name', 'asc');
+            }, function ($query) {
+                $query->orderBy($this->sortBy === 'position' ? 'position' : 'last_name', 'asc');
+            });
     }
 
     public function getAvailablePositions(): array
@@ -211,190 +290,82 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
+    <!-- Header -->
     <div class="flex items-center justify-between">
         <div>
             <flux:heading size="lg">Players</flux:heading>
             <p class="text-muted-foreground mt-1">Browse and filter fantasy football players</p>
         </div>
-    </div>
 
-    @if ($resolvedWeek)
-        <flux:callout class="mt-2">
-            NFL Week {{ $resolvedWeek }}
-        </flux:callout>
-    @endif
+        @if ($resolvedWeek)
+            <flux:badge variant="secondary" size="sm">
+                NFL Week {{ $resolvedWeek }}
+            </flux:badge>
+        @endif
+    </div>
 
     <!-- Filters -->
-    <div class="space-y-4">
-        <flux:callout>
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <!-- Search -->
-                <div>
-                    <flux:input
-                        wire:model.live.debounce.300ms="search"
-                        placeholder="Search players..."
-                        type="search"
-                    />
-                </div>
-
-                <!-- Position Filter -->
-                <div>
-                    <flux:select wire:model.live="position">
-                        <option value="">All Positions</option>
-                        @foreach ($this->getAvailablePositions() as $pos)
-                            <option value="{{ $pos }}">{{ $pos }}</option>
-                        @endforeach
-                    </flux:select>
-                </div>
-
-                <!-- Team Filter -->
-                <div>
-                    <flux:select wire:model.live="team">
-                        <option value="">All Teams</option>
-                        @foreach ($this->getAvailableTeams() as $teamCode)
-                            <option value="{{ $teamCode }}">{{ $teamCode }}</option>
-                        @endforeach
-                    </flux:select>
-                </div>
-
-                <!-- League Selection -->
-                <div>
-                    <flux:select wire:model.live="selectedLeagueId">
-                        <option value="">No League Selected</option>
-                        @if ($loadingLeagues)
-                            <option disabled>Loading leagues...</option>
-                        @else
-                            @foreach ($leagues as $league)
-                                <option value="{{ $league['id'] }}">{{ $league['name'] }}</option>
-                            @endforeach
-                        @endif
-                    </flux:select>
-                </div>
-            </div>
-        </flux:callout>
-
-        <!-- Active Filters Summary -->
-        @if ($search || $position || $team || $selectedLeagueId)
-            <div class="flex flex-wrap gap-2">
-                @if ($search)
-                    <flux:badge variant="outline">
-                        Search: {{ $search }}
-                        <button wire:click="$set('search', '')" class="ml-1 hover:text-destructive">×</button>
-                    </flux:badge>
-                @endif
-                @if ($position)
-                    <flux:badge variant="outline">
-                        Position: {{ $position }}
-                        <button wire:click="$set('position', '')" class="ml-1 hover:text-destructive">×</button>
-                    </flux:badge>
-                @endif
-                @if ($team)
-                    <flux:badge variant="outline">
-                        Team: {{ $team }}
-                        <button wire:click="$set('team', '')" class="ml-1 hover:text-destructive">×</button>
-                    </flux:badge>
-                @endif
-                @if ($selectedLeagueId)
-                    @php
-                        $selectedLeague = collect($leagues)->firstWhere('id', $selectedLeagueId);
-                    @endphp
-                    <flux:badge variant="outline">
-                        League: {{ $selectedLeague['name'] ?? 'Unknown' }}
-                        <button wire:click="$set('selectedLeagueId', '')" class="ml-1 hover:text-destructive">×</button>
-                    </flux:badge>
-                @endif
-            </div>
-        @endif
-    </div>
-
-    <!-- Players Table -->
-    <div class="rounded-lg border bg-card">
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="border-b bg-muted/50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-sm font-medium">Player</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium">Position</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium">Team</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium">ADP</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium">Injury Status</th>
-                        @if ($selectedLeagueId)
-                            <th class="px-4 py-3 text-left text-sm font-medium">League Status</th>
-                        @endif
-                    </tr>
-                </thead>
-                <tbody class="divide-y">
-                    @forelse ($this->getPlayersQuery()->paginate(25) as $player)
-                        @php
-                            $leagueStatus = $this->getPlayerLeagueStatus($player->player_id);
-                        @endphp
-                        <tr class="hover:bg-muted/50">
-                            <td class="px-4 py-3">
-                                <div class="flex flex-col">
-                                    <span class="font-medium">{{ $player->first_name }} {{ $player->last_name }}</span>
-                                    @if ($player->age)
-                                        <span class="text-xs text-muted-foreground">{{ $player->age }} years old</span>
-                                    @endif
-                                </div>
-                            </td>
-                            <td class="px-4 py-3">
-                                <flux:badge variant="secondary">{{ $player->position }}</flux:badge>
-                            </td>
-                            <td class="px-4 py-3">
-                                <flux:badge variant="outline">{{ $player->team }}</flux:badge>
-                            </td>
-                            <td class="px-4 py-3 text-sm">
-                                @if ($player->adp_formatted)
-                                    {{ $player->adp_formatted }}
-                                @elseif ($player->adp)
-                                    {{ number_format($player->adp, 1) }}
-                                @else
-                                    <span class="text-muted-foreground">-</span>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3">
-                                @if ($player->injury_status && $player->injury_status !== 'Healthy')
-                                    <div class="flex flex-col">
-                                        <span class="text-sm font-medium text-red-600">{{ $player->injury_status }}</span>
-                                        @if ($player->injury_body_part)
-                                            <span class="text-xs text-muted-foreground">{{ $player->injury_body_part }}</span>
-                                        @endif
-                                    </div>
-                                @else
-                                    <span class="text-sm text-green-600">Healthy</span>
-                                @endif
-                            </td>
-                            @if ($selectedLeagueId)
-                                <td class="px-4 py-3">
-                                    @if ($leagueStatus['status'] === 'owned')
-                                        <flux:badge variant="default">{{ $leagueStatus['team_name'] }}</flux:badge>
-                                    @else
-                                        <span class="text-sm text-muted-foreground">Free Agent</span>
-                                    @endif
-                                </td>
-                            @endif
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="{{ $selectedLeagueId ? 6 : 5 }}" class="px-4 py-8 text-center text-muted-foreground">
-                                No players found matching your filters.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination -->
-        @if ($this->getPlayersQuery()->paginate(25)->hasPages())
-            <div class="border-t px-4 py-3">
-                {{ $this->getPlayersQuery()->paginate(25)->links() }}
-            </div>
-        @endif
-    </div>
+    <x-player-filters
+        :search="$search"
+        :position="$position"
+        :team="$team"
+        :adpRange="$adpRange"
+        :injuryStatus="$injuryStatus"
+        :selectedLeagueId="$selectedLeagueId"
+        :leagues="$leagues"
+        :loadingLeagues="$loadingLeagues"
+        :availablePositions="$this->getAvailablePositions()"
+        :availableTeams="$this->getAvailableTeams()"
+    />
 
     <!-- Results Summary -->
-    <div class="text-sm text-muted-foreground">
-        Showing {{ $this->getPlayersQuery()->paginate(25)->count() }} of {{ $this->getPlayersQuery()->count() }} players
+    <div class="flex items-center justify-between">
+        <div class="text-sm text-muted-foreground">
+            Showing {{ $this->getPlayersQuery()->paginate(24)->count() }} of {{ $this->getPlayersQuery()->count() }} players
+        </div>
+
+        <div class="flex items-center gap-2">
+            <span class="text-sm text-muted-foreground">Sort by:</span>
+            <flux:select wire:model.live="sortBy" class="w-40">
+                <option value="last_name">Name (A-Z)</option>
+                <option value="adp">ADP (Low to High)</option>
+                <option value="position">Position</option>
+                <option value="team">Team</option>
+            </flux:select>
+        </div>
     </div>
+
+    <!-- Players Grid -->
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        @forelse ($this->getPlayersQuery()->paginate(24) as $player)
+            @php
+                $leagueStatus = $this->getPlayerLeagueStatus($player->player_id);
+            @endphp
+
+            <x-player-card
+                :player="$player"
+                :leagueStatus="$leagueStatus"
+                :showDetailed="false"
+            />
+        @empty
+            <div class="col-span-full">
+                <div class="text-center py-12">
+                    <div class="text-muted-foreground">
+                        <svg class="mx-auto h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <h3 class="text-lg font-medium mb-2">No players found</h3>
+                        <p>Try adjusting your filters to see more players.</p>
+                    </div>
+                </div>
+            </div>
+        @endforelse
+    </div>
+
+    <!-- Pagination -->
+    @if ($this->getPlayersQuery()->paginate(24)->hasPages())
+        <div class="flex justify-center pt-6">
+            {{ $this->getPlayersQuery()->paginate(24)->links() }}
+        </div>
+    @endif
 </div>
