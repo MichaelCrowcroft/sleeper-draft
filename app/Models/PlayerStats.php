@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PlayerStats extends Model
 {
+    use HasFactory;
+
     public $timestamps = false;
 
     protected $guarded = [];
@@ -85,6 +88,7 @@ class PlayerStats extends Model
 
         if ($instance) {
             $instance->update($values);
+
             return $instance;
         }
 

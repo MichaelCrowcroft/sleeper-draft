@@ -14,7 +14,7 @@ class PlayerResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return [
+        $data = [
             // Core player identification
             'player_id' => $this->player_id,
             'full_name' => $this->full_name,
@@ -48,5 +48,12 @@ class PlayerResource extends JsonResource
             // League scheduling
             'bye_week' => $this->bye_week,
         ];
+
+        // Append 2024 season stats if the relation is available (or load on demand)
+        if (method_exists($this->resource, 'getSeason2024Totals')) {
+            $data['season_2024_stats'] = $this->resource->getSeason2024Totals();
+        }
+
+        return $data;
     }
 }

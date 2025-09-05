@@ -86,4 +86,57 @@ class Player extends Model
             ->where('week', $week)
             ->first();
     }
+
+    /**
+     * Calculate aggregated season totals by summing all numeric values in the weekly 'stats' arrays.
+     */
+    public function calculateSeasonStatTotals(int $season): array
+    {
+        $totals = [];
+
+        $this->getStatsForSeason($season)->get()->each(function (PlayerStats $weeklyStats) use (&$totals) {
+            $stats = $weeklyStats->stats ?? [];
+
+            foreach ($stats as $metric => $value) {
+                if (is_numeric($value)) {
+                    $totals[$metric] = ($totals[$metric] ?? 0) + (float) $value;
+                }
+            }
+        });
+
+        return $totals;
+    }
+
+    /**
+     * Relationship for stats limited to the 2024 season.
+     */
+    public function stats2024(): HasMany
+    {
+        return $this->stats()->where('season', 2024);
+    }
+
+    /**
+     * Accessor-like helper that returns aggregated season stats for 2024 if the relation is (pre)loaded.
+     * If not loaded, it will load from DB efficiently and compute totals.
+     */
+    public function getSeason2024Totals(): array
+    {
+        if ($this->relationLoaded('stats2024')) {
+            $collection = $this->getRelation('stats2024');
+        } else {
+            $collection = $this->stats2024()->get();
+        }
+
+        $totals = [];
+        foreach ($collection as $weeklyStats) {
+            $stats = $weeklyStats->stats ?? [];
+            foreach ($stats as $metric => $value) {
+                if (is_numeric($value)) {
+                    $totals[$metric] = ($totals[$metric] ?? 0) + (float) $value;
+                }
+            }
+        }
+
+        return $totals;
+    }
 }
