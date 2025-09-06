@@ -14,7 +14,8 @@ new class extends Component
         $user = Auth::user();
 
         if($user->sleeper_user_id) {
-            $this->leagues = app(FetchUserLeagues::class)->execute((string) $user->sleeper_user_id, 'nfl', 2025);
+            $this->leagues = app(FetchUserLeagues::class)
+                ->execute($user->sleeper_user_id, 'nfl', '2025');
         } else {
             $this->leagues = [];
         }
@@ -22,6 +23,8 @@ new class extends Component
 }; ?>
 
 <section class="w-full">
+    {{ $user }}
+    {{ $leagues }}
     <div class="flex items-center justify-between mb-4">
         <div>
             <flux:heading size="xl">Leagues</flux:heading>
