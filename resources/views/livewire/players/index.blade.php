@@ -369,62 +369,61 @@ new class extends Component
 
         <!-- Players Table -->
         <div class="overflow-x-auto">
-            <div class="min-w-max">
-                <flux:table :paginate="$this->players" class="w-full">
-                    <flux:table.columns>
-                        <flux:table.column
-                            sortable
-                            :sorted="$sortBy === 'name'"
-                            :direction="$sortDirection"
-                            wire:click="sort('name')"
-                            class="cursor-pointer min-w-[140px]"
-                        >
-                            Player
-                        </flux:table.column>
-                        <flux:table.column
-                            sortable
-                            :sorted="$sortBy === 'position'"
-                            :direction="$sortDirection"
-                            wire:click="sort('position')"
-                            class="cursor-pointer min-w-[80px]"
-                        >
-                            Position
-                        </flux:table.column>
-                        <flux:table.column
-                            sortable
-                            :sorted="$sortBy === 'team'"
-                            :direction="$sortDirection"
-                            wire:click="sort('team')"
-                            class="cursor-pointer min-w-[80px]"
-                        >
-                            Team
-                        </flux:table.column>
-                        <flux:table.column
-                            sortable
-                            :sorted="$sortBy === 'age'"
-                            :direction="$sortDirection"
-                            wire:click="sort('age')"
-                            class="cursor-pointer min-w-[60px]"
-                        >
-                            Age
-                        </flux:table.column>
-                        <flux:table.column
-                            sortable
-                            :sorted="$sortBy === 'adp'"
-                            :direction="$sortDirection"
-                            wire:click="sort('adp')"
-                            class="cursor-pointer min-w-[80px]"
-                        >
-                            ADP
-                        </flux:table.column>
-                        <flux:table.column class="min-w-[100px]">2024 Avg PPG</flux:table.column>
-                        <flux:table.column class="min-w-[100px]">2024 +1 SD PPG</flux:table.column>
-                        <flux:table.column class="min-w-[100px]">2024 -1 SD PPG</flux:table.column>
-                        <flux:table.column class="min-w-[110px]">2025 Proj PPG</flux:table.column>
-                        <flux:table.column class="min-w-[100px]">Owner</flux:table.column>
-                        <flux:table.column class="min-w-[80px]">Status</flux:table.column>
-                        <flux:table.column class="min-w-[100px]">Actions</flux:table.column>
-                    </flux:table.columns>
+            <flux:table :paginate="$this->players" class="min-w-full">
+                <flux:table.columns>
+                    <flux:table.column
+                        sortable
+                        :sorted="$sortBy === 'name'"
+                        :direction="$sortDirection"
+                        wire:click="sort('name')"
+                        class="cursor-pointer"
+                    >
+                        Player
+                    </flux:table.column>
+                    <flux:table.column
+                        sortable
+                        :sorted="$sortBy === 'position'"
+                        :direction="$sortDirection"
+                        wire:click="sort('position')"
+                        class="cursor-pointer"
+                    >
+                        Pos
+                    </flux:table.column>
+                    <flux:table.column
+                        sortable
+                        :sorted="$sortBy === 'team'"
+                        :direction="$sortDirection"
+                        wire:click="sort('team')"
+                        class="cursor-pointer"
+                    >
+                        Team
+                    </flux:table.column>
+                    <flux:table.column
+                        sortable
+                        :sorted="$sortBy === 'age'"
+                        :direction="$sortDirection"
+                        wire:click="sort('age')"
+                        class="cursor-pointer"
+                    >
+                        Age
+                    </flux:table.column>
+                    <flux:table.column
+                        sortable
+                        :sorted="$sortBy === 'adp'"
+                        :direction="$sortDirection"
+                        wire:click="sort('adp')"
+                        class="cursor-pointer"
+                    >
+                        ADP
+                    </flux:table.column>
+                    <flux:table.column>Avg PPG</flux:table.column>
+                    <flux:table.column>+1σ PPG</flux:table.column>
+                    <flux:table.column>-1σ PPG</flux:table.column>
+                    <flux:table.column>Proj PPG</flux:table.column>
+                    <flux:table.column>Owner</flux:table.column>
+                    <flux:table.column>Status</flux:table.column>
+                    <flux:table.column>Actions</flux:table.column>
+                </flux:table.columns>
 
                 <flux:table.rows>
                     @forelse ($this->players as $player)
@@ -547,7 +546,6 @@ new class extends Component
                     @endforelse
                 </flux:table.rows>
             </flux:table>
-            </div>
         </div>
     </div>
 </section>
