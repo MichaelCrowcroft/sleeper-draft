@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Auth;
 new class extends Component
 {
     public array $leagues = [];
-    public ?User $user = null;
 
     public function mount(): void
     {
@@ -25,8 +24,6 @@ new class extends Component
 }; ?>
 
 <section class="w-full">
-    {{ $user }}
-    {{ $leagues }}
     <div class="flex items-center justify-between mb-4">
         <div>
             <flux:heading size="xl">Leagues</flux:heading>
