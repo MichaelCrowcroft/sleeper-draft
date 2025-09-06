@@ -172,6 +172,105 @@ class Player extends Model
     }
 
     /**
+     * Get projected PPR points for a specific season/week if available.
+     */
+    public function getProjectedPointsForWeek(int $season, int $week): ?float
+    {
+        $weekly = $this->getProjectionsForWeek($season, $week);
+
+        if (!$weekly) {
+            return null;
+        }
+
+        // Prefer nested stats array if present, otherwise fallback to flattened column
+        $stats = $weekly->stats ?? null;
+        if (is_array($stats) && isset($stats['pts_ppr']) && is_numeric($stats['pts_ppr'])) {
+            return (float) $stats['pts_ppr'];
+        }
+
+        if (isset($weekly->pts_ppr) && is_numeric($weekly->pts_ppr)) {
+            return (float) $weekly->pts_ppr;
+        }
+
+        return null;
+    }
+
+    /**
+     * Compute per-game projection averages for all numeric stats in a season.
+     * If gms_active is provided per week, it is used for per-game normalization,
+     * otherwise each week counts as one game.
+     *
+     * @return array<string, float>
+     */
+    public function getSeason2025ProjectionsAverages(): array
+    {
+        if ($this->relationLoaded('projections2025')) {
+            $collection = $this->getRelation('projections2025');
+        } else {
+            $collection = $this->projections2025()->get();
+        }
+
+        $sumByMetric = [];
+        $gamesCount = 0;
+
+        foreach ($collection as $weeklyProjection) {
+            $stats = is_array($weeklyProjection->stats ?? null) ? $weeklyProjection->stats : [];
+
+            $gms = null;
+            if (isset($stats['gms_active']) && is_numeric($stats['gms_active'])) {
+                $gms = (int) $stats['gms_active'];
+            } elseif (isset($weeklyProjection->gms_active) && is_numeric($weeklyProjection->gms_active)) {
+                $gms = (int) $weeklyProjection->gms_active;
+            }
+
+            $gamesCount += ($gms !== null ? max(0, $gms) : 1);
+
+            foreach ($stats as $metric => $value) {
+                if (is_numeric($value)) {
+                    $sumByMetric[$metric] = ($sumByMetric[$metric] ?? 0.0) + (float) $value;
+                }
+            }
+        }
+
+        if ($gamesCount <= 0) {
+            return [];
+        }
+
+        $avgByMetric = [];
+        foreach ($sumByMetric as $metric => $sum) {
+            $avgByMetric[$metric] = $sum / $gamesCount;
+        }
+
+        // Also include flattened fields if present on projections (e.g., pts_ppr)
+        // Compute their average similarly.
+        $flattenedSum = [];
+        $flattenedGames = 0;
+        foreach ($collection as $weeklyProjection) {
+            $gms = isset($weeklyProjection->gms_active) && is_numeric($weeklyProjection->gms_active)
+                ? max(0, (int) $weeklyProjection->gms_active)
+                : 1;
+            $flattenedGames += $gms;
+
+            foreach (['pts_ppr'] as $flatField) {
+                if (isset($weeklyProjection->{$flatField}) && is_numeric($weeklyProjection->{$flatField})) {
+                    $flattenedSum[$flatField] = ($flattenedSum[$flatField] ?? 0.0) + ((float) $weeklyProjection->{$flatField});
+                }
+            }
+        }
+
+        if ($flattenedGames > 0) {
+            foreach ($flattenedSum as $metric => $sum) {
+                // Prefer nested stats if already computed, otherwise use flattened
+                if (!array_key_exists($metric, $avgByMetric)) {
+                    $avgByMetric[$metric] = $sum / $flattenedGames;
+                }
+            }
+        }
+
+        return $avgByMetric;
+    }
+
+    /**
      * Calculate aggregated season totals by summing all numeric values in the weekly 'stats' arrays.
      */
     public function calculateSeasonStatTotals(int $season): array

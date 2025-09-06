@@ -1,11 +1,12 @@
 <?php
 
-use App\Actions\ValidateSleeperUsername;
 use App\Models\User;
+use App\Rules\ValidateSleeperUsername;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
@@ -21,21 +22,17 @@ new #[Layout('components.layouts.auth')] class extends Component {
      */
     public function register(): void
     {
+        $sleeperRule = new ValidateSleeperUsername();
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'sleeper_username' => ['required', 'string', 'max:255', 'unique:' . User::class . ',sleeper_username'],
-            'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
+            'sleeper_username' => ['required', 'string', 'max:255', $sleeperRule],
+            'password' => ['required', 'string', 'confirmed', Password::defaults()],
         ]);
 
-        // Validate Sleeper username exists
-        $sleeperValidator = new ValidateSleeperUsername();
-        $sleeperUserData = $sleeperValidator->execute($validated['sleeper_username']);
-
-        if (!$sleeperUserData) {
-            $this->addError('sleeper_username', 'This Sleeper username does not exist. Please check your username and try again.');
-            return;
-        }
+        // Get the validated Sleeper user data from the rule
+        $sleeperUserData = $sleeperRule->getUserData();
 
         // Add the validated Sleeper user ID to the validated data
         $validated['sleeper_user_id'] = $sleeperUserData['user_id'];
