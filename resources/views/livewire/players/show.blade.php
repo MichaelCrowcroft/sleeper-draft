@@ -436,73 +436,11 @@ new class extends Component {
                 <flux:heading size="md">Performance Snapshot</flux:heading>
 
                 <!-- 2024 Performance Distribution -->
-                <div class="w-full">
-                    <div class="text-center mb-3">
-                        <div class="text-sm font-medium text-gray-700">2024 Weekly Performance Distribution</div>
-                        <div class="text-xs text-gray-500 mt-1">PPR Fantasy Points</div>
-                    </div>
-                    <svg viewBox="0 0 {{ $this->box2024Horizontal['width'] }} {{ $this->box2024Horizontal['height'] }}" class="w-full h-[140px] drop-shadow-sm">
-                        <!-- subtle background -->
-                        <rect x="0" y="0" width="{{ $this->box2024Horizontal['width'] }}" height="{{ $this->box2024Horizontal['height'] }}" fill="#fefefe" rx="8" />
-
-                        <!-- light grid line at center for reference -->
-                        <line x1="{{ $this->box2024Horizontal['width'] * 0.1 }}" x2="{{ $this->box2024Horizontal['width'] * 0.9 }}" y1="{{ $this->box2024Horizontal['yMid'] }}" y2="{{ $this->box2024Horizontal['yMid'] }}" stroke="#f3f4f6" stroke-width="1" stroke-dasharray="2,3" />
-
-                        @if($this->box2024Horizontal['exists'])
-                            <!-- whiskers with gradient effect -->
-                            <line x1="{{ $this->box2024Horizontal['xMin'] }}" x2="{{ $this->box2024Horizontal['xQ1'] }}" y1="{{ $this->box2024Horizontal['yMid'] }}" y2="{{ $this->box2024Horizontal['yMid'] }}" stroke="#059669" stroke-width="3" stroke-linecap="round">
-                                <title>Min: {{ number_format($this->box2024Horizontal['vMin'], 1) }}</title>
-                            </line>
-                            <line x1="{{ $this->box2024Horizontal['xQ3'] }}" x2="{{ $this->box2024Horizontal['xMax'] }}" y1="{{ $this->box2024Horizontal['yMid'] }}" y2="{{ $this->box2024Horizontal['yMid'] }}" stroke="#059669" stroke-width="3" stroke-linecap="round">
-                                <title>Max: {{ number_format($this->box2024Horizontal['vMax'], 1) }}</title>
-                            </line>
-
-                            <!-- min/max caps with rounded ends -->
-                            <line x1="{{ $this->box2024Horizontal['xMin'] }}" x2="{{ $this->box2024Horizontal['xMin'] }}" y1="{{ $this->box2024Horizontal['yMid'] - 8 }}" y2="{{ $this->box2024Horizontal['yMid'] + 8 }}" stroke="#059669" stroke-width="3" stroke-linecap="round" />
-                            <line x1="{{ $this->box2024Horizontal['xMax'] }}" x2="{{ $this->box2024Horizontal['xMax'] }}" y1="{{ $this->box2024Horizontal['yMid'] - 8 }}" y2="{{ $this->box2024Horizontal['yMid'] + 8 }}" stroke="#059669" stroke-width="3" stroke-linecap="round" />
-
-                            <!-- box (Q1–Q3) with gradient and shadow effect -->
-                            <defs>
-                                <linearGradient id="boxGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                    <stop offset="0%" style="stop-color:#d1fae5;stop-opacity:0.9" />
-                                    <stop offset="100%" style="stop-color:#a7f3d0;stop-opacity:0.7" />
-                                </linearGradient>
-                                <filter id="boxShadow" x="-20%" y="-20%" width="140%" height="140%">
-                                    <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.15"/>
-                                </filter>
-                            </defs>
-                            <rect x="{{ $this->box2024Horizontal['xQ1'] }}" y="{{ $this->box2024Horizontal['yMid'] - ($this->box2024Horizontal['boxH']/2) }}" width="{{ max(1, $this->box2024Horizontal['xQ3'] - $this->box2024Horizontal['xQ1']) }}" height="{{ $this->box2024Horizontal['boxH'] }}" fill="url(#boxGradient)" stroke="#059669" stroke-width="2.5" rx="6" filter="url(#boxShadow)">
-                                <title>Q1–Q3: {{ number_format($this->box2024Horizontal['vQ1'], 1) }} – {{ number_format($this->box2024Horizontal['vQ3'], 1) }}</title>
-                            </rect>
-
-                            <!-- median line with emphasis -->
-                            <line x1="{{ $this->box2024Horizontal['xMedian'] }}" x2="{{ $this->box2024Horizontal['xMedian'] }}" y1="{{ $this->box2024Horizontal['yMid'] - ($this->box2024Horizontal['boxH']/2) }}" y2="{{ $this->box2024Horizontal['yMid'] + ($this->box2024Horizontal['boxH']/2) }}" stroke="#047857" stroke-width="3" stroke-linecap="round">
-                                <title>Median: {{ number_format($this->box2024Horizontal['vMedian'], 1) }}</title>
-                            </line>
-
-                            <!-- elegant numeric labels with better typography -->
-                            <!-- min -->
-                            <text x="{{ $this->box2024Horizontal['xMin'] }}" y="{{ $this->box2024Horizontal['yMid'] - ($this->box2024Horizontal['boxH']/2) - 8 }}" text-anchor="middle" font-size="11" font-weight="600" fill="#1f2937">{{ number_format($this->box2024Horizontal['vMin'], 1) }}</text>
-                            <text x="{{ $this->box2024Horizontal['xMin'] }}" y="{{ $this->box2024Horizontal['yMid'] + ($this->box2024Horizontal['boxH']/2) + 16 }}" text-anchor="middle" font-size="9" fill="#6b7280">MIN</text>
-
-                            <!-- Q1 -->
-                            <text x="{{ $this->box2024Horizontal['xQ1'] }}" y="{{ $this->box2024Horizontal['yMid'] + ($this->box2024Horizontal['boxH']/2) + 16 }}" text-anchor="middle" font-size="10" font-weight="500" fill="#059669">{{ number_format($this->box2024Horizontal['vQ1'], 1) }}</text>
-                            <text x="{{ $this->box2024Horizontal['xQ1'] }}" y="{{ $this->box2024Horizontal['yMid'] + ($this->box2024Horizontal['boxH']/2) + 26 }}" text-anchor="middle" font-size="8" fill="#6b7280">Q1</text>
-
-                            <!-- median (emphasized) -->
-                            <text x="{{ $this->box2024Horizontal['xMedian'] }}" y="{{ $this->box2024Horizontal['yMid'] - ($this->box2024Horizontal['boxH']/2) - 8 }}" text-anchor="middle" font-size="12" font-weight="700" fill="#047857">{{ number_format($this->box2024Horizontal['vMedian'], 1) }}</text>
-                            <text x="{{ $this->box2024Horizontal['xMedian'] }}" y="{{ $this->box2024Horizontal['yMid'] - ($this->box2024Horizontal['boxH']/2) - 18 }}" text-anchor="middle" font-size="9" fill="#047857">MEDIAN</text>
-
-                            <!-- Q3 -->
-                            <text x="{{ $this->box2024Horizontal['xQ3'] }}" y="{{ $this->box2024Horizontal['yMid'] + ($this->box2024Horizontal['boxH']/2) + 16 }}" text-anchor="middle" font-size="10" font-weight="500" fill="#059669">{{ number_format($this->box2024Horizontal['vQ3'], 1) }}</text>
-                            <text x="{{ $this->box2024Horizontal['xQ3'] }}" y="{{ $this->box2024Horizontal['yMid'] + ($this->box2024Horizontal['boxH']/2) + 26 }}" text-anchor="middle" font-size="8" fill="#6b7280">Q3</text>
-
-                            <!-- max -->
-                            <text x="{{ $this->box2024Horizontal['xMax'] }}" y="{{ $this->box2024Horizontal['yMid'] - ($this->box2024Horizontal['boxH']/2) - 8 }}" text-anchor="middle" font-size="11" font-weight="600" fill="#1f2937">{{ number_format($this->box2024Horizontal['vMax'], 1) }}</text>
-                            <text x="{{ $this->box2024Horizontal['xMax'] }}" y="{{ $this->box2024Horizontal['yMid'] + ($this->box2024Horizontal['boxH']/2) + 16 }}" text-anchor="middle" font-size="9" fill="#6b7280">MAX</text>
-                        @endif
-                    </svg>
-                </div>
+                <x-box-whisker-chart
+                    :data="$this->box2024Horizontal"
+                    title="2024 Weekly Performance Distribution"
+                    subtitle="PPR Fantasy Points"
+                />
 
                 <!-- Key numbers -->
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
