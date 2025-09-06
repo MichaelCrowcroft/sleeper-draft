@@ -32,7 +32,7 @@ new class extends Component
             <p class="text-muted-foreground">Week {{ $this->model['week'] }} • {{ $this->model['league']['name'] ?? 'League' }}</p>
         </div>
         <div class="flex items-center gap-2">
-            <flux:button wire:click="$refresh" variant="secondary" size="sm">Refresh</flux:button>
+            <flux:button wire:click="$refresh" variant="ghost" size="sm">Refresh</flux:button>
         </div>
     </div>
 
