@@ -12,17 +12,14 @@ class FetchUserLeagues
 
     public function execute(string $userId, string $sport = 'nfl', ?int $season = null): array
     {
-        $season = $season ?? (int) date('Y');
-        $cacheKey = "sleeper:user:{$userId}:leagues:{$sport}:{$season}";
+        $cacheSeason = $season ?? 0; // 0 represents "current" season
+        $cacheKey = "sleeper:user:{$userId}:leagues:{$sport}:{$cacheSeason}";
 
         return Cache::remember($cacheKey, now()->addSeconds($this->ttlSeconds ?? 600), function () use ($userId, $sport, $season) {
             try {
-                $resp = Sleeper::league()->userLeagues($userId, $sport, (string) $season);
-                if ($resp->successful()) {
-                    $data = $resp->json();
-                    return is_array($data) ? $data : [];
-                }
-                Log::warning('Sleeper user leagues fetch failed', ['status' => $resp->status(), 'user_id' => $userId]);
+                // Use the fluent API to resolve season automatically when null
+                $leagues = Sleeper::user($userId)->leaguesArray($sport, $season !== null ? (string) $season : null);
+                return is_array($leagues) ? $leagues : [];
             } catch (\Throwable $e) {
                 Log::error('Sleeper user leagues fetch exception: '.$e->getMessage(), ['user_id' => $userId]);
             }
