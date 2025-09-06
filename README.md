@@ -1,6 +1,6 @@
 # Sleeper Draft MCP Server
 
-A Laravel MCP (Model Context Protocol) server that exposes tools for the Sleeper fantasy football platform — unified data access, fantasy recommendations, lineup management, and utilities.
+A Laravel MCP (Model Context Protocol) server that exposes tools for Sleeper fantasy football analytics: player trending data, ADP rankings, season statistics, and projections powered by Laravel's robust data layer.
 
 ## Quickstart (Claude Desktop and Cursor)
 
@@ -48,39 +48,54 @@ Restart your client. In Cursor, manage servers in Settings → MCP; in Claude, t
 
 ## MCP Overview
 
-- Users and leagues: lookups; list leagues by season
-- Data access: unified tool for leagues, rosters, drafts, players, transactions
-- Players and market: projections, ADP, trending data
-- Fantasy recommendations: draft picks, waiver acquisitions, trade analysis, playoff planning
-- Lineup management: optimization, validation, player comparisons
-- Strategy tools: configure draft approach
-- Utilities: resolve current week, health check, cache management, tool discovery
+- Player Analytics: trending players, ADP rankings, season statistics
+- Fantasy Data Access: comprehensive player data with projections and performance metrics
+- Market Intelligence: real-time player trends and draft positioning
+- Season Analysis: historical stats and current season projections
+- GPT Actions Compatible: optimized endpoints for OpenAI Custom GPT integration
+- Laravel Powered: built with Laravel's robust ORM and caching capabilities
 
 ## Tools Reference
 
-### Sleeper: Users and Leagues
-- `user_lookup` — Get Sleeper user by username.
-- `user_leagues` — List Sleeper leagues for a user in a season.
+### Player Analytics & Data
+- `fetch-trending-players` — Get trending players based on adds/drops in the last 24 hours.
+- `fetch-adp-players` — Get top players by Average Draft Position (ADP).
+- `fetch-players-season-data` — Get season stats and projections for multiple players.
+- `fetch-player-season-data` — Get detailed season data for a specific player by ID or name.
 
-### Unified Data
-- `unified_data` — Leagues, rosters, drafts, players, transactions.
-- `league_matchups` — Weekly matchups for a league.
-- `league_standings` — Computed standings from records and points.
+## Usage Examples
 
-### Players & Market
-- `players_trending` — Trending adds/drops.
-- `projections_week` — Weekly projections.
-- `adp_get` — Current ADP values.
+### Fetch Trending Players
+```bash
+curl -X POST https://www.sleeperdraft.com/api/mcp/tools/fetch-trending-players \
+  -H "Content-Type: application/json" \
+  -d '{"type": "add"}'
+```
 
-### Fantasy Recommendations
-- `fantasy_recommendations` — Draft, waiver, trade, playoff guidance.
+### Get ADP Rankings
+```bash
+curl -X POST https://www.sleeperdraft.com/api/mcp/tools/fetch-adp-players \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
 
-### Lineup Management
-- `unified_lineup` — Optimize or validate lineups, compare players.
+### Get Player Season Data
+```bash
+curl -X POST https://www.sleeperdraft.com/api/mcp/tools/fetch-player-season-data \
+  -H "Content-Type: application/json" \
+  -d '{"player_id": "4046"}'
+```
 
-### Strategy & Utilities
-- `strategy_set` — Configure draft/season strategy levers.
-- `time_resolve_week` — Resolve current season/week.
-- `health_check` — Verify server and Sleeper reachability.
-- `cache_invalidate` — Invalidate cached keys by scope.
-- `tool_list` — List available tools.
+### Get Multiple Players Data
+```bash
+curl -X POST https://www.sleeperdraft.com/api/mcp/tools/fetch-players-season-data \
+  -H "Content-Type: application/json" \
+  -d '{"limit": 10}'
+```
+
+## API Endpoints
+
+- **MCP Server**: `https://www.sleeperdraft.com/mcp`
+- **Tools List**: `https://www.sleeperdraft.com/api/mcp/tools`
+- **OpenAPI Spec**: `https://www.sleeperdraft.com/api/openapi.yaml`
+- **Health Check**: `https://www.sleeperdraft.com/api/health`

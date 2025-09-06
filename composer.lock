@@ -4,29 +4,29 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2e2b6876d35fdc95d8ec3249639b0b73",
+    "content-hash": "b01e8e834f297f9a5db3cc15ed827a61",
     "packages": [
         {
             "name": "brick/math",
-            "version": "0.13.1",
+            "version": "0.14.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/brick/math.git",
-                "reference": "fc7ed316430118cc7836bf45faff18d5dfc8de04"
+                "reference": "113a8ee2656b882d4c3164fa31aa6e12cbb7aaa2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/brick/math/zipball/fc7ed316430118cc7836bf45faff18d5dfc8de04",
-                "reference": "fc7ed316430118cc7836bf45faff18d5dfc8de04",
+                "url": "https://api.github.com/repos/brick/math/zipball/113a8ee2656b882d4c3164fa31aa6e12cbb7aaa2",
+                "reference": "113a8ee2656b882d4c3164fa31aa6e12cbb7aaa2",
                 "shasum": ""
             },
             "require": {
-                "php": "^8.1"
+                "php": "^8.2"
             },
             "require-dev": {
                 "php-coveralls/php-coveralls": "^2.2",
-                "phpunit/phpunit": "^10.1",
-                "vimeo/psalm": "6.8.8"
+                "phpstan/phpstan": "2.1.22",
+                "phpunit/phpunit": "^11.5"
             },
             "type": "library",
             "autoload": {
@@ -56,7 +56,7 @@
             ],
             "support": {
                 "issues": "https://github.com/brick/math/issues",
-                "source": "https://github.com/brick/math/tree/0.13.1"
+                "source": "https://github.com/brick/math/tree/0.14.0"
             },
             "funding": [
                 {
@@ -64,7 +64,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-03-29T13:50:30+00:00"
+            "time": "2025-08-29T12:40:03+00:00"
         },
         {
             "name": "carbonphp/carbon-doctrine-types",
@@ -1055,16 +1055,16 @@
         },
         {
             "name": "laravel/framework",
-            "version": "v12.28.0",
+            "version": "v12.28.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "aa2e8af4c7e84e83a857d5171cf784c7720da4e6"
+                "reference": "868c1f2d3dba4df6d21e3a8d818479f094cfd942"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/aa2e8af4c7e84e83a857d5171cf784c7720da4e6",
-                "reference": "aa2e8af4c7e84e83a857d5171cf784c7720da4e6",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/868c1f2d3dba4df6d21e3a8d818479f094cfd942",
+                "reference": "868c1f2d3dba4df6d21e3a8d818479f094cfd942",
                 "shasum": ""
             },
             "require": {
@@ -1270,7 +1270,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2025-09-03T17:04:36+00:00"
+            "time": "2025-09-04T14:58:12+00:00"
         },
         {
             "name": "laravel/prompts",
@@ -2011,16 +2011,16 @@
         },
         {
             "name": "livewire/flux",
-            "version": "v2.3.0",
+            "version": "v2.3.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/livewire/flux.git",
-                "reference": "83559c48eb929aa2aa33e351e76b501467111e9e"
+                "reference": "d76c702806f48b75427226a81ffdbfb1d2b1b47d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/livewire/flux/zipball/83559c48eb929aa2aa33e351e76b501467111e9e",
-                "reference": "83559c48eb929aa2aa33e351e76b501467111e9e",
+                "url": "https://api.github.com/repos/livewire/flux/zipball/d76c702806f48b75427226a81ffdbfb1d2b1b47d",
+                "reference": "d76c702806f48b75427226a81ffdbfb1d2b1b47d",
                 "shasum": ""
             },
             "require": {
@@ -2071,9 +2071,66 @@
             ],
             "support": {
                 "issues": "https://github.com/livewire/flux/issues",
-                "source": "https://github.com/livewire/flux/tree/v2.3.0"
+                "source": "https://github.com/livewire/flux/tree/v2.3.1"
             },
-            "time": "2025-09-03T21:42:14+00:00"
+            "time": "2025-09-05T03:49:53+00:00"
+        },
+        {
+            "name": "livewire/flux-pro",
+            "version": "2.3.1",
+            "dist": {
+                "type": "zip",
+                "url": "https://composer.fluxui.dev/download/9fcd648b-ab09-4d76-9749-2c82a1e9647f/flux-pro-2.3.1.zip",
+                "reference": "418d9e1084c871cde3f2eeea0f3d34e7803cbc43",
+                "shasum": "e03a43b5f0cc2d90e82faf1e81639b6177739d3f"
+            },
+            "require": {
+                "illuminate/console": "^10.0|^11.0|^12.0",
+                "illuminate/support": "^10.0|^11.0|^12.0",
+                "illuminate/view": "^10.0|^11.0|^12.0",
+                "laravel/prompts": "^0.1.24|^0.2|^0.3",
+                "livewire/flux": "2.3.1|dev-main",
+                "livewire/livewire": "^3.6.2",
+                "php": "^8.1",
+                "symfony/console": "^6.0|^7.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Flux": "FluxPro\\FluxPro"
+                    },
+                    "providers": [
+                        "FluxPro\\FluxProServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/helpers.php"
+                ],
+                "psr-4": {
+                    "FluxPro\\": "src/"
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "authors": [
+                {
+                    "name": "Caleb Porzio",
+                    "email": "calebporzio@gmail.com"
+                }
+            ],
+            "description": "The pro version of Flux, the official UI component library for Livewire.",
+            "keywords": [
+                "components",
+                "flux",
+                "laravel",
+                "livewire",
+                "ui"
+            ],
+            "time": "2025-09-05T04:04:01+00:00"
         },
         {
             "name": "livewire/livewire",
@@ -2870,6 +2927,77 @@
                 "source": "https://github.com/opgginc/laravel-mcp-server/tree/1.4.2"
             },
             "time": "2025-08-09T14:39:43+00:00"
+        },
+        {
+            "name": "phiki/phiki",
+            "version": "v2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/phikiphp/phiki.git",
+                "reference": "461f6dd7e91dc3a95463b42f549ac7d0aab4702f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/phikiphp/phiki/zipball/461f6dd7e91dc3a95463b42f549ac7d0aab4702f",
+                "reference": "461f6dd7e91dc3a95463b42f549ac7d0aab4702f",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "league/commonmark": "^2.5.3",
+                "php": "^8.2",
+                "psr/simple-cache": "^3.0"
+            },
+            "require-dev": {
+                "illuminate/support": "^11.45",
+                "laravel/pint": "^1.18.1",
+                "orchestra/testbench": "^9.15",
+                "pestphp/pest": "^3.5.1",
+                "phpstan/extension-installer": "^1.4.3",
+                "phpstan/phpstan": "^2.0",
+                "symfony/var-dumper": "^7.1.6"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Phiki\\Adapters\\Laravel\\PhikiServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Phiki\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ryan Chandler",
+                    "email": "support@ryangjchandler.co.uk",
+                    "homepage": "https://ryangjchandler.co.uk",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Syntax highlighting using TextMate grammars in PHP.",
+            "support": {
+                "issues": "https://github.com/phikiphp/phiki/issues",
+                "source": "https://github.com/phikiphp/phiki/tree/v2.0.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/ryangjchandler",
+                    "type": "github"
+                },
+                {
+                    "url": "https://buymeacoffee.com/ryangjchandler",
+                    "type": "other"
+                }
+            ],
+            "time": "2025-08-28T18:20:27+00:00"
         },
         {
             "name": "phpoption/phpoption",
@@ -3707,20 +3835,20 @@
         },
         {
             "name": "ramsey/uuid",
-            "version": "4.9.0",
+            "version": "4.9.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ramsey/uuid.git",
-                "reference": "4e0e23cc785f0724a0e838279a9eb03f28b092a0"
+                "reference": "81f941f6f729b1e3ceea61d9d014f8b6c6800440"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ramsey/uuid/zipball/4e0e23cc785f0724a0e838279a9eb03f28b092a0",
-                "reference": "4e0e23cc785f0724a0e838279a9eb03f28b092a0",
+                "url": "https://api.github.com/repos/ramsey/uuid/zipball/81f941f6f729b1e3ceea61d9d014f8b6c6800440",
+                "reference": "81f941f6f729b1e3ceea61d9d014f8b6c6800440",
                 "shasum": ""
             },
             "require": {
-                "brick/math": "^0.8.8 || ^0.9 || ^0.10 || ^0.11 || ^0.12 || ^0.13",
+                "brick/math": "^0.8.8 || ^0.9 || ^0.10 || ^0.11 || ^0.12 || ^0.13 || ^0.14",
                 "php": "^8.0",
                 "ramsey/collection": "^1.2 || ^2.0"
             },
@@ -3779,9 +3907,9 @@
             ],
             "support": {
                 "issues": "https://github.com/ramsey/uuid/issues",
-                "source": "https://github.com/ramsey/uuid/tree/4.9.0"
+                "source": "https://github.com/ramsey/uuid/tree/4.9.1"
             },
-            "time": "2025-06-25T14:20:11+00:00"
+            "time": "2025-09-04T20:59:21+00:00"
         },
         {
             "name": "saloonphp/saloon",
@@ -6404,64 +6532,6 @@
             "time": "2025-08-13T11:49:31+00:00"
         },
         {
-            "name": "tempest/highlight",
-            "version": "2.13.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/tempestphp/highlight.git",
-                "reference": "b3efa9bedc6a6524a7e9328327cb0ce477b5b9d6"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/tempestphp/highlight/zipball/b3efa9bedc6a6524a7e9328327cb0ce477b5b9d6",
-                "reference": "b3efa9bedc6a6524a7e9328327cb0ce477b5b9d6",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.4"
-            },
-            "require-dev": {
-                "assertchris/ellison": "^1.0.2",
-                "friendsofphp/php-cs-fixer": "^3.84",
-                "league/commonmark": "^2.4",
-                "phpstan/phpstan": "^1.12.0",
-                "phpunit/phpunit": "^10.0",
-                "symfony/var-dumper": "^6.4|^7.0"
-            },
-            "suggest": {
-                "assertchris/ellison": "Allows you to analyse sentence complexity",
-                "league/commonmark": "Adds markdown support"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Tempest\\Highlight\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Brent Roose",
-                    "email": "brendt@stitcher.io"
-                }
-            ],
-            "description": "Fast, extensible, server-side code highlighting",
-            "support": {
-                "issues": "https://github.com/tempestphp/highlight/issues",
-                "source": "https://github.com/tempestphp/highlight/tree/2.13.1"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/brendt",
-                    "type": "github"
-                }
-            ],
-            "time": "2025-07-18T12:38:05+00:00"
-        },
-        {
             "name": "tijsverkoyen/css-to-inline-styles",
             "version": "v2.3.0",
             "source": {
@@ -7184,16 +7254,16 @@
         },
         {
             "name": "laravel/boost",
-            "version": "v1.0.21",
+            "version": "v1.1.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/boost.git",
-                "reference": "149986e8e346ca435befa6bb92f51bbf09063772"
+                "reference": "70f909465bf73dad7e791fad8b7716b3b2712076"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/boost/zipball/149986e8e346ca435befa6bb92f51bbf09063772",
-                "reference": "149986e8e346ca435befa6bb92f51bbf09063772",
+                "url": "https://api.github.com/repos/laravel/boost/zipball/70f909465bf73dad7e791fad8b7716b3b2712076",
+                "reference": "70f909465bf73dad7e791fad8b7716b3b2712076",
                 "shasum": ""
             },
             "require": {
@@ -7204,7 +7274,7 @@
                 "illuminate/support": "^10.0|^11.0|^12.0",
                 "laravel/mcp": "^0.1.1",
                 "laravel/prompts": "^0.1.9|^0.3",
-                "laravel/roster": "^0.2.4",
+                "laravel/roster": "^0.2.5",
                 "php": "^8.1"
             },
             "require-dev": {
@@ -7245,7 +7315,7 @@
                 "issues": "https://github.com/laravel/boost/issues",
                 "source": "https://github.com/laravel/boost"
             },
-            "time": "2025-09-03T08:23:46+00:00"
+            "time": "2025-09-04T12:16:09+00:00"
         },
         {
             "name": "laravel/mcp",
@@ -7461,16 +7531,16 @@
         },
         {
             "name": "laravel/roster",
-            "version": "v0.2.5",
+            "version": "v0.2.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/roster.git",
-                "reference": "0252fa419733c61b3ebeba8e4e2b9ad2a63f3a17"
+                "reference": "5615acdf860c5a5c61d04aba44f2d3312550c514"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/roster/zipball/0252fa419733c61b3ebeba8e4e2b9ad2a63f3a17",
-                "reference": "0252fa419733c61b3ebeba8e4e2b9ad2a63f3a17",
+                "url": "https://api.github.com/repos/laravel/roster/zipball/5615acdf860c5a5c61d04aba44f2d3312550c514",
+                "reference": "5615acdf860c5a5c61d04aba44f2d3312550c514",
                 "shasum": ""
             },
             "require": {
@@ -7518,7 +7588,7 @@
                 "issues": "https://github.com/laravel/roster/issues",
                 "source": "https://github.com/laravel/roster"
             },
-            "time": "2025-08-29T07:47:42+00:00"
+            "time": "2025-09-04T07:31:39+00:00"
         },
         {
             "name": "laravel/sail",

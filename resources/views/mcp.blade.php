@@ -3,40 +3,101 @@ $title = 'Model Context Protocol for Fantasy Football';
 @endphp
 
 <x-layouts.app.marketing :title="$title">
-    <div class="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] dark:text-[#EDEDEC] px-4 sm:px-6 py-8 sm:py-12 break-words overflow-x-hidden">
-        <div class="mx-auto max-w-6xl w-full">
-            @include('partials.marketing-nav')
-
             <!-- Hero Section -->
-            <div class="rounded-2xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm dark:border-white/10 dark:bg-[#141414] mb-8">
-                <div class="text-center">
-                    <h1 class="text-3xl leading-tight font-semibold sm:text-4xl lg:text-5xl mb-4">MCP Tools for Fantasy Football</h1>
-                    <p class="text-lg text-[#575654] dark:text-[#A1A09A] max-w-3xl mx-auto">
-                        This Laravel server exposes a Model Context Protocol (MCP) endpoint with tools for Sleeper: unified data access, fantasy recommendations, lineup management, strategy tools, and core utilities.
-                    </p>
+            <div class="relative pt-16 pb-16 sm:pt-20 sm:pb-20">
+                <div class="relative rounded-3xl border border-zinc-200/60 bg-white/60 backdrop-blur-sm p-8 sm:p-12 shadow-2xl shadow-zinc-900/5 dark:border-zinc-800/60 dark:bg-zinc-900/60 dark:shadow-zinc-100/5 mb-16">
+                    <div class="text-center">
+                        <div class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 mb-6">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                            Developer Documentation
+                        </div>
+
+                        <h1 class="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight mb-6">
+                            <span class="bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-700 dark:from-zinc-100 dark:via-zinc-200 dark:to-zinc-300 bg-clip-text text-transparent">Model Context Protocol</span>
+                            <br>
+                            <span class="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">for Fantasy Football</span>
+                        </h1>
+
+                        <p class="text-xl text-zinc-600 dark:text-zinc-400 max-w-4xl mx-auto mb-12 leading-relaxed">
+                            This Laravel server exposes a Model Context Protocol endpoint with tools for Sleeper fantasy football analytics: player trending data, ADP rankings, season statistics, and projections powered by Laravel's robust data layer.
+                        </p>
+
+                        <div class="flex flex-col sm:flex-row justify-center gap-4">
+                            <a href="https://chatgpt.com/g/g-68b45e513c9881918831ae2a2dc294a5" target="_blank" rel="noopener noreferrer"
+                               class="group relative inline-flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 px-8 py-4 text-lg font-semibold text-white shadow-xl shadow-emerald-500/25 transition-all duration-300 hover:shadow-2xl hover:shadow-emerald-500/40 hover:scale-105">
+                                <span class="relative z-10">Try the Custom GPT</span>
+                                <svg class="relative z-10 h-5 w-5 transition-transform group-hover:translate-x-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5 10a1 1 0 011-1h5.586L9.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 11-1.414-1.414L11.586 11H6a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+
+                            <a href="{{ route('home') }}"
+                               class="group inline-flex items-center justify-center gap-3 rounded-2xl border-2 border-zinc-200 bg-white/80 backdrop-blur-sm px-8 py-4 text-lg font-semibold text-zinc-900 shadow-lg transition-all duration-300 hover:border-zinc-300 hover:shadow-xl hover:scale-105 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-100 dark:hover:border-zinc-600">
+                                <span>Back to Home</span>
+                                <svg class="h-5 w-5 transition-transform group-hover:translate-x-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5 10a1 1 0 011-1h5.586L9.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 11-1.414-1.414L11.586 11H6a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Background decoration -->
+                <div class="absolute inset-0 -z-10">
+                    <div class="absolute top-10 left-10 w-72 h-72 bg-gradient-to-br from-emerald-400/20 to-teal-600/20 rounded-full blur-3xl animate-pulse"></div>
+                    <div class="absolute bottom-10 right-10 w-96 h-96 bg-gradient-to-br from-emerald-400/10 to-teal-600/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
                 </div>
             </div>
 
-            <!-- Setup Instructions -->
-            <div class="rounded-xl border border-black/10 bg-[#FCFCFB] p-4 sm:p-5 shadow-sm dark:border-white/10 dark:bg-[#0f0f0f] mb-8">
-                <div class="mb-2 text-[12px] font-semibold tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]"> Quickstart — Claude and Cursor </div>
-                <ol class="mb-3 list-decimal space-y-1 pl-5 text-[13px] text-[#575654] dark:text-[#A1A09A]">
-                    <li>Close your client (Claude Desktop or Cursor).</li>
-                    <li> Create or edit the config file:
-                        <ul class="mt-1 list-disc space-y-1 pl-5">
-                            <li> Claude Desktop: <span class="rounded bg-white px-1.5 py-0.5 text-[12px] dark:bg-[#161615]">~/Library/Application Support/Claude/claude_desktop_config.json</span></li>
-                            <li> Cursor: <span class="rounded bg-white px-1.5 py-0.5 text-[12px] dark:bg-[#161615]">~/.cursor/mcp.json</span></li>
-                        </ul>
-                    </li>
-                    <li>Add this server:</li>
-                </ol>
-                <div class="space-y-4">
-                    <div>
-                        <div class="mb-2 text-[12px] font-medium text-[#575654] dark:text-[#A1A09A]">Basic Setup (No Authentication)</div>
-                        <div class="space-y-3">
-                            <div>
-                                <div class="mb-1 text-[12px] text-[#706f6c] dark:text-[#A1A09A]">Claude Desktop</div>
-                                <div class="w-full overflow-x-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]"><pre class="overflow-x-auto max-w-full"><code class="json whitespace-pre">{!! App\Helpers\CodeHighlighter::highlightJson('{
+            <div class="grid lg:grid-cols-2 gap-8 pb-16">
+                <!-- Setup Instructions -->
+                <div class="relative rounded-3xl border border-zinc-200/60 bg-white/60 backdrop-blur-sm p-8 shadow-2xl shadow-zinc-900/5 dark:border-zinc-800/60 dark:bg-zinc-900/60 dark:shadow-zinc-100/5">
+                    <div class="mb-8">
+                        <div class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 mb-4">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                            Quickstart
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-4">Claude & Cursor Setup</h2>
+                        <p class="text-zinc-600 dark:text-zinc-400 mb-6">Connect your AI assistant to fantasy football data in three simple steps</p>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 text-sm font-bold flex items-center justify-center">1</div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-zinc-600 dark:text-zinc-400">Close your client (Claude Desktop or Cursor)</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 text-sm font-bold flex items-center justify-center">2</div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-2">Create or edit the config file:</p>
+                                <ul class="space-y-1 text-xs text-zinc-500 dark:text-zinc-500">
+                                    <li>• <span class="font-mono bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded">~/Library/Application Support/Claude/claude_desktop_config.json</span></li>
+                                    <li>• <span class="font-mono bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded">~/.cursor/mcp.json</span></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 text-sm font-bold flex items-center justify-center">3</div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-zinc-600 dark:text-zinc-400">Add this server using the configuration examples below</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 space-y-6">
+                        <div>
+                            <div class="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Claude Desktop Configuration</div>
+                            <div class="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 overflow-hidden">
+                                <div class="w-full overflow-x-auto p-4">
+                                    <x-phiki::code grammar="json" theme="github-light">{
   "mcpServers": {
     "fantasy-football-mcp": {
       "command": "npx",
@@ -48,11 +109,16 @@ $title = 'Model Context Protocol for Fantasy Football';
       ]
     }
   }
-}') !!}</code></pre></div>
+}</x-phiki::code>
+                                </div>
                             </div>
-                            <div>
-                                <div class="mb-1 text-[12px] text-[#706f6c] dark:text-[#A1A09A]">Cursor</div>
-                                <div class="w-full overflow-x-auto rounded-md border border-[#2d2d2d] bg-[#1e1e1e] p-3 text-[12px] leading-relaxed shadow-inner dark:border-[#2d2d2d] dark:bg-[#1e1e1e]"><pre class="overflow-x-auto max-w-full"><code class="json whitespace-pre">{!! App\Helpers\CodeHighlighter::highlightJson('{
+                        </div>
+
+                        <div>
+                            <div class="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Cursor Configuration</div>
+                            <div class="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 overflow-hidden">
+                                <div class="w-full overflow-x-auto p-4">
+                                    <x-phiki::code grammar="json" theme="github-light">{
   "mcpServers": {
     "fantasy-football-mcp": {
       "transport": {
@@ -61,96 +127,220 @@ $title = 'Model Context Protocol for Fantasy Football';
       }
     }
   }
-}') !!}</code></pre></div>
+}</x-phiki::code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="mt-6 text-xs text-zinc-500 dark:text-zinc-500">
+                        Restart your client. In Cursor, manage servers in Settings → MCP; in Claude, the server appears under MCP servers.
+                    </p>
+                </div>
+
+                <!-- MCP Overview & Features -->
+                <div class="space-y-8">
+                    <!-- MCP Overview -->
+                    <div class="relative rounded-3xl border border-zinc-200/60 bg-white/60 backdrop-blur-sm p-8 shadow-2xl shadow-zinc-900/5 dark:border-zinc-800/60 dark:bg-zinc-900/60 dark:shadow-zinc-100/5">
+                        <div class="mb-6">
+                            <div class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 mb-4">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Features
+                            </div>
+                            <h2 class="text-2xl font-bold tracking-tight mb-4">MCP Overview</h2>
+                        </div>
+
+                        <ul class="space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
+                            <li class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Player Analytics</span>: trending players, ADP rankings, season statistics</div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Fantasy Data Access</span>: comprehensive player data with projections and performance metrics</div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 bg-emerald-600 rounded-full mt-2 flex-shrink-0"></div>
+                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Market Intelligence</span>: real-time player trends and draft positioning</div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 bg-emerald-700 rounded-full mt-2 flex-shrink-0"></div>
+                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Season Analysis</span>: historical stats and current season projections</div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 bg-teal-500 rounded-full mt-2 flex-shrink-0"></div>
+                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">GPT Actions Compatible</span>: optimized endpoints for OpenAI Custom GPT integration</div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 bg-emerald-800 rounded-full mt-2 flex-shrink-0"></div>
+                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Laravel Powered</span>: built with Laravel's robust ORM and caching capabilities</div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Tools Reference -->
+                    <div class="relative rounded-3xl border border-zinc-200/60 bg-white/60 backdrop-blur-sm p-8 shadow-2xl shadow-zinc-900/5 dark:border-zinc-800/60 dark:bg-zinc-900/60 dark:shadow-zinc-100/5">
+                        <div class="mb-6">
+                            <div class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 mb-4">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                API Reference
+                            </div>
+                            <h2 class="text-2xl font-bold tracking-tight mb-4">Available Tools</h2>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="rounded-xl border border-emerald-200/50 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 p-4 dark:border-emerald-800/50 dark:from-emerald-900/5 dark:to-teal-900/5">
+                                <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Player Analytics & Data</h3>
+                                <ul class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                                    <li class="flex items-start gap-2">
+                                        <span class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300 mt-0.5 flex-shrink-0">fetch-trending-players</span>
+                                        <span>Get trending players based on adds/drops in the last 24 hours</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <span class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300 mt-0.5 flex-shrink-0">fetch-adp-players</span>
+                                        <span>Get top players by Average Draft Position (ADP)</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <span class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300 mt-0.5 flex-shrink-0">fetch-players-season-data</span>
+                                        <span>Get season stats and projections for multiple players</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <span class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300 mt-0.5 flex-shrink-0">fetch-player-season-data</span>
+                                        <span>Get detailed season data for a specific player by ID or name</span>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </div>
                 </div>
-                <p class="mt-4 text-[12px] leading-6 text-[#706f6c] dark:text-[#A1A09A]">
-                    Restart your client. In Cursor, manage servers in Settings → MCP; in Claude, the server appears under MCP servers.
-                </p>
             </div>
 
-            <!-- MCP Overview -->
-            <div class="rounded-xl border border-black/10 bg-[#FCFCFB] p-4 sm:p-5 shadow-sm dark:border-white/10 dark:bg-[#0f0f0f] mb-8">
-                <div class="mb-3 text-[12px] font-semibold tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">MCP Overview</div>
-                <ul class="list-disc space-y-1 pl-4 sm:pl-5 text-[13px] text-[#575654] dark:text-[#A1A09A]">
-                    <li><span class="font-medium">Users and leagues</span>: lookups; list leagues by season</li>
-                    <li><span class="font-medium">Data access</span>: unified tool for leagues, rosters, drafts, players, transactions</li>
-                    <li><span class="font-medium">Players and market</span>: projections, ADP, trending data</li>
-                    <li><span class="font-medium">Fantasy recommendations</span>: draft picks, waiver acquisitions, trade analysis, playoff planning</li>
-                    <li><span class="font-medium">Lineup management</span>: optimization, validation, player comparisons</li>
-                    <li><span class="font-medium">Strategy tools</span>: configure draft approach</li>
-                    <li><span class="font-medium">Utilities</span>: resolve current week, health check, cache management, tool discovery</li>
-                </ul>
-            </div>
+            <!-- Usage Examples & Endpoints -->
+            <div class="grid lg:grid-cols-2 gap-8 pb-16">
+                <!-- Usage Examples -->
+                <div class="relative rounded-3xl border border-zinc-200/60 bg-white/60 backdrop-blur-sm p-8 shadow-2xl shadow-zinc-900/5 dark:border-zinc-800/60 dark:bg-zinc-900/60 dark:shadow-zinc-100/5">
+                    <div class="mb-8">
+                        <div class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 mb-4">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            Examples
+                        </div>
+                        <h2 class="text-2xl font-bold tracking-tight mb-4">Usage Examples</h2>
+                        <p class="text-zinc-600 dark:text-zinc-400">Direct API calls for custom integrations</p>
+                    </div>
 
-            <!-- Tools Reference -->
-            <div class="rounded-xl border border-black/10 bg-[#FCFCFB] p-4 sm:p-5 shadow-sm dark:border-white/10 dark:bg-[#0f0f0f] mb-8">
-                <div class="mb-3 text-[12px] font-semibold tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">Tools Reference</div>
-                <div class="space-y-5 text-[13px] text-[#575654] dark:text-[#A1A09A]">
-                    <div>
-                        <div class="font-semibold">Sleeper: Users and Leagues</div>
-                        <ul class="mt-2 list-disc space-y-1 pl-4 sm:pl-5">
-                            <li><span class="font-medium">user_lookup</span> — Get Sleeper user by username.</li>
-                            <li><span class="font-medium">user_leagues</span> — List Sleeper leagues for a user in a season.</li>
-                        </ul>
+                    <div class="space-y-6">
+                        <div>
+                            <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Fetch Trending Players</div>
+                            <div class="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 overflow-hidden">
+                                <div class="w-full overflow-x-auto p-4">
+                                    <pre class="text-xs text-zinc-800 dark:text-zinc-200 whitespace-pre"><code>POST /api/mcp/tools/fetch-trending-players
+{
+  "type": "add"
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Get ADP Rankings</div>
+                            <div class="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 overflow-hidden">
+                                <div class="w-full overflow-x-auto p-4">
+                                    <pre class="text-xs text-zinc-800 dark:text-zinc-200 whitespace-pre"><code>POST /api/mcp/tools/fetch-adp-players
+{}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Get Player Season Data</div>
+                            <div class="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 overflow-hidden">
+                                <div class="w-full overflow-x-auto p-4">
+                                    <pre class="text-xs text-zinc-800 dark:text-zinc-200 whitespace-pre"><code>POST /api/mcp/tools/fetch-player-season-data
+{
+  "player_id": "4046"
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <div class="font-semibold">Unified Data</div>
-                        <ul class="mt-2 list-disc space-y-1 pl-4 sm:pl-5">
-                            <li><span class="font-medium">unified_data</span> — Leagues, rosters, drafts, players, transactions.</li>
-                            <li><span class="font-medium">league_matchups</span> — Weekly matchups for a league.</li>
-                            <li><span class="font-medium">league_standings</span> — Computed standings from records and points.</li>
-                        </ul>
+                </div>
+
+                <!-- Endpoints -->
+                <div class="relative rounded-3xl border border-zinc-200/60 bg-white/60 backdrop-blur-sm p-8 shadow-2xl shadow-zinc-900/5 dark:border-zinc-800/60 dark:bg-zinc-900/60 dark:shadow-zinc-100/5">
+                    <div class="mb-8">
+                        <div class="inline-flex items-center gap-2 rounded-full bg-teal-100 px-4 py-2 text-sm font-medium text-teal-800 dark:bg-teal-900/30 dark:text-teal-300 mb-4">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                            </svg>
+                            Endpoints
+                        </div>
+                        <h2 class="text-2xl font-bold tracking-tight mb-4">API Endpoints</h2>
+                        <p class="text-zinc-600 dark:text-zinc-400">Live and local server endpoints</p>
                     </div>
-                    <div>
-                        <div class="font-semibold">Players &amp; Market</div>
-                        <ul class="mt-2 list-disc space-y-1 pl-4 sm:pl-5">
-                            <li><span class="font-medium">players_trending</span> — Trending adds/drops.</li>
-                            <li><span class="font-medium">projections_week</span> — Weekly projections.</li>
-                            <li><span class="font-medium">adp_get</span> — Current ADP values.</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <div class="font-semibold">Fantasy Recommendations</div>
-                        <ul class="mt-2 list-disc space-y-1 pl-4 sm:pl-5">
-                            <li><span class="font-medium">fantasy_recommendations</span> — Draft, waiver, trade, playoff guidance.</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <div class="font-semibold">Lineup Management</div>
-                        <ul class="mt-2 list-disc space-y-1 pl-4 sm:pl-5">
-                            <li><span class="font-medium">unified_lineup</span> — Optimize or validate lineups, compare players.</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <div class="font-semibold">Strategy &amp; Utilities</div>
-                        <ul class="mt-2 list-disc space-y-1 pl-4 sm:pl-5">
-                            <li><span class="font-medium">strategy_set</span> — Configure draft/season strategy levers.</li>
-                            <li><span class="font-medium">time_resolve_week</span> — Resolve current season/week.</li>
-                            <li><span class="font-medium">health_check</span> — Verify server and Sleeper reachability.</li>
-                            <li><span class="font-medium">cache_invalidate</span> — Invalidate cached keys by scope.</li>
-                            <li><span class="font-medium">tool_list</span> — List available tools.</li>
-                        </ul>
+
+                    <div class="space-y-6">
+                        <div class="group rounded-xl border border-emerald-200/50 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 p-4 transition-all hover:border-emerald-300/50 dark:border-emerald-800/50 dark:from-emerald-900/5 dark:to-teal-900/5 dark:hover:border-emerald-700/50">
+                            <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Live MCP Endpoint</div>
+                            <div class="relative rounded-lg bg-zinc-100 p-3 dark:bg-zinc-800">
+                                <code class="text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all select-all">https://www.sleeperdraft.com/mcp</code>
+                                <div class="absolute top-2 right-2">
+                                    <button class="rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors" onclick="navigator.clipboard.writeText('https://www.sleeperdraft.com/mcp')">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="group rounded-xl border border-emerald-200/50 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 p-4 transition-all hover:border-emerald-300/50 dark:border-emerald-800/50 dark:from-emerald-900/5 dark:to-teal-900/5 dark:hover:border-emerald-700/50">
+                            <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Local MCP Endpoint</div>
+                            <div class="relative rounded-lg bg-zinc-100 p-3 dark:bg-zinc-800">
+                                <code class="text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all select-all">{{ url('/mcp') }}</code>
+                                <div class="absolute top-2 right-2">
+                                    <button class="rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors" data-copy="{{ url('/mcp') }}" onclick="navigator.clipboard.writeText(this.dataset.copy)">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="group rounded-xl border border-emerald-200/50 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 p-4 transition-all hover:border-emerald-300/50 dark:border-emerald-800/50 dark:from-emerald-900/5 dark:to-teal-900/5 dark:hover:border-emerald-700/50">
+                            <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Tools List</div>
+                            <div class="relative rounded-lg bg-zinc-100 p-3 dark:bg-zinc-800">
+                                <code class="text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all select-all">https://www.sleeperdraft.com/api/mcp/tools</code>
+                                <div class="absolute top-2 right-2">
+                                    <button class="rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors" onclick="navigator.clipboard.writeText('https://www.sleeperdraft.com/api/mcp/tools')">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="group rounded-xl border border-emerald-200/50 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 p-4 transition-all hover:border-emerald-300/50 dark:border-emerald-800/50 dark:from-emerald-900/5 dark:to-teal-900/5 dark:hover:border-emerald-700/50">
+                            <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">OpenAPI Spec</div>
+                            <div class="relative rounded-lg bg-zinc-100 p-3 dark:bg-zinc-800">
+                                <code class="text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all select-all">https://www.sleeperdraft.com/api/openapi.yaml</code>
+                                <div class="absolute top-2 right-2">
+                                    <button class="rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors" onclick="navigator.clipboard.writeText('https://www.sleeperdraft.com/api/openapi.yaml')">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Quick Connect Endpoints -->
-            <div class="rounded-xl border border-black/10 bg-[#FCFCFB] p-4 sm:p-5 shadow-sm dark:border-white/10 dark:bg-[#0f0f0f]">
-                <div class="mb-3 text-[12px] font-semibold tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">Endpoints</div>
-                <div class="space-y-4">
-                    <div class="rounded-md border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#0f0f0f]">
-                        <div class="mb-2 text-[12px] tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">Live MCP Endpoint</div>
-                        <div class="rounded-md bg-[#FCFCFB] px-3 py-2 text-[13px] break-all shadow-inner select-all dark:bg-[#161615] max-w-full overflow-hidden"> https://www.sleeperdraft.com/mcp </div>
-                    </div>
-                    <div class="rounded-md border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#0f0f0f]">
-                        <div class="mb-2 text-[12px] tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">Local MCP Endpoint</div>
-                        <div class="rounded-md bg-[#FCFCFB] px-3 py-2 text-[13px] break-all shadow-inner select-all dark:bg-[#161615] max-w-full overflow-hidden"> {{ url('/mcp') }} </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </x-layouts.app.marketing>

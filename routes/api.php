@@ -13,18 +13,6 @@ Route::middleware('api.analytics')->group(function () {
         ->name('api.mcp.fetch-trending-players');
     Route::post('/mcp/tools/fetch-adp-players', [McpActionController::class, 'invokeTool'])
         ->name('api.mcp.fetch-adp-players');
-    Route::post('/mcp/tools/fetch-user-leagues', [McpActionController::class, 'invokeTool'])
-        ->name('api.mcp.fetch-user-leagues');
-    Route::post('/mcp/tools/draft-picks', [McpActionController::class, 'invokeTool'])
-        ->name('api.mcp.draft-picks');
-    Route::post('/mcp/tools/fetch-league', [McpActionController::class, 'invokeTool'])
-        ->name('api.mcp.fetch-league');
-    Route::post('/mcp/tools/fetch-roster', [McpActionController::class, 'invokeTool'])
-        ->name('api.mcp.fetch-roster');
-    Route::post('/mcp/tools/fetch-transactions', [McpActionController::class, 'invokeTool'])
-        ->name('api.mcp.fetch-transactions');
-    Route::post('/mcp/tools/fetch-matchups', [McpActionController::class, 'invokeTool'])
-        ->name('api.mcp.fetch-matchups');
     Route::post('/mcp/tools/fetch-players-season-data', [McpActionController::class, 'invokeTool'])
         ->name('api.mcp.fetch-players-season-data');
     Route::post('/mcp/tools/fetch-player-season-data', [McpActionController::class, 'invokeTool'])
@@ -52,12 +40,6 @@ Route::middleware('api.analytics')->group(function () {
         $tools = [
             'fetch-trending-players',
             'fetch-adp-players',
-            'fetch-user-leagues',
-            'draft-picks',
-            'fetch-league',
-            'fetch-roster',
-            'fetch-transactions',
-            'fetch-matchups',
             'fetch-players-season-data',
             'fetch-player-season-data',
         ];
@@ -69,12 +51,6 @@ Route::middleware('api.analytics')->group(function () {
                     'description' => match ($tool) {
                         'fetch-trending-players' => 'Fetches trending players from the database based on adds or drops within the last 24 hours',
                         'fetch-adp-players' => 'Fetches top players by Average Draft Position (ADP) from the database',
-                        'fetch-user-leagues' => 'Fetches all leagues for a given Sleeper user',
-                        'draft-picks' => 'Provides intelligent draft pick suggestions by analyzing draft state and player ADP values',
-                        'fetch-league' => 'Get a specific league and users with team summaries',
-                        'fetch-roster' => 'Get a specific user roster enriched with player and owner details',
-                        'fetch-transactions' => 'Fetches league transactions with expanded player details',
-                        'fetch-matchups' => 'Fetches matchups and scores for a league in a specific week',
                         'fetch-players-season-data' => 'Returns last season stats + summary and current season projections + summary for players',
                         'fetch-player-season-data' => 'Returns last season stats + summary and current season projections + summary for a player by id or name (all matches if multiple)',
                     },

@@ -19,19 +19,10 @@ class McpActionController extends Controller
         // Extract tool name from the route
         $routeName = $request->route()->getName();
 
-        // Map route names to tool class names (support new and legacy routes)
+        // Map route names to tool class names
         $routeToToolClassMap = [
             'api.mcp.fetch-trending-players' => \App\MCP\Tools\FetchTrendingPlayersTool::class,
             'api.mcp.fetch-adp-players' => \App\MCP\Tools\FetchADPPlayersTool::class,
-            'api.mcp.fetch-user-leagues' => \App\MCP\Tools\FetchUserLeaguesTool::class,
-            'api.mcp.draft-picks' => \App\MCP\Tools\DraftPicksTool::class,
-            // New names
-            'api.mcp.fetch-league' => \App\MCP\Tools\FetchLeagueTool::class,
-            'api.mcp.fetch-roster' => \App\MCP\Tools\FetchRosterTool::class,
-            'api.mcp.fetch-transactions' => \App\MCP\Tools\FetchTransactionsTool::class,
-            // Unchanged
-            'api.mcp.fetch-matchups' => \App\MCP\Tools\FetchMatchupsTool::class,
-
             'api.mcp.fetch-players-season-data' => \App\MCP\Tools\FetchPlayersSeasonDataTool::class,
             'api.mcp.fetch-player-season-data' => \App\MCP\Tools\FetchPlayerSeasonDataTool::class,
         ];
@@ -184,12 +175,6 @@ class McpActionController extends Controller
         return [
             'fetch-trending-players',
             'fetch-adp-players',
-            'fetch-user-leagues',
-            'draft-picks',
-            'fetch-league',
-            'fetch-roster',
-            'fetch-transactions',
-            'fetch-matchups',
             'fetch-players-season-data',
             'fetch-player-season-data',
         ];
@@ -203,13 +188,6 @@ class McpActionController extends Controller
         $mapping = [
             'fetch-trending-players' => 'fetch-trending-players',
             'fetch-adp-players' => 'fetch-adp-players',
-            'fetch-user-leagues' => 'fetch-user-leagues',
-            'draft-picks' => 'draft-picks',
-            // New names
-            'fetch-league' => 'fetch-league',
-            'fetch-roster' => 'fetch-roster',
-            'fetch-transactions' => 'fetch-transactions',
-            'fetch-matchups' => 'fetch-matchups',
             'fetch-players-season-data' => 'fetch-players-season-data',
             'fetch-player-season-data' => 'fetch-player-season-data',
         ];

@@ -1,4 +1,3 @@
-{{-- Privacy Policy Page --}}
 <x-layouts.app.marketing title="Privacy Policy - SleeperDraft">
     <div class="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] dark:text-[#EDEDEC] px-4 sm:px-6 py-8 sm:py-12">
         <div class="mx-auto max-w-4xl">
