@@ -96,27 +96,104 @@ new class extends Component {
         ];
     }
 
-    public function getBellCurvePathProperty(): string
+    public function getWeeklyActualPointsProperty(): array
     {
-        // Render a standard normal bell curve (σ=1) across -3..+3, scaled to the viewBox
-        $width = 320.0;
-        $height = 120.0;
-        $paddingX = 10.0; // side padding
-        $plotWidth = $width - 2 * $paddingX;
+        $series = [];
+        foreach ($this->weeklyStats as $ws) {
+            $stats = $ws->stats ?? [];
+            if (isset($stats['pts_ppr']) && is_numeric($stats['pts_ppr'])) {
+                $series[] = ['week' => (int) $ws->week, 'value' => (float) $stats['pts_ppr']];
+            }
+        }
+        usort($series, fn($a, $b) => $a['week'] <=> $b['week']);
+        return $series;
+    }
 
-        $points = [];
-        $samples = 60;
-        $maxY = 1.0; // we'll normalize peak to 1.0 for display
-        for ($i = 0; $i <= $samples; $i++) {
-            $t = $i / $samples;                 // 0..1
-            $z = -3.0 + 6.0 * $t;              // -3..+3
-            $yNorm = exp(-0.5 * $z * $z);      // standard normal (omit constant), peak = 1
-            $x = $paddingX + $plotWidth * $t;
-            $y = $height - ($yNorm / $maxY) * ($height - 20.0); // top padding for aesthetics
-            $points[] = ($i === 0 ? 'M' : 'L').round($x, 2).','.round($y, 2);
+    public function getWeeklyProjectedPointsProperty(): array
+    {
+        $series = [];
+        foreach ($this->weeklyProjections as $wp) {
+            $stats = $wp->stats ?? [];
+            $val = null;
+            if (isset($stats['pts_ppr']) && is_numeric($stats['pts_ppr'])) {
+                $val = (float) $stats['pts_ppr'];
+            } elseif (isset($wp->pts_ppr) && is_numeric($wp->pts_ppr)) {
+                $val = (float) $wp->pts_ppr;
+            }
+            if ($val !== null) {
+                $series[] = ['week' => (int) $wp->week, 'value' => $val];
+            }
+        }
+        usort($series, fn($a, $b) => $a['week'] <=> $b['week']);
+        return $series;
+    }
+
+    public function getLineChartProperty(): array
+    {
+        $width = 640.0;  // viewBox width
+        $height = 180.0; // viewBox height
+        $padL = 30.0;    // left padding for labels if needed
+        $padR = 10.0;
+        $padT = 10.0;
+        $padB = 20.0;
+
+        $act = $this->weeklyActualPoints;
+        $prj = $this->weeklyProjectedPoints;
+
+        $all = array_merge($act, $prj);
+        if (empty($all)) {
+            return [
+                'width' => $width,
+                'height' => $height,
+                'actualPath' => '',
+                'projectedPath' => '',
+                'avgActualY' => null,
+                'avgProjY' => null,
+            ];
         }
 
-        return implode(' ', $points);
+        $minWeek = min(array_map(fn($p) => $p['week'], $all));
+        $maxWeek = max(array_map(fn($p) => $p['week'], $all));
+        if ($minWeek === $maxWeek) { $minWeek = max(1, $minWeek - 1); $maxWeek = $maxWeek + 1; }
+
+        $minVal = min(array_map(fn($p) => $p['value'], $all));
+        $maxVal = max(array_map(fn($p) => $p['value'], $all));
+        if ($minVal === $maxVal) { $minVal = max(0.0, $minVal - 1.0); $maxVal = $maxVal + 1.0; }
+
+        $plotW = $width - $padL - $padR;
+        $plotH = $height - $padT - $padB;
+
+        $scaleX = function (int $w) use ($minWeek, $maxWeek, $padL, $plotW) {
+            $t = ($w - $minWeek) / ($maxWeek - $minWeek);
+            return $padL + $t * $plotW;
+        };
+        $scaleY = function (float $v) use ($minVal, $maxVal, $padT, $plotH) {
+            $t = ($v - $minVal) / ($maxVal - $minVal);
+            return $padT + (1.0 - $t) * $plotH;
+        };
+
+        $buildPath = function (array $series) use ($scaleX, $scaleY) {
+            if (empty($series)) { return ''; }
+            $d = [];
+            foreach ($series as $i => $pt) {
+                $x = round($scaleX($pt['week']), 2);
+                $y = round($scaleY($pt['value']), 2);
+                $d[] = ($i === 0 ? 'M' : 'L').$x.','.$y;
+            }
+            return implode(' ', $d);
+        };
+
+        $avgActual = isset($this->summary2024['average_points_per_game']) ? (float)$this->summary2024['average_points_per_game'] : null;
+        $avgProj = isset($this->projections2025['average_points_per_game']) ? (float)$this->projections2025['average_points_per_game'] : null;
+
+        return [
+            'width' => $width,
+            'height' => $height,
+            'actualPath' => $buildPath($act),
+            'projectedPath' => $buildPath($prj),
+            'avgActualY' => $avgActual !== null ? round($scaleY($avgActual), 2) : null,
+            'avgProjY' => $avgProj !== null ? round($scaleY($avgProj), 2) : null,
+        ];
     }
 
     public function getWeeklyStatsProperty()
@@ -271,18 +348,27 @@ new class extends Component {
             <div class="flex flex-col gap-4">
                 <flux:heading size="md">Performance Snapshot</flux:heading>
 
-                <!-- Bell Curve (Normalized) with mean and ±1σ markers -->
+                <!-- Real data line chart: 2024 actuals (green) and 2025 projections (blue) -->
                 <div class="w-full">
-                    <svg viewBox="0 0 320 120" class="w-full h-[120px]">
-                        <path d="{{ $this->bellCurvePath }}" fill="none" stroke="#16a34a" stroke-width="2" />
-                        @php
-                            $meanX = 160; // center
-                            $sigmaPixels = (320 - 20) / 6; // plotWidth/6 for ±1σ from center
-                        @endphp
-                        <line x1="{{ $meanX }}" y1="10" x2="{{ $meanX }}" y2="110" stroke="#16a34a" stroke-width="1.5" />
-                        <line x1="{{ $meanX - $sigmaPixels }}" y1="20" x2="{{ $meanX - $sigmaPixels }}" y2="110" stroke="#16a34a" stroke-dasharray="4 4" stroke-width="1" />
-                        <line x1="{{ $meanX + $sigmaPixels }}" y1="20" x2="{{ $meanX + $sigmaPixels }}" y2="110" stroke="#16a34a" stroke-dasharray="4 4" stroke-width="1" />
+                    <svg viewBox="0 0 {{ $this->lineChart['width'] }} {{ $this->lineChart['height'] }}" class="w-full h-[180px]">
+                        @if($this->lineChart['actualPath'])
+                            <path d="{{ $this->lineChart['actualPath'] }}" fill="none" stroke="#16a34a" stroke-width="2" />
+                        @endif
+                        @if($this->lineChart['projectedPath'])
+                            <path d="{{ $this->lineChart['projectedPath'] }}" fill="none" stroke="#2563eb" stroke-width="2" />
+                        @endif
+
+                        @if(!is_null($this->lineChart['avgActualY']))
+                            <line x1="0" x2="{{ $this->lineChart['width'] }}" y1="{{ $this->lineChart['avgActualY'] }}" y2="{{ $this->lineChart['avgActualY'] }}" stroke="#16a34a" stroke-dasharray="4 4" stroke-width="1" />
+                        @endif
+                        @if(!is_null($this->lineChart['avgProjY']))
+                            <line x1="0" x2="{{ $this->lineChart['width'] }}" y1="{{ $this->lineChart['avgProjY'] }}" y2="{{ $this->lineChart['avgProjY'] }}" stroke="#2563eb" stroke-dasharray="4 4" stroke-width="1" />
+                        @endif
                     </svg>
+                    <div class="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                        <div class="flex items-center gap-2"><span class="inline-block w-3 h-0.5 bg-green-600"></span> 2024 Actual PPR</div>
+                        <div class="flex items-center gap-2"><span class="inline-block w-3 h-0.5 bg-blue-600"></span> 2025 Projected PPR</div>
+                    </div>
                 </div>
 
                 <!-- Key numbers -->
