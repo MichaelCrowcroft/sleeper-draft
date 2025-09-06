@@ -307,7 +307,7 @@ new class extends Component
 
         <!-- Filters -->
         <flux:callout>
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-6 place-items-center">
                 <!-- Search -->
                 <div>
                     <flux:input
@@ -416,22 +416,22 @@ new class extends Component
                     >
                         ADP
                     </flux:table.column>
-                    <flux:table.column>Avg PPG</flux:table.column>
-                    <flux:table.column>+1σ PPG</flux:table.column>
-                    <flux:table.column>-1σ PPG</flux:table.column>
-                    <flux:table.column>Proj PPG</flux:table.column>
+                    <flux:table.column>Avg PPG (2024)</flux:table.column>
+                    <flux:table.column>+1σ PPG (2024)</flux:table.column>
+                    <flux:table.column>-1σ PPG (2024)</flux:table.column>
+                    <flux:table.column>Proj PPG (2025)</flux:table.column>
                     <flux:table.column>Owner</flux:table.column>
                     <flux:table.column>Status</flux:table.column>
                     <flux:table.column>Actions</flux:table.column>
                 </flux:table.columns>
 
                 <flux:table.rows>
-                    @forelse ($this->players as $player)
+                    @forelse($this->players as $player)
                         <flux:table.row key="{{ $player->player_id }}" wire:key="player-{{ $player->player_id }}">
                             <flux:table.cell>
                                 <div class="flex flex-col">
                                     <span class="font-medium">{{ $player->first_name }} {{ $player->last_name }}</span>
-                                    @if ($player->height || $player->weight)
+                                    @if($player->height || $player->weight)
                                         <span class="text-xs text-muted-foreground">
                                             @if($player->height)
                                                 {{ $player->height }}
