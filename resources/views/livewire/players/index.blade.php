@@ -29,9 +29,12 @@ new class extends Component
         $this->selectedLeagueId = request('league_id', '');
         $this->faOnly = request()->boolean('fa_only');
 
-        // Auto-select first league if none selected
-        if (Auth::check() && !$this->selectedLeagueId && !empty($this->leagues)) {
-            $this->selectedLeagueId = $this->leagues[0]['id'] ?? '';
+        // Auto-select first league if none selected and user is authenticated
+        if (Auth::check() && !$this->selectedLeagueId) {
+            $leagues = $this->getLeaguesProperty();
+            if (!empty($leagues)) {
+                $this->selectedLeagueId = $leagues[0]['league_id'] ?? '';
+            }
         }
     }
 
@@ -169,14 +172,14 @@ new class extends Component
         }
 
         try {
-            // Use the MCP tool to fetch user leagues
-            $userIdentifier = Auth::user()->sleeper_username ?? Auth::user()->sleeper_user_id;
+            // Use the sleeper_user_id (required for API calls)
+            $userIdentifier = Auth::user()->sleeper_user_id;
             if (!$userIdentifier) {
                 return [];
             }
 
             // Use the Sleeper API to fetch user leagues
-            $response = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::user()->leagues($userIdentifier, 'nfl', date('Y'));
+            $response = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::user($userIdentifier)->leagues('nfl', date('Y'));
 
             if ($response->successful()) {
                 $leagues = $response->json();
@@ -198,22 +201,33 @@ new class extends Component
 
         try {
             // Get all rosters for the selected league
-            $response = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::league()->rosters($this->selectedLeagueId);
-            $rosters = $response->successful() ? $response->json() : [];
+            $rostersResponse = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::league($this->selectedLeagueId)->rosters();
+            $rosters = $rostersResponse->successful() ? $rostersResponse->json() : [];
+
+            // Get all users for the selected league to map owner IDs to names
+            $usersResponse = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::league($this->selectedLeagueId)->users();
+            $users = $usersResponse->successful() ? $usersResponse->json() : [];
+
+            // Create a mapping of user_id to display_name
+            $userMap = collect($users)->keyBy('user_id')->map(function ($user) {
+                return $user['display_name'] ?? $user['username'] ?? 'Unknown Owner';
+            });
 
             $rosteredPlayers = collect();
 
             if ($rosters) {
                 foreach ($rosters as $roster) {
                     $rosterId = $roster['roster_id'];
-                    $ownerName = $roster['owner_name'] ?? 'Unknown Owner';
+                    $ownerId = $roster['owner_id'] ?? null;
+                    $ownerName = $ownerId ? $userMap->get($ownerId, 'Unknown Owner') : 'Unknown Owner';
 
                     // Add all players from this roster
                     if (isset($roster['players']) && is_array($roster['players'])) {
                         foreach ($roster['players'] as $playerId) {
                             $rosteredPlayers->put($playerId, [
                                 'owner' => $ownerName,
-                                'roster_id' => $rosterId
+                                'roster_id' => $rosterId,
+                                'owner_id' => $ownerId
                             ]);
                         }
                     }
@@ -328,7 +342,7 @@ new class extends Component
                     <flux:select wire:model.live="selectedLeagueId">
                         <flux:select.option value="">No League Selected</flux:select.option>
                         @foreach ($this->leagues as $league)
-                            <flux:select.option value="{{ $league['id'] }}">{{ $league['name'] }}</flux:select.option>
+                            <flux:select.option value="{{ $league['league_id'] }}">{{ $league['name'] }}</flux:select.option>
                         @endforeach
                     </flux:select>
                 </div>
@@ -541,11 +555,6 @@ new class extends Component
                     @endforelse
                 </flux:table.rows>
             </flux:table>
-        </div>
-
-        <!-- Results Summary -->
-        <div class="text-sm text-muted-foreground">
-            Showing {{ $this->players->count() }} of {{ $this->players->total() }} players
         </div>
     </div>
 </section>
