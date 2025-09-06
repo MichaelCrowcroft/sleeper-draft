@@ -26,15 +26,17 @@ Route::middleware(['auth'])->group(function () {
 
     // Players section
     Volt::route('players', 'players.index')->name('players.index');
-    Volt::route('players/{playerId}', 'players.show')->name('players.show');
 
-    // Position-specific player pages
+    // Position-specific player pages (must come before parameterized routes)
     Volt::route('players/qb', 'players.qb')->name('players.qb');
     Volt::route('players/rb', 'players.rb')->name('players.rb');
     Volt::route('players/wr', 'players.wr')->name('players.wr');
     Volt::route('players/te', 'players.te')->name('players.te');
     Volt::route('players/def', 'players.def')->name('players.def');
     Volt::route('players/k', 'players.k')->name('players.k');
+
+    // Player show route (must come last due to parameter)
+    Volt::route('players/{playerId}', 'players.show')->name('players.show');
 
     // Analytics routes
     Volt::route('analytics', 'analytics.index')->name('analytics.index');
