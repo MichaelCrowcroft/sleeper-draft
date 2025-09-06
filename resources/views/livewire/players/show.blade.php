@@ -2,7 +2,6 @@
 
 use App\Models\Player;
 use Livewire\Volt\Component;
-use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 
 new class extends Component {
     public Player $player;
@@ -29,54 +28,6 @@ new class extends Component {
         return $this->player->getSeason2025ProjectionSummary();
     }
 
-    public function getResolvedWeekProperty()
-    {
-        try {
-            $resp = Sleeper::state()->current('nfl');
-            $state = $resp->json();
-            $week = isset($state['week']) ? (int) $state['week'] : null;
-            return ($week && $week >= 1 && $week <= 18) ? $week : null;
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }
-
-    public function getNextGameWeekProperty(): ?int
-    {
-        $currentWeek = $this->resolvedWeek;
-        if (!$currentWeek) {
-            return null;
-        }
-
-        // Prefer current week if available; otherwise the next available week
-        $weeks = $this->player->getProjectionsForSeason(2025)->pluck('week')->all();
-        if (in_array($currentWeek, $weeks, true)) {
-            return (int) $currentWeek;
-        }
-
-        $futureWeeks = array_values(array_filter($weeks, fn($w) => $w > $currentWeek));
-        return !empty($futureWeeks) ? (int) min($futureWeeks) : null;
-    }
-
-    public function getNextGameProjectionProperty(): ?float
-    {
-        $week = $this->nextGameWeek;
-        if (!$week) {
-            return null;
-        }
-        return $this->player->getProjectedPointsForWeek(2025, (int) $week);
-    }
-
-    public function getNextGameProjectionStatsProperty(): array
-    {
-        $week = $this->nextGameWeek;
-        if (!$week) {
-            return [];
-        }
-        $weekly = $this->player->getProjectionsForWeek(2025, (int) $week);
-        $stats = $weekly?->stats ?? [];
-        return is_array($stats) ? $stats : [];
-    }
 
     public function getProjectionDistributionProperty(): array
     {
@@ -128,72 +79,138 @@ new class extends Component {
         return $series;
     }
 
-    public function getLineChartProperty(): array
+    protected function computeBox(array $values): ?array
     {
-        $width = 640.0;  // viewBox width
-        $height = 180.0; // viewBox height
-        $padL = 30.0;    // left padding for labels if needed
-        $padR = 10.0;
+        if (empty($values)) {
+            return null;
+        }
+        sort($values);
+        $n = count($values);
+
+        $median = function(array $arr): float {
+            $m = count($arr);
+            $mid = intdiv($m, 2);
+            if ($m % 2 === 0) {
+                return ( ($arr[$mid - 1] + $arr[$mid]) / 2.0 );
+            }
+            return (float) $arr[$mid];
+        };
+
+        $med = $median($values);
+        if ($n <= 2) {
+            $q1 = $values[0];
+            $q3 = $values[$n - 1];
+        } else {
+            $mid = intdiv($n, 2);
+            $lower = array_slice($values, 0, $mid);
+            $upper = array_slice($values, ($n % 2 === 0) ? $mid : $mid + 1);
+            $q1 = $median($lower);
+            $q3 = $median($upper);
+        }
+
+        return [
+            'min' => (float) min($values),
+            'q1' => (float) $q1,
+            'median' => (float) $med,
+            'q3' => (float) $q3,
+            'max' => (float) max($values),
+        ];
+    }
+
+    public function getBoxPlotProperty(): array
+    {
+        $actVals = array_map(fn($p) => (float)$p['value'], $this->weeklyActualPoints);
+        $prjVals = array_map(fn($p) => (float)$p['value'], $this->weeklyProjectedPoints);
+
+        $actBox = $this->computeBox($actVals);
+        $prjBox = $this->computeBox($prjVals);
+
+        $width = 360.0;
+        $height = 180.0;
+        $padL = 30.0;
+        $padR = 20.0;
         $padT = 10.0;
-        $padB = 20.0;
+        $padB = 25.0;
+        $plotH = $height - $padT - $padB;
+        $plotW = $width - $padL - $padR;
 
-        $act = $this->weeklyActualPoints;
-        $prj = $this->weeklyProjectedPoints;
+        $boxes = array_values(array_filter([
+            ['label' => '2024', 'stats' => $actBox],
+            ['label' => '2025', 'stats' => $prjBox],
+        ], fn($it) => !is_null($it['stats'])));
 
-        $all = array_merge($act, $prj);
-        if (empty($all)) {
+        if (empty($boxes)) {
             return [
                 'width' => $width,
                 'height' => $height,
-                'actualPath' => '',
-                'projectedPath' => '',
-                'avgActualY' => null,
-                'avgProjY' => null,
+                'items' => [],
+                'ticks' => [],
             ];
         }
 
-        $minWeek = min(array_map(fn($p) => $p['week'], $all));
-        $maxWeek = max(array_map(fn($p) => $p['week'], $all));
-        if ($minWeek === $maxWeek) { $minWeek = max(1, $minWeek - 1); $maxWeek = $maxWeek + 1; }
-
-        $minVal = min(array_map(fn($p) => $p['value'], $all));
-        $maxVal = max(array_map(fn($p) => $p['value'], $all));
+        $minVal = min(array_map(fn($b) => $b['stats']['min'], $boxes));
+        $maxVal = max(array_map(fn($b) => $b['stats']['max'], $boxes));
         if ($minVal === $maxVal) { $minVal = max(0.0, $minVal - 1.0); $maxVal = $maxVal + 1.0; }
 
-        $plotW = $width - $padL - $padR;
-        $plotH = $height - $padT - $padB;
-
-        $scaleX = function (int $w) use ($minWeek, $maxWeek, $padL, $plotW) {
-            $t = ($w - $minWeek) / ($maxWeek - $minWeek);
-            return $padL + $t * $plotW;
-        };
         $scaleY = function (float $v) use ($minVal, $maxVal, $padT, $plotH) {
             $t = ($v - $minVal) / ($maxVal - $minVal);
             return $padT + (1.0 - $t) * $plotH;
         };
 
-        $buildPath = function (array $series) use ($scaleX, $scaleY) {
-            if (empty($series)) { return ''; }
-            $d = [];
-            foreach ($series as $i => $pt) {
-                $x = round($scaleX($pt['week']), 2);
-                $y = round($scaleY($pt['value']), 2);
-                $d[] = ($i === 0 ? 'M' : 'L').$x.','.$y;
-            }
-            return implode(' ', $d);
-        };
+        $n = count($boxes);
+        $slotW = $plotW / max(1, $n);
+        $boxW = min(36.0, $slotW * 0.4);
 
-        $avgActual = isset($this->summary2024['average_points_per_game']) ? (float)$this->summary2024['average_points_per_game'] : null;
-        $avgProj = isset($this->projections2025['average_points_per_game']) ? (float)$this->projections2025['average_points_per_game'] : null;
+        $items = [];
+        foreach ($boxes as $i => $b) {
+            $xCenter = $padL + ($i + 0.5) * $slotW;
+            $s = $b['stats'];
+            $yMin = round($scaleY($s['min']), 2);
+            $yQ1 = round($scaleY($s['q1']), 2);
+            $yMedian = round($scaleY($s['median']), 2);
+            $yQ3 = round($scaleY($s['q3']), 2);
+            $yMax = round($scaleY($s['max']), 2);
+
+            $items[] = [
+                'label' => $b['label'],
+                'x' => round($xCenter, 2),
+                'w' => round($boxW, 2),
+                'yMin' => $yMin,
+                'yQ1' => $yQ1,
+                'yMedian' => $yMedian,
+                'yQ3' => $yQ3,
+                'yMax' => $yMax,
+            ];
+        }
+
+        // simple 4 ticks (min, 1/3, 2/3, max)
+        $ticks = [];
+        for ($k = 0; $k <= 3; $k++) {
+            $val = $minVal + ($k / 3.0) * ($maxVal - $minVal);
+            $ticks[] = ['y' => round($scaleY($val), 2), 'label' => number_format($val, 1)];
+        }
 
         return [
             'width' => $width,
             'height' => $height,
-            'actualPath' => $buildPath($act),
-            'projectedPath' => $buildPath($prj),
-            'avgActualY' => $avgActual !== null ? round($scaleY($avgActual), 2) : null,
-            'avgProjY' => $avgProj !== null ? round($scaleY($avgProj), 2) : null,
+            'items' => $items,
+            'ticks' => $ticks,
         ];
+    }
+
+    public function getActualMedian2024Property(): ?float
+    {
+        $vals = array_map(fn($p) => (float)$p['value'], $this->weeklyActualPoints);
+        if (empty($vals)) {
+            return null;
+        }
+        sort($vals);
+        $n = count($vals);
+        $mid = intdiv($n, 2);
+        if ($n % 2 === 0) {
+            return ( ($vals[$mid - 1] + $vals[$mid]) / 2.0 );
+        }
+        return (float) $vals[$mid];
     }
 
     public function getWeeklyStatsProperty()
@@ -348,22 +365,28 @@ new class extends Component {
             <div class="flex flex-col gap-4">
                 <flux:heading size="md">Performance Snapshot</flux:heading>
 
-                <!-- Real data line chart: 2024 actuals (green) and 2025 projections (blue) -->
+                <!-- Box & Whisker chart for 2024 actuals (green) and 2025 projections (blue) -->
                 <div class="w-full">
-                    <svg viewBox="0 0 {{ $this->lineChart['width'] }} {{ $this->lineChart['height'] }}" class="w-full h-[180px]">
-                        @if($this->lineChart['actualPath'])
-                            <path d="{{ $this->lineChart['actualPath'] }}" fill="none" stroke="#16a34a" stroke-width="2" />
-                        @endif
-                        @if($this->lineChart['projectedPath'])
-                            <path d="{{ $this->lineChart['projectedPath'] }}" fill="none" stroke="#2563eb" stroke-width="2" />
-                        @endif
+                    <svg viewBox="0 0 {{ $this->boxPlot['width'] }} {{ $this->boxPlot['height'] }}" class="w-full h-[180px]">
+                        @foreach($this->boxPlot['ticks'] as $t)
+                            <line x1="0" x2="{{ $this->boxPlot['width'] }}" y1="{{ $t['y'] }}" y2="{{ $t['y'] }}" stroke="#e5e7eb" stroke-width="1" />
+                        @endforeach
 
-                        @if(!is_null($this->lineChart['avgActualY']))
-                            <line x1="0" x2="{{ $this->lineChart['width'] }}" y1="{{ $this->lineChart['avgActualY'] }}" y2="{{ $this->lineChart['avgActualY'] }}" stroke="#16a34a" stroke-dasharray="4 4" stroke-width="1" />
-                        @endif
-                        @if(!is_null($this->lineChart['avgProjY']))
-                            <line x1="0" x2="{{ $this->lineChart['width'] }}" y1="{{ $this->lineChart['avgProjY'] }}" y2="{{ $this->lineChart['avgProjY'] }}" stroke="#2563eb" stroke-dasharray="4 4" stroke-width="1" />
-                        @endif
+                        @foreach($this->boxPlot['items'] as $idx => $it)
+                            @php $color = $idx === 0 ? '#16a34a' : '#2563eb'; @endphp
+                            <!-- whiskers -->
+                            <line x1="{{ $it['x'] }}" x2="{{ $it['x'] }}" y1="{{ $it['yMin'] }}" y2="{{ $it['yQ1'] }}" stroke="{{ $color }}" stroke-width="2" />
+                            <line x1="{{ $it['x'] }}" x2="{{ $it['x'] }}" y1="{{ $it['yQ3'] }}" y2="{{ $it['yMax'] }}" stroke="{{ $color }}" stroke-width="2" />
+                            <!-- min/max caps -->
+                            <line x1="{{ $it['x'] - $it['w']/2 }}" x2="{{ $it['x'] + $it['w']/2 }}" y1="{{ $it['yMin'] }}" y2="{{ $it['yMin'] }}" stroke="{{ $color }}" stroke-width="2" />
+                            <line x1="{{ $it['x'] - $it['w']/2 }}" x2="{{ $it['x'] + $it['w']/2 }}" y1="{{ $it['yMax'] }}" y2="{{ $it['yMax'] }}" stroke="{{ $color }}" stroke-width="2" />
+                            <!-- box -->
+                            <rect x="{{ $it['x'] - $it['w']/2 }}" y="{{ $it['yQ3'] }}" width="{{ $it['w'] }}" height="{{ max(1, $it['yQ1'] - $it['yQ3']) }}" fill="{{ $idx === 0 ? '#16a34a' : '#2563eb' }}22" stroke="{{ $color }}" stroke-width="2" rx="3" />
+                            <!-- median -->
+                            <line x1="{{ $it['x'] - $it['w']/2 }}" x2="{{ $it['x'] + $it['w']/2 }}" y1="{{ $it['yMedian'] }}" y2="{{ $it['yMedian'] }}" stroke="{{ $color }}" stroke-width="2" />
+                            <!-- labels -->
+                            <text x="{{ $it['x'] }}" y="{{ $this->boxPlot['height'] - 6 }}" text-anchor="middle" font-size="10" fill="#6b7280">{{ $it['label'] }}</text>
+                        @endforeach
                     </svg>
                     <div class="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
                         <div class="flex items-center gap-2"><span class="inline-block w-3 h-0.5 bg-green-600"></span> 2024 Actual PPR</div>
@@ -386,8 +409,8 @@ new class extends Component {
                         <div class="text-2xl font-bold">{{ number_format($this->projections2025['min_points'] ?? 0, 1) }} / {{ number_format($this->projections2025['max_points'] ?? 0, 1) }}</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-sm text-muted-foreground">Next Game Proj</div>
-                        <div class="text-2xl font-bold text-blue-600">@if(!is_null($this->nextGameProjection)) {{ number_format($this->nextGameProjection, 1) }} @else — @endif</div>
+                        <div class="text-sm text-muted-foreground">Median PPG (2024)</div>
+                        <div class="text-2xl font-bold text-blue-600">@if(!is_null($this->actualMedian2024)) {{ number_format($this->actualMedian2024, 1) }} @else — @endif</div>
                     </div>
                 </div>
 
@@ -395,7 +418,6 @@ new class extends Component {
                 <div class="flex items-center gap-2">
                     <flux:button size="sm" variant="{{ $summaryTab === '2024' ? 'primary' : 'ghost' }}" wire:click="$set('summaryTab','2024')">2024 Results</flux:button>
                     <flux:button size="sm" variant="{{ $summaryTab === '2025' ? 'primary' : 'ghost' }}" wire:click="$set('summaryTab','2025')">2025 Projections</flux:button>
-                    <flux:button size="sm" variant="{{ $summaryTab === 'next' ? 'primary' : 'ghost' }}" wire:click="$set('summaryTab','next')">Next Game</flux:button>
                 </div>
             </div>
         </flux:callout>
@@ -533,29 +555,6 @@ new class extends Component {
                     </div>
                 </flux:callout>
             @endif
-        @elseif ($summaryTab === 'next')
-            <flux:callout>
-                <flux:heading size="md" class="mb-4">Next Game Projection</flux:heading>
-                <div class="grid gap-4 md:grid-cols-2">
-                    <div class="space-y-3">
-                        <div class="flex justify-between"><span>Week:</span><span class="font-semibold">{{ $this->nextGameWeek ?? '—' }}</span></div>
-                        <div class="flex justify-between"><span>Projected Points:</span><span class="font-semibold text-blue-600">@if(!is_null($this->nextGameProjection)) {{ number_format($this->nextGameProjection, 1) }} @else — @endif</span></div>
-                    </div>
-                    <div class="space-y-2">
-                        @php $ng = $this->nextGameProjectionStats; @endphp
-                        <div class="text-sm text-muted-foreground">Key Inputs</div>
-                        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                            <div>Pass Yds:</div><div class="font-medium">{{ $ng['pass_yd'] ?? '—' }}</div>
-                            <div>Pass TD:</div><div class="font-medium">{{ $ng['pass_td'] ?? '—' }}</div>
-                            <div>Rush Yds:</div><div class="font-medium">{{ $ng['rush_yd'] ?? '—' }}</div>
-                            <div>Rush TD:</div><div class="font-medium">{{ $ng['rush_td'] ?? '—' }}</div>
-                            <div>Rec:</div><div class="font-medium">{{ $ng['rec'] ?? '—' }}</div>
-                            <div>Rec Yds:</div><div class="font-medium">{{ $ng['rec_yd'] ?? '—' }}</div>
-                            <div>Rec TD:</div><div class="font-medium">{{ $ng['rec_td'] ?? '—' }}</div>
-                        </div>
-                    </div>
-                </div>
-            </flux:callout>
         @endif
 
         <!-- Position-Specific Stats -->
