@@ -11,13 +11,12 @@ new class extends Component
 
     public function mount(): void
     {
-        $auth = Auth::user();
-        $sleeperUserId = $auth->sleeper_user_id ?? null;
-        $state = app(DetermineCurrentWeek::class)->execute('nfl');
-        $season = $state['season'];
+        $user = Auth::user();
+        $week = app(DetermineCurrentWeek::class)->execute('nfl');
+        $season = $week['season'];
 
-        if ($sleeperUserId) {
-            $this->leagues = app(FetchUserLeagues::class)->execute((string) $sleeperUserId, 'nfl', $season);
+        if($user->sleeper_user_id) {
+            $this->leagues = app(FetchUserLeagues::class)->execute((string) $user->sleeper_user_id, 'nfl', 2025);
         } else {
             $this->leagues = [];
         }
