@@ -369,64 +369,62 @@ new class extends Component
 
         <!-- Players Table -->
         <div class="overflow-x-auto">
-            <flux:table :paginate="$this->players" class="min-w-full">
-                <flux:table.columns>
-                    <flux:table.column
-                        sortable
-                        :sorted="$sortBy === 'name'"
-                        :direction="$sortDirection"
-                        wire:click="sort('name')"
-                        class="cursor-pointer"
-                    >
-                        Player
-                    </flux:table.column>
-                    <flux:table.column
-                        sortable
-                        :sorted="$sortBy === 'position'"
-                        :direction="$sortDirection"
-                        wire:click="sort('position')"
-                        class="cursor-pointer"
-                    >
-                        Position
-                    </flux:table.column>
-                    <flux:table.column
-                        sortable
-                        :sorted="$sortBy === 'team'"
-                        :direction="$sortDirection"
-                        wire:click="sort('team')"
-                        class="cursor-pointer"
-                    >
-                        Team
-                    </flux:table.column>
-                    <flux:table.column
-                        sortable
-                        :sorted="$sortBy === 'age'"
-                        :direction="$sortDirection"
-                        wire:click="sort('age')"
-                        class="cursor-pointer"
-                    >
-                        Age
-                    </flux:table.column>
-                    <flux:table.column
-                        sortable
-                        :sorted="$sortBy === 'adp'"
-                        :direction="$sortDirection"
-                        wire:click="sort('adp')"
-                        class="cursor-pointer"
-                    >
-                        ADP
-                    </flux:table.column>
-                    <flux:table.column>2024 PPG</flux:table.column>
-                    <flux:table.column>2024 Total</flux:table.column>
-                    <flux:table.column>2025 Proj PPG</flux:table.column>
-                    <flux:table.column>2025 Total</flux:table.column>
-                    @if($this->resolvedWeek && $this->resolvedWeek <= 18)
-                        <flux:table.column>2024 Last 4</flux:table.column>
-                    @endif
-                    <flux:table.column>Owner</flux:table.column>
-                    <flux:table.column>Status</flux:table.column>
-                    <flux:table.column>Actions</flux:table.column>
-                </flux:table.columns>
+            <div class="min-w-max">
+                <flux:table :paginate="$this->players" class="w-full">
+                    <flux:table.columns>
+                        <flux:table.column
+                            sortable
+                            :sorted="$sortBy === 'name'"
+                            :direction="$sortDirection"
+                            wire:click="sort('name')"
+                            class="cursor-pointer min-w-[140px]"
+                        >
+                            Player
+                        </flux:table.column>
+                        <flux:table.column
+                            sortable
+                            :sorted="$sortBy === 'position'"
+                            :direction="$sortDirection"
+                            wire:click="sort('position')"
+                            class="cursor-pointer min-w-[80px]"
+                        >
+                            Position
+                        </flux:table.column>
+                        <flux:table.column
+                            sortable
+                            :sorted="$sortBy === 'team'"
+                            :direction="$sortDirection"
+                            wire:click="sort('team')"
+                            class="cursor-pointer min-w-[80px]"
+                        >
+                            Team
+                        </flux:table.column>
+                        <flux:table.column
+                            sortable
+                            :sorted="$sortBy === 'age'"
+                            :direction="$sortDirection"
+                            wire:click="sort('age')"
+                            class="cursor-pointer min-w-[60px]"
+                        >
+                            Age
+                        </flux:table.column>
+                        <flux:table.column
+                            sortable
+                            :sorted="$sortBy === 'adp'"
+                            :direction="$sortDirection"
+                            wire:click="sort('adp')"
+                            class="cursor-pointer min-w-[80px]"
+                        >
+                            ADP
+                        </flux:table.column>
+                        <flux:table.column class="min-w-[100px]">2024 Avg PPG</flux:table.column>
+                        <flux:table.column class="min-w-[100px]">2024 +1 SD PPG</flux:table.column>
+                        <flux:table.column class="min-w-[100px]">2024 -1 SD PPG</flux:table.column>
+                        <flux:table.column class="min-w-[110px]">2025 Proj PPG</flux:table.column>
+                        <flux:table.column class="min-w-[100px]">Owner</flux:table.column>
+                        <flux:table.column class="min-w-[80px]">Status</flux:table.column>
+                        <flux:table.column class="min-w-[100px]">Actions</flux:table.column>
+                    </flux:table.columns>
 
                 <flux:table.rows>
                     @forelse ($this->players as $player)
@@ -485,8 +483,20 @@ new class extends Component
                             </flux:table.cell>
 
                             <flux:table.cell>
-                                @if (isset($player->season_2024_summary) && isset($player->season_2024_summary['total_points']) && $player->season_2024_summary['total_points'] > 0)
-                                    {{ number_format($player->season_2024_summary['total_points'], 1) }}
+                                @if (isset($player->season_2024_summary) && isset($player->season_2024_summary['stddev_above']) && $player->season_2024_summary['stddev_above'] > 0)
+                                    <span class="font-medium text-green-700">{{ number_format($player->season_2024_summary['stddev_above'], 1) }}</span>
+                                @else
+                                    <span class="text-muted-foreground">-</span>
+                                @endif
+                            </flux:table.cell>
+
+                            <flux:table.cell>
+                                @if (isset($player->season_2024_summary) && isset($player->season_2024_summary['stddev_below']))
+                                    @if($player->season_2024_summary['stddev_below'] > 0)
+                                        <span class="font-medium text-green-500">{{ number_format($player->season_2024_summary['stddev_below'], 1) }}</span>
+                                    @else
+                                        <span class="font-medium text-red-500">{{ number_format($player->season_2024_summary['stddev_below'], 1) }}</span>
+                                    @endif
                                 @else
                                     <span class="text-muted-foreground">-</span>
                                 @endif
@@ -499,24 +509,6 @@ new class extends Component
                                     <span class="text-muted-foreground">-</span>
                                 @endif
                             </flux:table.cell>
-
-                            <flux:table.cell>
-                                @if (isset($player->season_2025_projections) && isset($player->season_2025_projections['total_points']) && $player->season_2025_projections['total_points'] > 0)
-                                    {{ number_format($player->season_2025_projections['total_points'], 1) }}
-                                @else
-                                    <span class="text-muted-foreground">-</span>
-                                @endif
-                            </flux:table.cell>
-
-                            @if($this->resolvedWeek && $this->resolvedWeek <= 18)
-                                <flux:table.cell>
-                                    @if (isset($player->season_2024_summary) && isset($player->season_2024_summary['last_4_games_avg']) && $player->season_2024_summary['last_4_games_avg'] > 0)
-                                        <span class="font-medium">{{ number_format($player->season_2024_summary['last_4_games_avg'], 1) }}</span>
-                                    @else
-                                        <span class="text-muted-foreground">-</span>
-                                    @endif
-                                </flux:table.cell>
-                            @endif
 
                             <flux:table.cell>
                                 @if ($player->is_rostered)
@@ -546,7 +538,7 @@ new class extends Component
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell colspan="{{ ($this->resolvedWeek && $this->resolvedWeek <= 18) ? 13 : 12 }}" align="center">
+                            <flux:table.cell colspan="12" align="center">
                                 <div class="py-8 text-muted-foreground">
                                     No players found matching your filters.
                                 </div>
@@ -555,6 +547,7 @@ new class extends Component
                     @endforelse
                 </flux:table.rows>
             </flux:table>
+            </div>
         </div>
     </div>
 </section>
