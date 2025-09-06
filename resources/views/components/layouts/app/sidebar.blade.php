@@ -14,7 +14,20 @@
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
-                    <flux:navlist.item icon="user-group" :href="route('players.index')" :current="request()->routeIs('players.*')" wire:navigate>{{ __('Players') }}</flux:navlist.item>
+
+                    <flux:navlist.submenu icon="user-group" :open="request()->routeIs('players.*')">
+                        <flux:navlist.submenu.trigger>{{ __('Players') }}</flux:navlist.submenu.trigger>
+
+                        <flux:navlist.submenu.content>
+                            <flux:navlist.item :href="route('players.index')" :current="request()->routeIs('players.index')" wire:navigate>{{ __('All Players') }}</flux:navlist.item>
+                            <flux:navlist.item :href="route('players.qb')" :current="request()->routeIs('players.qb')" wire:navigate>{{ __('Quarterbacks') }}</flux:navlist.item>
+                            <flux:navlist.item :href="route('players.rb')" :current="request()->routeIs('players.rb')" wire:navigate>{{ __('Running Backs') }}</flux:navlist.item>
+                            <flux:navlist.item :href="route('players.wr')" :current="request()->routeIs('players.wr')" wire:navigate>{{ __('Wide Receivers') }}</flux:navlist.item>
+                            <flux:navlist.item :href="route('players.te')" :current="request()->routeIs('players.te')" wire:navigate>{{ __('Tight Ends') }}</flux:navlist.item>
+                            <flux:navlist.item :href="route('players.def')" :current="request()->routeIs('players.def')" wire:navigate>{{ __('Defenses') }}</flux:navlist.item>
+                            <flux:navlist.item :href="route('players.k')" :current="request()->routeIs('players.k')" wire:navigate>{{ __('Kickers') }}</flux:navlist.item>
+                        </flux:navlist.submenu.content>
+                    </flux:navlist.submenu>
                 </flux:navlist.group>
             </flux:navlist>
 
