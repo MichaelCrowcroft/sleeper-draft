@@ -65,10 +65,6 @@
     </div>
 @else
     <div class="w-full">
-        <div class="text-center mb-3">
-            <div class="text-sm font-medium text-gray-700">{{ $title }}</div>
-            <div class="text-xs text-gray-500 mt-1">{{ $subtitle }}</div>
-        </div>
         <div class="text-center py-8 text-muted-foreground text-sm">
             No data available for visualization.
         </div>
