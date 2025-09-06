@@ -12,8 +12,6 @@ new class extends Component
     public function mount(): void
     {
         $user = Auth::user();
-        $week = app(DetermineCurrentWeek::class)->execute('nfl');
-        $season = $week['season'];
 
         if($user->sleeper_user_id) {
             $this->leagues = app(FetchUserLeagues::class)->execute((string) $user->sleeper_user_id, 'nfl', 2025);
