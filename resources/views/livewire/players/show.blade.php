@@ -127,10 +127,10 @@ new class extends Component {
 
         $width = 360.0;
         $height = 180.0;
-        $padL = 30.0;
-        $padR = 20.0;
-        $padT = 10.0;
-        $padB = 25.0;
+        $padL = 34.0;
+        $padR = 16.0;
+        $padT = 8.0;
+        $padB = 26.0;
         $plotH = $height - $padT - $padB;
         $plotW = $width - $padL - $padR;
 
@@ -180,6 +180,12 @@ new class extends Component {
                 'yMedian' => $yMedian,
                 'yQ3' => $yQ3,
                 'yMax' => $yMax,
+                // raw values for labels/tooltips
+                'vMin' => $s['min'],
+                'vQ1' => $s['q1'],
+                'vMedian' => $s['median'],
+                'vQ3' => $s['q3'],
+                'vMax' => $s['max'],
             ];
         }
 
@@ -195,6 +201,10 @@ new class extends Component {
             'height' => $height,
             'items' => $items,
             'ticks' => $ticks,
+            'padL' => $padL,
+            'padT' => $padT,
+            'plotH' => $plotH,
+            'slotW' => $slotW,
         ];
     }
 
@@ -367,23 +377,49 @@ new class extends Component {
 
                 <!-- Box & Whisker chart for 2024 actuals (green) and 2025 projections (blue) -->
                 <div class="w-full">
-                    <svg viewBox="0 0 {{ $this->boxPlot['width'] }} {{ $this->boxPlot['height'] }}" class="w-full h-[180px]">
+                    <svg viewBox="0 0 {{ $this->boxPlot['width'] }} {{ $this->boxPlot['height'] }}" class="w-full h-[200px]">
+                        <!-- background bands by section -->
+                        @php $nItems = count($this->boxPlot['items']); @endphp
+                        @for ($i = 0; $i < $nItems; $i++)
+                            @php
+                                $xCenter = $this->boxPlot['padL'] + ($i + 0.5) * $this->boxPlot['slotW'];
+                                $x0 = $xCenter - ($this->boxPlot['slotW'] / 2);
+                                $x1 = $xCenter + ($this->boxPlot['slotW'] / 2);
+                                $bandColor = $i % 2 === 0 ? '#f8fafc' : '#f1f5f9';
+                            @endphp
+                            <rect x="{{ $x0 }}" y="{{ $this->boxPlot['padT'] }}" width="{{ $this->boxPlot['slotW'] }}" height="{{ $this->boxPlot['plotH'] }}" fill="{{ $bandColor }}" />
+                        @endfor
+
+                        <!-- grid lines and Y-axis labels -->
                         @foreach($this->boxPlot['ticks'] as $t)
                             <line x1="0" x2="{{ $this->boxPlot['width'] }}" y1="{{ $t['y'] }}" y2="{{ $t['y'] }}" stroke="#e5e7eb" stroke-width="1" />
+                            <text x="4" y="{{ $t['y'] - 2 }}" font-size="10" fill="#6b7280">{{ $t['label'] }}</text>
                         @endforeach
 
                         @foreach($this->boxPlot['items'] as $idx => $it)
                             @php $color = $idx === 0 ? '#16a34a' : '#2563eb'; @endphp
                             <!-- whiskers -->
-                            <line x1="{{ $it['x'] }}" x2="{{ $it['x'] }}" y1="{{ $it['yMin'] }}" y2="{{ $it['yQ1'] }}" stroke="{{ $color }}" stroke-width="2" />
-                            <line x1="{{ $it['x'] }}" x2="{{ $it['x'] }}" y1="{{ $it['yQ3'] }}" y2="{{ $it['yMax'] }}" stroke="{{ $color }}" stroke-width="2" />
+                            <line x1="{{ $it['x'] }}" x2="{{ $it['x'] }}" y1="{{ $it['yMin'] }}" y2="{{ $it['yQ1'] }}" stroke="{{ $color }}" stroke-width="2">
+                                <title>{{ $it['label'] }} Min: {{ number_format($it['vMin'], 1) }}</title>
+                            </line>
+                            <line x1="{{ $it['x'] }}" x2="{{ $it['x'] }}" y1="{{ $it['yQ3'] }}" y2="{{ $it['yMax'] }}" stroke="{{ $color }}" stroke-width="2">
+                                <title>{{ $it['label'] }} Max: {{ number_format($it['vMax'], 1) }}</title>
+                            </line>
                             <!-- min/max caps -->
                             <line x1="{{ $it['x'] - $it['w']/2 }}" x2="{{ $it['x'] + $it['w']/2 }}" y1="{{ $it['yMin'] }}" y2="{{ $it['yMin'] }}" stroke="{{ $color }}" stroke-width="2" />
                             <line x1="{{ $it['x'] - $it['w']/2 }}" x2="{{ $it['x'] + $it['w']/2 }}" y1="{{ $it['yMax'] }}" y2="{{ $it['yMax'] }}" stroke="{{ $color }}" stroke-width="2" />
                             <!-- box -->
-                            <rect x="{{ $it['x'] - $it['w']/2 }}" y="{{ $it['yQ3'] }}" width="{{ $it['w'] }}" height="{{ max(1, $it['yQ1'] - $it['yQ3']) }}" fill="{{ $idx === 0 ? '#16a34a' : '#2563eb' }}22" stroke="{{ $color }}" stroke-width="2" rx="3" />
+                            <rect x="{{ $it['x'] - $it['w']/2 }}" y="{{ $it['yQ3'] }}" width="{{ $it['w'] }}" height="{{ max(1, $it['yQ1'] - $it['yQ3']) }}" fill="{{ $idx === 0 ? '#16a34a' : '#2563eb' }}22" stroke="{{ $color }}" stroke-width="2" rx="3">
+                                <title>{{ $it['label'] }} Q1–Q3: {{ number_format($it['vQ1'], 1) }} – {{ number_format($it['vQ3'], 1) }}</title>
+                            </rect>
                             <!-- median -->
-                            <line x1="{{ $it['x'] - $it['w']/2 }}" x2="{{ $it['x'] + $it['w']/2 }}" y1="{{ $it['yMedian'] }}" y2="{{ $it['yMedian'] }}" stroke="{{ $color }}" stroke-width="2" />
+                            <line x1="{{ $it['x'] - $it['w']/2 }}" x2="{{ $it['x'] + $it['w']/2 }}" y1="{{ $it['yMedian'] }}" y2="{{ $it['yMedian'] }}" stroke="{{ $color }}" stroke-width="2">
+                                <title>{{ $it['label'] }} Median: {{ number_format($it['vMedian'], 1) }}</title>
+                            </line>
+                            <!-- numeric labels for min/median/max -->
+                            <text x="{{ $it['x'] + $it['w']/2 + 6 }}" y="{{ $it['yMin'] + 3 }}" font-size="9" fill="#6b7280">{{ number_format($it['vMin'], 1) }}</text>
+                            <text x="{{ $it['x'] + $it['w']/2 + 6 }}" y="{{ $it['yMedian'] + 3 }}" font-size="9" fill="#6b7280">{{ number_format($it['vMedian'], 1) }}</text>
+                            <text x="{{ $it['x'] + $it['w']/2 + 6 }}" y="{{ $it['yMax'] + 3 }}" font-size="9" fill="#6b7280">{{ number_format($it['vMax'], 1) }}</text>
                             <!-- labels -->
                             <text x="{{ $it['x'] }}" y="{{ $this->boxPlot['height'] - 6 }}" text-anchor="middle" font-size="10" fill="#6b7280">{{ $it['label'] }}</text>
                         @endforeach
@@ -428,28 +464,28 @@ new class extends Component {
                 <flux:callout>
                     <flux:heading size="md" class="mb-4">2024 Season Stats</flux:heading>
                     <div class="grid gap-4 md:grid-cols-2">
-                        <div class="space-y-3">
-                            @if (isset($this->summary2024['total_points']))
+                    <div class="space-y-3">
+                        @if (isset($this->summary2024['total_points']))
                                 <div class="flex justify-between"><span>Total Points:</span><span class="font-semibold">{{ number_format($this->summary2024['total_points'], 1) }}</span></div>
-                            @endif
+                        @endif
                             @if (isset($this->summary2024['average_points_per_game']) && ($this->summary2024['games_active'] ?? 0) > 0)
                                 <div class="flex justify-between"><span>Avg PPG:</span><span class="font-semibold">{{ number_format($this->summary2024['average_points_per_game'], 1) }}</span></div>
-                            @endif
+                        @endif
                             @if (isset($this->summary2024['min_points']))
                                 <div class="flex justify-between"><span>Worst Game:</span><span class="font-semibold">{{ number_format($this->summary2024['min_points'], 1) }}</span></div>
-                            @endif
-                            @if (isset($this->summary2024['max_points']))
+                        @endif
+                        @if (isset($this->summary2024['max_points']))
                                 <div class="flex justify-between"><span>Best Game:</span><span class="font-semibold">{{ number_format($this->summary2024['max_points'], 1) }}</span></div>
                             @endif
-                        </div>
+                            </div>
                         <div class="space-y-3">
                             @if (isset($this->summary2024['games_active']))
                                 <div class="flex justify-between"><span>Games Played:</span><span class="font-semibold">{{ $this->summary2024['games_active'] }}</span></div>
                             @endif
                             @if (isset($this->summary2024['stddev_below']) && isset($this->summary2024['stddev_above']))
                                 <div class="flex justify-between"><span>±1σ PPG:</span><span class="font-semibold">{{ number_format($this->summary2024['stddev_below'], 1) }} – {{ number_format($this->summary2024['stddev_above'], 1) }}</span></div>
-                            @endif
-                        </div>
+                        @endif
+                    </div>
                     </div>
                 </flux:callout>
 
@@ -507,8 +543,8 @@ new class extends Component {
                                 </tbody>
                             </table>
                         </div>
-                    </flux:callout>
-                @endif
+                </flux:callout>
+            @endif
             @else
                 <flux:callout>
                     <flux:heading size="md" class="mb-4">2024 Stats</flux:heading>
@@ -516,19 +552,19 @@ new class extends Component {
                 </flux:callout>
             @endif
         @elseif ($summaryTab === '2025')
-            <flux:callout>
-                <flux:heading size="md" class="mb-4">2025 Projections</flux:heading>
+                <flux:callout>
+                    <flux:heading size="md" class="mb-4">2025 Projections</flux:heading>
                 <div class="grid gap-4 md:grid-cols-2">
                     <div class="space-y-3">
                         <div class="flex justify-between"><span>Total Projected Points:</span><span class="font-semibold">{{ number_format($this->projections2025['total_points'] ?? 0, 1) }}</span></div>
                         <div class="flex justify-between"><span>Projected Games:</span><span class="font-semibold">{{ $this->projections2025['games'] ?? 0 }}</span></div>
                         <div class="flex justify-between"><span>Projected PPG:</span><span class="font-semibold">{{ number_format($this->projections2025['average_points_per_game'] ?? 0, 1) }}</span></div>
-                    </div>
+                            </div>
                     <div class="space-y-3">
                         <div class="flex justify-between"><span>±1σ PPG:</span><span class="font-semibold">{{ number_format($this->projectionDistribution['lower'] ?? 0, 1) }} – {{ number_format($this->projectionDistribution['upper'] ?? 0, 1) }}</span></div>
                         <div class="flex justify-between"><span>Season Min/Max (wk):</span><span class="font-semibold">{{ number_format($this->projections2025['min_points'] ?? 0, 1) }} / {{ number_format($this->projections2025['max_points'] ?? 0, 1) }}</span></div>
-                    </div>
-                </div>
+                            </div>
+                            </div>
             </flux:callout>
 
             @if ($this->weeklyProjections->count() > 0)
