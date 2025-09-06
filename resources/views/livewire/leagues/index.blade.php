@@ -2,12 +2,14 @@
 
 use App\Actions\Matchups\DetermineCurrentWeek;
 use App\Actions\Sleeper\FetchUserLeagues;
+use App\Models\User;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Auth;
 
 new class extends Component
 {
     public array $leagues = [];
+    public ?User $user = null;
 
     public function mount(): void
     {
