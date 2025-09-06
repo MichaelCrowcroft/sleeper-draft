@@ -223,6 +223,66 @@ new class extends Component {
         return (float) $vals[$mid];
     }
 
+    public function getBox2024HorizontalProperty(): array
+    {
+        $actVals = array_map(fn($p) => (float)$p['value'], $this->weeklyActualPoints);
+        $stats = $this->computeBox($actVals);
+
+        $width = 360.0;
+        $height = 100.0;
+        $padL = 12.0;
+        $padR = 12.0;
+        $padT = 16.0;
+        $padB = 20.0;
+        $plotW = $width - $padL - $padR;
+        $yMid = $padT + ($height - $padT - $padB) / 2.0;
+        $boxH = 18.0;
+
+        if (!$stats) {
+            return [
+                'width' => $width,
+                'height' => $height,
+                'exists' => false,
+            ];
+        }
+
+        $minVal = $stats['min'];
+        $maxVal = $stats['max'];
+        if ($minVal === $maxVal) {
+            $minVal = max(0.0, $minVal - 1.0);
+            $maxVal = $maxVal + 1.0;
+        }
+
+        $scaleX = function (float $v) use ($minVal, $maxVal, $padL, $plotW) {
+            $t = ($v - $minVal) / ($maxVal - $minVal);
+            return $padL + $t * $plotW;
+        };
+
+        $xMin = round($scaleX($stats['min']), 2);
+        $xQ1 = round($scaleX($stats['q1']), 2);
+        $xMedian = round($scaleX($stats['median']), 2);
+        $xQ3 = round($scaleX($stats['q3']), 2);
+        $xMax = round($scaleX($stats['max']), 2);
+
+        return [
+            'width' => $width,
+            'height' => $height,
+            'exists' => true,
+            'yMid' => round($yMid, 2),
+            'boxH' => $boxH,
+            'xMin' => $xMin,
+            'xQ1' => $xQ1,
+            'xMedian' => $xMedian,
+            'xQ3' => $xQ3,
+            'xMax' => $xMax,
+            'vMin' => $stats['min'],
+            'vQ1' => $stats['q1'],
+            'vMedian' => $stats['median'],
+            'vQ3' => $stats['q3'],
+            'vMax' => $stats['max'],
+        ];
+    }
+
     public function getWeeklyStatsProperty()
     {
         return $this->player->getStatsForSeason(2024)->get();
@@ -375,59 +435,40 @@ new class extends Component {
             <div class="flex flex-col gap-4">
                 <flux:heading size="md">Performance Snapshot</flux:heading>
 
-                <!-- Box & Whisker chart for 2024 actuals (green) and 2025 projections (blue) -->
+                <!-- 2024 Horizontal Box & Whisker (no axes, labeled) -->
                 <div class="w-full">
-                    <svg viewBox="0 0 {{ $this->boxPlot['width'] }} {{ $this->boxPlot['height'] }}" class="w-full h-[200px]">
-                        <!-- background bands by section -->
-                        @php $nItems = count($this->boxPlot['items']); @endphp
-                        @for ($i = 0; $i < $nItems; $i++)
-                            @php
-                                $xCenter = $this->boxPlot['padL'] + ($i + 0.5) * $this->boxPlot['slotW'];
-                                $x0 = $xCenter - ($this->boxPlot['slotW'] / 2);
-                                $x1 = $xCenter + ($this->boxPlot['slotW'] / 2);
-                                $bandColor = $i % 2 === 0 ? '#f8fafc' : '#f1f5f9';
-                            @endphp
-                            <rect x="{{ $x0 }}" y="{{ $this->boxPlot['padT'] }}" width="{{ $this->boxPlot['slotW'] }}" height="{{ $this->boxPlot['plotH'] }}" fill="{{ $bandColor }}" />
-                        @endfor
-
-                        <!-- grid lines and Y-axis labels -->
-                        @foreach($this->boxPlot['ticks'] as $t)
-                            <line x1="0" x2="{{ $this->boxPlot['width'] }}" y1="{{ $t['y'] }}" y2="{{ $t['y'] }}" stroke="#e5e7eb" stroke-width="1" />
-                            <text x="4" y="{{ $t['y'] - 2 }}" font-size="10" fill="#6b7280">{{ $t['label'] }}</text>
-                        @endforeach
-
-                        @foreach($this->boxPlot['items'] as $idx => $it)
-                            @php $color = $idx === 0 ? '#16a34a' : '#2563eb'; @endphp
+                    <svg viewBox="0 0 {{ $this->box2024Horizontal['width'] }} {{ $this->box2024Horizontal['height'] }}" class="w-full h-[120px]">
+                        @if($this->box2024Horizontal['exists'])
                             <!-- whiskers -->
-                            <line x1="{{ $it['x'] }}" x2="{{ $it['x'] }}" y1="{{ $it['yMin'] }}" y2="{{ $it['yQ1'] }}" stroke="{{ $color }}" stroke-width="2">
-                                <title>{{ $it['label'] }} Min: {{ number_format($it['vMin'], 1) }}</title>
+                            <line x1="{{ $this->box2024Horizontal['xMin'] }}" x2="{{ $this->box2024Horizontal['xQ1'] }}" y1="{{ $this->box2024Horizontal['yMid'] }}" y2="{{ $this->box2024Horizontal['yMid'] }}" stroke="#16a34a" stroke-width="2">
+                                <title>Min: {{ number_format($this->box2024Horizontal['vMin'], 1) }}</title>
                             </line>
-                            <line x1="{{ $it['x'] }}" x2="{{ $it['x'] }}" y1="{{ $it['yQ3'] }}" y2="{{ $it['yMax'] }}" stroke="{{ $color }}" stroke-width="2">
-                                <title>{{ $it['label'] }} Max: {{ number_format($it['vMax'], 1) }}</title>
+                            <line x1="{{ $this->box2024Horizontal['xQ3'] }}" x2="{{ $this->box2024Horizontal['xMax'] }}" y1="{{ $this->box2024Horizontal['yMid'] }}" y2="{{ $this->box2024Horizontal['yMid'] }}" stroke="#16a34a" stroke-width="2">
+                                <title>Max: {{ number_format($this->box2024Horizontal['vMax'], 1) }}</title>
                             </line>
                             <!-- min/max caps -->
-                            <line x1="{{ $it['x'] - $it['w']/2 }}" x2="{{ $it['x'] + $it['w']/2 }}" y1="{{ $it['yMin'] }}" y2="{{ $it['yMin'] }}" stroke="{{ $color }}" stroke-width="2" />
-                            <line x1="{{ $it['x'] - $it['w']/2 }}" x2="{{ $it['x'] + $it['w']/2 }}" y1="{{ $it['yMax'] }}" y2="{{ $it['yMax'] }}" stroke="{{ $color }}" stroke-width="2" />
-                            <!-- box -->
-                            <rect x="{{ $it['x'] - $it['w']/2 }}" y="{{ $it['yQ3'] }}" width="{{ $it['w'] }}" height="{{ max(1, $it['yQ1'] - $it['yQ3']) }}" fill="{{ $idx === 0 ? '#16a34a' : '#2563eb' }}22" stroke="{{ $color }}" stroke-width="2" rx="3">
-                                <title>{{ $it['label'] }} Q1–Q3: {{ number_format($it['vQ1'], 1) }} – {{ number_format($it['vQ3'], 1) }}</title>
+                            <line x1="{{ $this->box2024Horizontal['xMin'] }}" x2="{{ $this->box2024Horizontal['xMin'] }}" y1="{{ $this->box2024Horizontal['yMid'] - 6 }}" y2="{{ $this->box2024Horizontal['yMid'] + 6 }}" stroke="#16a34a" stroke-width="2" />
+                            <line x1="{{ $this->box2024Horizontal['xMax'] }}" x2="{{ $this->box2024Horizontal['xMax'] }}" y1="{{ $this->box2024Horizontal['yMid'] - 6 }}" y2="{{ $this->box2024Horizontal['yMid'] + 6 }}" stroke="#16a34a" stroke-width="2" />
+
+                            <!-- box (Q1–Q3) -->
+                            <rect x="{{ $this->box2024Horizontal['xQ1'] }}" y="{{ $this->box2024Horizontal['yMid'] - ($this->box2024Horizontal['boxH']/2) }}" width="{{ max(1, $this->box2024Horizontal['xQ3'] - $this->box2024Horizontal['xQ1']) }}" height="{{ $this->box2024Horizontal['boxH'] }}" fill="#16a34a22" stroke="#16a34a" stroke-width="2" rx="3">
+                                <title>Q1–Q3: {{ number_format($this->box2024Horizontal['vQ1'], 1) }} – {{ number_format($this->box2024Horizontal['vQ3'], 1) }}</title>
                             </rect>
+
                             <!-- median -->
-                            <line x1="{{ $it['x'] - $it['w']/2 }}" x2="{{ $it['x'] + $it['w']/2 }}" y1="{{ $it['yMedian'] }}" y2="{{ $it['yMedian'] }}" stroke="{{ $color }}" stroke-width="2">
-                                <title>{{ $it['label'] }} Median: {{ number_format($it['vMedian'], 1) }}</title>
+                            <line x1="{{ $this->box2024Horizontal['xMedian'] }}" x2="{{ $this->box2024Horizontal['xMedian'] }}" y1="{{ $this->box2024Horizontal['yMid'] - ($this->box2024Horizontal['boxH']/2) }}" y2="{{ $this->box2024Horizontal['yMid'] + ($this->box2024Horizontal['boxH']/2) }}" stroke="#16a34a" stroke-width="2">
+                                <title>Median: {{ number_format($this->box2024Horizontal['vMedian'], 1) }}</title>
                             </line>
-                            <!-- numeric labels for min/median/max -->
-                            <text x="{{ $it['x'] + $it['w']/2 + 6 }}" y="{{ $it['yMin'] + 3 }}" font-size="9" fill="#6b7280">{{ number_format($it['vMin'], 1) }}</text>
-                            <text x="{{ $it['x'] + $it['w']/2 + 6 }}" y="{{ $it['yMedian'] + 3 }}" font-size="9" fill="#6b7280">{{ number_format($it['vMedian'], 1) }}</text>
-                            <text x="{{ $it['x'] + $it['w']/2 + 6 }}" y="{{ $it['yMax'] + 3 }}" font-size="9" fill="#6b7280">{{ number_format($it['vMax'], 1) }}</text>
-                            <!-- labels -->
-                            <text x="{{ $it['x'] }}" y="{{ $this->boxPlot['height'] - 6 }}" text-anchor="middle" font-size="10" fill="#6b7280">{{ $it['label'] }}</text>
-                        @endforeach
+
+                            <!-- numeric labels: min, Q1, median, Q3, max -->
+                            <text x="{{ $this->box2024Horizontal['xMin'] }}" y="{{ $this->box2024Horizontal['yMid'] - ($this->box2024Horizontal['boxH']/2) - 6 }}" text-anchor="middle" font-size="10" fill="#374151">{{ number_format($this->box2024Horizontal['vMin'], 1) }}</text>
+                            <text x="{{ $this->box2024Horizontal['xQ1'] }}" y="{{ $this->box2024Horizontal['yMid'] + ($this->box2024Horizontal['boxH']/2) + 12 }}" text-anchor="middle" font-size="10" fill="#6b7280">Q1 {{ number_format($this->box2024Horizontal['vQ1'], 1) }}</text>
+                            <text x="{{ $this->box2024Horizontal['xMedian'] }}" y="{{ $this->box2024Horizontal['yMid'] - ($this->box2024Horizontal['boxH']/2) - 6 }}" text-anchor="middle" font-size="10" fill="#374151">{{ number_format($this->box2024Horizontal['vMedian'], 1) }}</text>
+                            <text x="{{ $this->box2024Horizontal['xQ3'] }}" y="{{ $this->box2024Horizontal['yMid'] + ($this->box2024Horizontal['boxH']/2) + 12 }}" text-anchor="middle" font-size="10" fill="#6b7280">Q3 {{ number_format($this->box2024Horizontal['vQ3'], 1) }}</text>
+                            <text x="{{ $this->box2024Horizontal['xMax'] }}" y="{{ $this->box2024Horizontal['yMid'] - ($this->box2024Horizontal['boxH']/2) - 6 }}" text-anchor="middle" font-size="10" fill="#374151">{{ number_format($this->box2024Horizontal['vMax'], 1) }}</text>
+                        @endif
                     </svg>
-                    <div class="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                        <div class="flex items-center gap-2"><span class="inline-block w-3 h-0.5 bg-green-600"></span> 2024 Actual PPR</div>
-                        <div class="flex items-center gap-2"><span class="inline-block w-3 h-0.5 bg-blue-600"></span> 2025 Projected PPR</div>
-                    </div>
+                    <div class="mt-2 text-xs text-muted-foreground">2024 PPR box-and-whisker</div>
                 </div>
 
                 <!-- Key numbers -->
