@@ -2,9 +2,12 @@
 
 use App\Models\Player;
 use Livewire\Volt\Component;
+use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 
 new class extends Component {
     public Player $player;
+
+    public string $summaryTab = '2025';
 
     public function mount($playerId)
     {
@@ -24,6 +27,96 @@ new class extends Component {
     public function getProjections2025Property()
     {
         return $this->player->getSeason2025ProjectionSummary();
+    }
+
+    public function getResolvedWeekProperty()
+    {
+        try {
+            $resp = Sleeper::state()->current('nfl');
+            $state = $resp->json();
+            $week = isset($state['week']) ? (int) $state['week'] : null;
+            return ($week && $week >= 1 && $week <= 18) ? $week : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    public function getNextGameWeekProperty(): ?int
+    {
+        $currentWeek = $this->resolvedWeek;
+        if (!$currentWeek) {
+            return null;
+        }
+
+        // Prefer current week if available; otherwise the next available week
+        $weeks = $this->player->getProjectionsForSeason(2025)->pluck('week')->all();
+        if (in_array($currentWeek, $weeks, true)) {
+            return (int) $currentWeek;
+        }
+
+        $futureWeeks = array_values(array_filter($weeks, fn($w) => $w > $currentWeek));
+        return !empty($futureWeeks) ? (int) min($futureWeeks) : null;
+    }
+
+    public function getNextGameProjectionProperty(): ?float
+    {
+        $week = $this->nextGameWeek;
+        if (!$week) {
+            return null;
+        }
+        return $this->player->getProjectedPointsForWeek(2025, (int) $week);
+    }
+
+    public function getNextGameProjectionStatsProperty(): array
+    {
+        $week = $this->nextGameWeek;
+        if (!$week) {
+            return [];
+        }
+        $weekly = $this->player->getProjectionsForWeek(2025, (int) $week);
+        $stats = $weekly?->stats ?? [];
+        return is_array($stats) ? $stats : [];
+    }
+
+    public function getProjectionDistributionProperty(): array
+    {
+        $proj = $this->projections2025;
+        $avg = (float) ($proj['average_points_per_game'] ?? 0.0);
+        $stdAbove = (float) ($proj['stddev_above'] ?? $avg);
+        $stdBelow = (float) ($proj['stddev_below'] ?? $avg);
+        $std = max(0.01, ($stdAbove - $avg));
+
+        return [
+            'avg' => $avg,
+            'std' => $std,
+            'lower' => max(0.0, $stdBelow),
+            'upper' => max(0.0, $stdAbove),
+            'min' => (float) ($proj['min_points'] ?? 0.0),
+            'max' => (float) ($proj['max_points'] ?? 0.0),
+        ];
+    }
+
+    public function getBellCurvePathProperty(): string
+    {
+        // Render a standard normal bell curve (σ=1) across -3..+3, scaled to the viewBox
+        $width = 320.0;
+        $height = 120.0;
+        $paddingX = 10.0; // side padding
+        $plotWidth = $width - 2 * $paddingX;
+
+        $points = [];
+        $samples = 60;
+        $maxY = 1.0; // we'll normalize peak to 1.0 for display
+        for ($i = 0; $i <= $samples; $i++) {
+            $t = $i / $samples;                 // 0..1
+            $z = -3.0 + 6.0 * $t;              // -3..+3
+            $yNorm = exp(-0.5 * $z * $z);      // standard normal (omit constant), peak = 1
+            $x = $paddingX + $plotWidth * $t;
+            $y = $height - ($yNorm / $maxY) * ($height - 20.0); // top padding for aesthetics
+            $points[] = ($i === 0 ? 'M' : 'L').round($x, 2).','.round($y, 2);
+        }
+
+        return implode(' ', $points);
     }
 
     public function getWeeklyStatsProperty()
@@ -173,68 +266,211 @@ new class extends Component {
             </div>
         </div>
 
-        <!-- Season Summary Cards -->
-        <div class="grid gap-4 md:grid-cols-2">
-            <!-- 2024 Season Stats -->
+        <!-- Snapshot: Distribution + Key Numbers -->
+        <flux:callout>
+            <div class="flex flex-col gap-4">
+                <flux:heading size="md">Performance Snapshot</flux:heading>
+
+                <!-- Bell Curve (Normalized) with mean and ±1σ markers -->
+                <div class="w-full">
+                    <svg viewBox="0 0 320 120" class="w-full h-[120px]">
+                        <path d="{{ $this->bellCurvePath }}" fill="none" stroke="#16a34a" stroke-width="2" />
+                        @php
+                            $meanX = 160; // center
+                            $sigmaPixels = (320 - 20) / 6; // plotWidth/6 for ±1σ from center
+                        @endphp
+                        <line x1="{{ $meanX }}" y1="10" x2="{{ $meanX }}" y2="110" stroke="#16a34a" stroke-width="1.5" />
+                        <line x1="{{ $meanX - $sigmaPixels }}" y1="20" x2="{{ $meanX - $sigmaPixels }}" y2="110" stroke="#16a34a" stroke-dasharray="4 4" stroke-width="1" />
+                        <line x1="{{ $meanX + $sigmaPixels }}" y1="20" x2="{{ $meanX + $sigmaPixels }}" y2="110" stroke="#16a34a" stroke-dasharray="4 4" stroke-width="1" />
+                    </svg>
+                </div>
+
+                <!-- Key numbers -->
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="text-center">
+                        <div class="text-sm text-muted-foreground">Avg Proj PPG</div>
+                        <div class="text-2xl font-bold text-green-600">{{ number_format($this->projectionDistribution['avg'] ?? 0, 1) }}</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-muted-foreground">1σ Range</div>
+                        <div class="text-2xl font-bold">{{ number_format($this->projectionDistribution['lower'] ?? 0, 1) }} – {{ number_format($this->projectionDistribution['upper'] ?? 0, 1) }}</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-muted-foreground">Season Min/Max (wk)</div>
+                        <div class="text-2xl font-bold">{{ number_format($this->projections2025['min_points'] ?? 0, 1) }} / {{ number_format($this->projections2025['max_points'] ?? 0, 1) }}</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-muted-foreground">Next Game Proj</div>
+                        <div class="text-2xl font-bold text-blue-600">@if(!is_null($this->nextGameProjection)) {{ number_format($this->nextGameProjection, 1) }} @else — @endif</div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex items-center gap-2">
+                    <flux:button size="sm" variant="{{ $summaryTab === '2024' ? 'primary' : 'ghost' }}" wire:click="$set('summaryTab','2024')">2024 Results</flux:button>
+                    <flux:button size="sm" variant="{{ $summaryTab === '2025' ? 'primary' : 'ghost' }}" wire:click="$set('summaryTab','2025')">2025 Projections</flux:button>
+                    <flux:button size="sm" variant="{{ $summaryTab === 'next' ? 'primary' : 'ghost' }}" wire:click="$set('summaryTab','next')">Next Game</flux:button>
+                </div>
+            </div>
+        </flux:callout>
+
+        <!-- Tab Panels -->
+        @if ($summaryTab === '2024')
             @if (!empty($this->stats2024))
                 <flux:callout>
                     <flux:heading size="md" class="mb-4">2024 Season Stats</flux:heading>
-                    <div class="space-y-3">
-                        @if (isset($this->summary2024['total_points']))
-                            <div class="flex justify-between">
-                                <span>Total Points:</span>
-                                <span class="font-semibold">{{ number_format($this->summary2024['total_points'], 1) }}</span>
-                            </div>
-                        @endif
-                        @if (isset($this->summary2024['games_active']))
-                            <div class="flex justify-between">
-                                <span>Games Played:</span>
-                                <span class="font-semibold">{{ $this->summary2024['games_active'] }}</span>
-                            </div>
-                        @endif
-                        @if (isset($this->summary2024['average_points_per_game']) && $this->summary2024['games_active'] > 0)
-                            <div class="flex justify-between">
-                                <span>Avg PPG:</span>
-                                <span class="font-semibold">{{ number_format($this->summary2024['average_points_per_game'], 1) }}</span>
-                            </div>
-                        @endif
-                        @if (isset($this->summary2024['max_points']))
-                            <div class="flex justify-between">
-                                <span>Best Game:</span>
-                                <span class="font-semibold">{{ number_format($this->summary2024['max_points'], 1) }}</span>
-                            </div>
-                        @endif
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div class="space-y-3">
+                            @if (isset($this->summary2024['total_points']))
+                                <div class="flex justify-between"><span>Total Points:</span><span class="font-semibold">{{ number_format($this->summary2024['total_points'], 1) }}</span></div>
+                            @endif
+                            @if (isset($this->summary2024['average_points_per_game']) && ($this->summary2024['games_active'] ?? 0) > 0)
+                                <div class="flex justify-between"><span>Avg PPG:</span><span class="font-semibold">{{ number_format($this->summary2024['average_points_per_game'], 1) }}</span></div>
+                            @endif
+                            @if (isset($this->summary2024['min_points']))
+                                <div class="flex justify-between"><span>Worst Game:</span><span class="font-semibold">{{ number_format($this->summary2024['min_points'], 1) }}</span></div>
+                            @endif
+                            @if (isset($this->summary2024['max_points']))
+                                <div class="flex justify-between"><span>Best Game:</span><span class="font-semibold">{{ number_format($this->summary2024['max_points'], 1) }}</span></div>
+                            @endif
+                        </div>
+                        <div class="space-y-3">
+                            @if (isset($this->summary2024['games_active']))
+                                <div class="flex justify-between"><span>Games Played:</span><span class="font-semibold">{{ $this->summary2024['games_active'] }}</span></div>
+                            @endif
+                            @if (isset($this->summary2024['stddev_below']) && isset($this->summary2024['stddev_above']))
+                                <div class="flex justify-between"><span>±1σ PPG:</span><span class="font-semibold">{{ number_format($this->summary2024['stddev_below'], 1) }} – {{ number_format($this->summary2024['stddev_above'], 1) }}</span></div>
+                            @endif
+                        </div>
                     </div>
                 </flux:callout>
-            @endif
 
-            <!-- 2025 Projections -->
-            @if (!empty($this->projections2025))
+                @if ($this->weeklyStats->count() > 0)
+                    <flux:callout>
+                        <flux:heading size="md" class="mb-4">Weekly Performance (2024)</flux:heading>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="border-b">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left">Week</th>
+                                        <th class="px-3 py-2 text-left">Points</th>
+                                        @if ($this->position === 'QB')
+                                            <th class="px-3 py-2 text-left">Pass Yds</th>
+                                            <th class="px-3 py-2 text-left">Pass TDs</th>
+                                        @elseif ($this->position === 'RB')
+                                            <th class="px-3 py-2 text-left">Rush Yds</th>
+                                            <th class="px-3 py-2 text-left">Rush TDs</th>
+                                            <th class="px-3 py-2 text-left">Rec</th>
+                                        @elseif (in_array($this->position, ['WR', 'TE']))
+                                            <th class="px-3 py-2 text-left">Rec</th>
+                                            <th class="px-3 py-2 text-left">Rec Yds</th>
+                                            <th class="px-3 py-2 text-left">TDs</th>
+                                        @else
+                                            <th class="px-3 py-2 text-left">Pass Yds</th>
+                                            <th class="px-3 py-2 text-left">Rush Yds</th>
+                                            <th class="px-3 py-2 text-left">Rec Yds</th>
+                                        @endif
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @foreach ($this->weeklyStats->sortBy('week') as $weekStat)
+                                        @php $stats = $weekStat->stats ?? []; @endphp
+                                        <tr>
+                                            <td class="px-3 py-2 font-medium">{{ $weekStat->week }}</td>
+                                            <td class="px-3 py-2">{{ isset($stats['pts_ppr']) ? number_format($stats['pts_ppr'], 1) : '-' }}</td>
+                                            @if ($this->position === 'QB')
+                                                <td class="px-3 py-2">{{ $stats['pass_yd'] ?? '-' }}</td>
+                                                <td class="px-3 py-2">{{ $stats['pass_td'] ?? '-' }}</td>
+                                            @elseif ($this->position === 'RB')
+                                                <td class="px-3 py-2">{{ $stats['rush_yd'] ?? '-' }}</td>
+                                                <td class="px-3 py-2">{{ $stats['rush_td'] ?? '-' }}</td>
+                                                <td class="px-3 py-2">{{ $stats['rec'] ?? '-' }}</td>
+                                            @elseif (in_array($this->position, ['WR', 'TE']))
+                                                <td class="px-3 py-2">{{ $stats['rec'] ?? '-' }}</td>
+                                                <td class="px-3 py-2">{{ $stats['rec_yd'] ?? '-' }}</td>
+                                                <td class="px-3 py-2">{{ $stats['rec_td'] ?? '-' }}</td>
+                                            @else
+                                                <td class="px-3 py-2">{{ $stats['pass_yd'] ?? '-' }}</td>
+                                                <td class="px-3 py-2">{{ $stats['rush_yd'] ?? '-' }}</td>
+                                                <td class="px-3 py-2">{{ $stats['rec_yd'] ?? '-' }}</td>
+                                            @endif
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </flux:callout>
+                @endif
+            @else
                 <flux:callout>
-                    <flux:heading size="md" class="mb-4">2025 Projections</flux:heading>
+                    <flux:heading size="md" class="mb-4">2024 Stats</flux:heading>
+                    <div class="text-center py-8 text-muted-foreground">No 2024 stats available for this player.</div>
+                </flux:callout>
+            @endif
+        @elseif ($summaryTab === '2025')
+            <flux:callout>
+                <flux:heading size="md" class="mb-4">2025 Projections</flux:heading>
+                <div class="grid gap-4 md:grid-cols-2">
                     <div class="space-y-3">
-                        @if (isset($this->projections2025['total_points']))
-                            <div class="flex justify-between">
-                                <span>Projected Points:</span>
-                                <span class="font-semibold">{{ number_format($this->projections2025['total_points'], 1) }}</span>
-                            </div>
-                        @endif
-                        @if (isset($this->projections2025['games']))
-                            <div class="flex justify-between">
-                                <span>Projected Games:</span>
-                                <span class="font-semibold">{{ $this->projections2025['games'] }}</span>
-                            </div>
-                        @endif
-                        @if (isset($this->projections2025['average_points_per_game']) && $this->projections2025['games'] > 0)
-                            <div class="flex justify-between">
-                                <span>Projected PPG:</span>
-                                <span class="font-semibold">{{ number_format($this->projections2025['average_points_per_game'], 1) }}</span>
-                            </div>
-                        @endif
+                        <div class="flex justify-between"><span>Total Projected Points:</span><span class="font-semibold">{{ number_format($this->projections2025['total_points'] ?? 0, 1) }}</span></div>
+                        <div class="flex justify-between"><span>Projected Games:</span><span class="font-semibold">{{ $this->projections2025['games'] ?? 0 }}</span></div>
+                        <div class="flex justify-between"><span>Projected PPG:</span><span class="font-semibold">{{ number_format($this->projections2025['average_points_per_game'] ?? 0, 1) }}</span></div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between"><span>±1σ PPG:</span><span class="font-semibold">{{ number_format($this->projectionDistribution['lower'] ?? 0, 1) }} – {{ number_format($this->projectionDistribution['upper'] ?? 0, 1) }}</span></div>
+                        <div class="flex justify-between"><span>Season Min/Max (wk):</span><span class="font-semibold">{{ number_format($this->projections2025['min_points'] ?? 0, 1) }} / {{ number_format($this->projections2025['max_points'] ?? 0, 1) }}</span></div>
+                    </div>
+                </div>
+            </flux:callout>
+
+            @if ($this->weeklyProjections->count() > 0)
+                <flux:callout>
+                    <flux:heading size="md" class="mb-4">Weekly Projections (2025)</flux:heading>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="border-b">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">Week</th>
+                                    <th class="px-3 py-2 text-left">Projected PPR</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                @foreach ($this->weeklyProjections->sortBy('week') as $proj)
+                                    @php $stats = $proj->stats ?? []; @endphp
+                                    <tr>
+                                        <td class="px-3 py-2 font-medium">{{ $proj->week }}</td>
+                                        <td class="px-3 py-2">@if(isset($stats['pts_ppr'])) {{ number_format($stats['pts_ppr'], 1) }} @elseif(isset($proj->pts_ppr)) {{ number_format($proj->pts_ppr, 1) }} @else - @endif</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </flux:callout>
             @endif
-        </div>
+        @elseif ($summaryTab === 'next')
+            <flux:callout>
+                <flux:heading size="md" class="mb-4">Next Game Projection</flux:heading>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div class="space-y-3">
+                        <div class="flex justify-between"><span>Week:</span><span class="font-semibold">{{ $this->nextGameWeek ?? '—' }}</span></div>
+                        <div class="flex justify-between"><span>Projected Points:</span><span class="font-semibold text-blue-600">@if(!is_null($this->nextGameProjection)) {{ number_format($this->nextGameProjection, 1) }} @else — @endif</span></div>
+                    </div>
+                    <div class="space-y-2">
+                        @php $ng = $this->nextGameProjectionStats; @endphp
+                        <div class="text-sm text-muted-foreground">Key Inputs</div>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                            <div>Pass Yds:</div><div class="font-medium">{{ $ng['pass_yd'] ?? '—' }}</div>
+                            <div>Pass TD:</div><div class="font-medium">{{ $ng['pass_td'] ?? '—' }}</div>
+                            <div>Rush Yds:</div><div class="font-medium">{{ $ng['rush_yd'] ?? '—' }}</div>
+                            <div>Rush TD:</div><div class="font-medium">{{ $ng['rush_td'] ?? '—' }}</div>
+                            <div>Rec:</div><div class="font-medium">{{ $ng['rec'] ?? '—' }}</div>
+                            <div>Rec Yds:</div><div class="font-medium">{{ $ng['rec_yd'] ?? '—' }}</div>
+                            <div>Rec TD:</div><div class="font-medium">{{ $ng['rec_td'] ?? '—' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </flux:callout>
+        @endif
 
         <!-- Position-Specific Stats -->
         @if (!empty($this->stats2024))
