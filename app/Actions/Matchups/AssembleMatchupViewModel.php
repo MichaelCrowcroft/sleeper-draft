@@ -7,6 +7,7 @@ use App\Actions\Sleeper\FetchMatchups;
 use App\Actions\Sleeper\FetchLeagueUsers;
 use App\Actions\Sleeper\FetchRosters;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
 
 class AssembleMatchupViewModel
 {
@@ -47,23 +48,67 @@ class AssembleMatchupViewModel
             $userById[(string) ($u['user_id'] ?? '')] = $u;
         }
 
+        // Determine selected roster id robustly
+        $allRosterIds = array_map(fn ($r) => (int) ($r['roster_id'] ?? 0), $rosters);
+        $selectedRosterId = in_array($rosterId, $allRosterIds, true) ? $rosterId : 0;
+
+        if ($selectedRosterId === 0) {
+            $auth = Auth::user();
+            $sleeperUserId = $auth->sleeper_user_id ?? null;
+            if ($sleeperUserId) {
+                foreach ($rosters as $r) {
+                    if (($r['owner_id'] ?? null) == $sleeperUserId) {
+                        $selectedRosterId = (int) ($r['roster_id'] ?? 0);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($selectedRosterId === 0) {
+            // fallback to first available in matchups or rosters
+            if (!empty($matchups)) {
+                $selectedRosterId = (int) ($matchups[0]['roster_id'] ?? 0);
+            } elseif (!empty($rosters)) {
+                $selectedRosterId = (int) ($rosters[0]['roster_id'] ?? 0);
+            }
+        }
+
         // Find this roster's matchup_id and opponent roster
-        $myEntries = array_values(array_filter($matchups, fn ($m) => (int) ($m['roster_id'] ?? 0) === $rosterId));
+        $myEntries = array_values(array_filter($matchups, fn ($m) => (int) ($m['roster_id'] ?? 0) === $selectedRosterId));
         $myMatchupId = isset($myEntries[0]['matchup_id']) ? (int) $myEntries[0]['matchup_id'] : null;
-        $pair = array_values(array_filter($matchups, fn ($m) => isset($m['matchup_id']) && (int) $m['matchup_id'] === $myMatchupId));
+        $pair = $myMatchupId !== null
+            ? array_values(array_filter($matchups, fn ($m) => isset($m['matchup_id']) && (int) $m['matchup_id'] === $myMatchupId))
+            : [];
+
+        // Fallback: find first complete pair
+        if (count($pair) < 2) {
+            $byMatchup = [];
+            foreach ($matchups as $m) {
+                if (!isset($m['matchup_id'])) { continue; }
+                $byMatchup[$m['matchup_id']][] = $m;
+            }
+            foreach ($byMatchup as $mid => $entries) {
+                if (count($entries) >= 2) {
+                    $pair = array_values($entries);
+                    $myMatchupId = (int) $mid;
+                    break;
+                }
+            }
+        }
 
         if (count($pair) < 2) {
             return [
                 'league' => $league,
                 'week' => $resolvedWeek,
                 'season' => $season,
-                'error' => 'Matchup not found for given roster',
+                'error' => 'Matchup not found for this week',
             ];
         }
 
         $home = $pair[0];
         $away = $pair[1];
-        if ((int) $home['roster_id'] !== $rosterId) {
+        if ((int) $home['roster_id'] !== $selectedRosterId) {
             [$home, $away] = [$away, $home];
         }
 
@@ -141,6 +186,7 @@ class AssembleMatchupViewModel
             ],
             'win_probability' => $prob,
             'roster_options' => $rosterOptions,
+            'selected_roster_id' => $selectedRosterId,
         ];
     }
 }

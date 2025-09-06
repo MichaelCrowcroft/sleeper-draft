@@ -45,6 +45,9 @@ Route::middleware(['auth'])->group(function () {
     // Matchups routes
     Volt::route('leagues/{leagueId}/week/{week}/matchup', 'matchups.show')->name('matchups.show');
     Volt::route('leagues/{leagueId}/matchup', 'matchups.show')->name('matchups.show.current');
+
+    // Leagues index
+    Volt::route('leagues', 'leagues.index')->name('leagues.index');
 });
 
 require __DIR__.'/auth.php';
