@@ -438,8 +438,6 @@ new class extends Component {
                 <!-- 2024 Performance Distribution -->
                 <x-box-whisker-chart
                     :data="$this->box2024Horizontal"
-                    title="2024 Weekly Performance Distribution"
-                    subtitle="PPR Fantasy Points"
                 />
 
                 <!-- Key numbers -->

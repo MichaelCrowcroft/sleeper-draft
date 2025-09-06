@@ -1,6 +1,4 @@
 @props([
-    'title' => 'Performance Distribution',
-    'subtitle' => 'PPR Fantasy Points',
     'data' => null,
     'width' => 480.0,
     'height' => 120.0,
@@ -8,14 +6,7 @@
 
 @if($data && $data['exists'] ?? false)
     <div class="w-full">
-        <div class="text-center mb-3">
-            <div class="text-sm font-medium text-gray-700">{{ $title }}</div>
-            <div class="text-xs text-gray-500 mt-1">{{ $subtitle }}</div>
-        </div>
-        <svg viewBox="0 0 {{ $data['width'] }} {{ $data['height'] }}" class="w-full h-[140px] drop-shadow-sm">
-            <!-- subtle background -->
-            <rect x="0" y="0" width="{{ $data['width'] }}" height="{{ $data['height'] }}" fill="#fefefe" rx="8" />
-
+        <svg viewBox="0 0 {{ $data['width'] }} {{ $data['height'] }}" class="w-full h-[140px]">
             <!-- light grid line at center for reference -->
             <line x1="{{ $data['width'] * 0.1 }}" x2="{{ $data['width'] * 0.9 }}" y1="{{ $data['yMid'] }}" y2="{{ $data['yMid'] }}" stroke="#f3f4f6" stroke-width="1" stroke-dasharray="2,3" />
 
