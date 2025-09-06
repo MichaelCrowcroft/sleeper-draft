@@ -28,6 +28,11 @@ new class extends Component
         $this->team = request('team', '');
         $this->selectedLeagueId = request('league_id', '');
         $this->faOnly = request()->boolean('fa_only');
+
+        // Auto-select first league if none selected
+        if (Auth::check() && !$this->selectedLeagueId && !empty($this->leagues)) {
+            $this->selectedLeagueId = $this->leagues[0]['id'] ?? '';
+        }
     }
 
     public function sort($column)
@@ -59,6 +64,12 @@ new class extends Component
                 $q->where('team', $this->team);
             })
             ->where('active', true);
+
+        // Filter by free agents only if requested
+        if ($this->faOnly && $this->selectedLeagueId) {
+            $rosteredPlayerIds = $this->rosteredPlayers->keys()->toArray();
+            $query->whereNotIn('player_id', $rosteredPlayerIds);
+        }
 
         // Apply sorting
         if ($this->sortBy) {
@@ -94,10 +105,15 @@ new class extends Component
         $players = $query->with(['stats2024', 'projections2025'])
             ->paginate(25);
 
-        // Add player stats for each player
+        // Add player stats and roster information for each player
         foreach ($players as $player) {
             $player->season_2024_summary = $player->getSeason2024Summary();
             $player->season_2025_projections = $player->getSeason2025ProjectionSummary();
+
+            // Add roster information
+            $rosterInfo = $this->rosteredPlayers->get($player->player_id);
+            $player->owner = $rosterInfo ? $rosterInfo['owner'] : 'Free Agent';
+            $player->is_rostered = $rosterInfo !== null;
         }
 
         return $players;
@@ -124,6 +140,7 @@ new class extends Component
         return Cache::remember('player_positions', now()->addHours(1), function () {
             return Player::whereNotNull('position')
                 ->where('active', true)
+                ->whereIn('position', ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'])
                 ->distinct()
                 ->pluck('position')
                 ->sort()
@@ -147,8 +164,68 @@ new class extends Component
 
     public function getLeaguesProperty()
     {
-        return Auth::check() ? [] : [];
+        if (!Auth::check()) {
+            return [];
+        }
+
+        try {
+            // Use the MCP tool to fetch user leagues
+            $userIdentifier = Auth::user()->sleeper_username ?? Auth::user()->sleeper_user_id;
+            if (!$userIdentifier) {
+                return [];
+            }
+
+            // Use the Sleeper API to fetch user leagues
+            $response = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::user()->leagues($userIdentifier, 'nfl', date('Y'));
+
+            if ($response->successful()) {
+                $leagues = $response->json();
+            } else {
+                $leagues = [];
+            }
+
+            return $leagues ?? [];
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
+
+    public function getRosteredPlayersProperty()
+    {
+        if (!$this->selectedLeagueId) {
+            return collect();
+        }
+
+        try {
+            // Get all rosters for the selected league
+            $response = \MichaelCrowcroft\SleeperLaravel\Facades\Sleeper::league()->rosters($this->selectedLeagueId);
+            $rosters = $response->successful() ? $response->json() : [];
+
+            $rosteredPlayers = collect();
+
+            if ($rosters) {
+                foreach ($rosters as $roster) {
+                    $rosterId = $roster['roster_id'];
+                    $ownerName = $roster['owner_name'] ?? 'Unknown Owner';
+
+                    // Add all players from this roster
+                    if (isset($roster['players']) && is_array($roster['players'])) {
+                        foreach ($roster['players'] as $playerId) {
+                            $rosteredPlayers->put($playerId, [
+                                'owner' => $ownerName,
+                                'roster_id' => $rosterId
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            return $rosteredPlayers;
+        } catch (\Throwable $e) {
+            return collect();
+        }
+    }
+
 
     public function getResolvedWeekProperty()
     {
@@ -332,6 +409,7 @@ new class extends Component
                     @if($this->resolvedWeek && $this->resolvedWeek <= 18)
                         <flux:table.column>2024 Last 4</flux:table.column>
                     @endif
+                    <flux:table.column>Owner</flux:table.column>
                     <flux:table.column>Status</flux:table.column>
                     <flux:table.column>Actions</flux:table.column>
                 </flux:table.columns>
@@ -427,6 +505,14 @@ new class extends Component
                             @endif
 
                             <flux:table.cell>
+                                @if ($player->is_rostered)
+                                    <flux:badge variant="secondary" color="blue">{{ $player->owner }}</flux:badge>
+                                @else
+                                    <flux:badge variant="outline" color="gray">Free Agent</flux:badge>
+                                @endif
+                            </flux:table.cell>
+
+                            <flux:table.cell>
                                 @if ($player->injury_status && $player->injury_status !== 'Healthy')
                                     <flux:badge color="red" size="sm">{{ $player->injury_status }}</flux:badge>
                                 @else
@@ -446,7 +532,7 @@ new class extends Component
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell colspan="{{ ($this->resolvedWeek && $this->resolvedWeek <= 18) ? 12 : 11 }}" align="center">
+                            <flux:table.cell colspan="{{ ($this->resolvedWeek && $this->resolvedWeek <= 18) ? 13 : 12 }}" align="center">
                                 <div class="py-8 text-muted-foreground">
                                     No players found matching your filters.
                                 </div>
