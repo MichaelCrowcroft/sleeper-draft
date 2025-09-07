@@ -111,29 +111,6 @@ new class extends Component
                     </svg>
                 </div>
 
-                <!-- Risk Legend -->
-                <div class="p-4 rounded-lg border bg-card">
-                    <div class="font-semibold mb-2">Risk Indicators</div>
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div class="flex items-center gap-2">
-                            <span class="px-2 py-1 rounded-full bg-green-600 text-white">✓ Safe</span>
-                            <span>Game completed</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="px-2 py-1 rounded-full bg-blue-600 text-white">⚠ Low</span>
-                            <span>Reliable projection</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="px-2 py-1 rounded-full bg-yellow-600 text-white">⚠ Medium</span>
-                            <span>Moderate risk</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="px-2 py-1 rounded-full bg-red-600 text-white">⚠ High</span>
-                            <span>High variance</span>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Lineup Optimizer Link -->
                 <div class="p-4 rounded-lg border bg-card">
                     <div class="flex items-center justify-between">
@@ -173,7 +150,7 @@ new class extends Component
                                                 @elseif($row['risk'] === 'medium') bg-yellow-600
                                                 @else bg-red-600
                                                 @endif">
-                                                @if($row['status'] === 'locked') ✓ Safe @else ⚠ {{ ucfirst($row['risk']) }} @endif
+                                                @if($row['status'] === 'locked') ✓ Locked in @else ⚠ {{ ucfirst($row['risk']) }} @endif
                                             </span>
                                             <span class="font-medium">{{ $row['range']['display'] }}</span>
                                         </div>
@@ -207,7 +184,7 @@ new class extends Component
                                                 @elseif($row['risk'] === 'medium') bg-yellow-600
                                                 @else bg-red-600
                                                 @endif">
-                                                @if($row['status'] === 'locked') ✓ Safe @else ⚠ {{ ucfirst($row['risk']) }} @endif
+                                                @if($row['status'] === 'locked') ✓ Locked in @else ⚠ {{ ucfirst($row['risk']) }} @endif
                                             </span>
                                             <span class="font-medium">{{ $row['range']['display'] }}</span>
                                         </div>
