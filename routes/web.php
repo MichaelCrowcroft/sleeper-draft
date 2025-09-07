@@ -49,6 +49,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Leagues index
     Volt::route('leagues', 'leagues.index')->name('leagues.index');
+
+    // Trade Evaluator
+    Volt::route('trade-evaluator', 'trade-evaluator.index')->name('trade-evaluator.index');
 });
 
 require __DIR__.'/auth.php';
