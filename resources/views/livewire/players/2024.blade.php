@@ -16,11 +16,6 @@ new class extends Component {
         return $this->player->getStatsForSeason(2024)->get();
     }
 
-    public function getWeeklyProjectionsProperty()
-    {
-        return $this->player->getProjectionsForSeason(2025)->get();
-    }
-
     public function getPositionProperty(): string
     {
         // Use fantasy_positions if available, fallback to position
@@ -175,44 +170,6 @@ new class extends Component {
                 @else
                     <div class="text-center py-8 text-muted-foreground">
                         <p>No weekly performance data available</p>
-                    </div>
-                @endif
-            </flux:callout>
-
-            <!-- 2025 Weekly Projections -->
-            <flux:callout>
-                <flux:heading size="md" class="mb-4">2025 Weekly Projections</flux:heading>
-                @if ($this->weeklyProjections->count() > 0)
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead>
-                                <tr class="border-b border-gray-200 dark:border-gray-700">
-                                    <th class="px-3 py-3 text-left font-semibold">Week</th>
-                                    <th class="px-3 py-3 text-left font-semibold">Projected PPR</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                                @foreach ($this->weeklyProjections->sortBy('week') as $proj)
-                                    @php $stats = $proj->stats ?? []; @endphp
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
-                                        <td class="px-3 py-2 font-medium">{{ $proj->week }}</td>
-                                        <td class="px-3 py-2 font-semibold">
-                                            @if(isset($stats['pts_ppr']))
-                                                {{ number_format($stats['pts_ppr'], 1) }}
-                                            @elseif(isset($proj->pts_ppr))
-                                                {{ number_format($proj->pts_ppr, 1) }}
-                                            @else
-                                                —
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    <div class="text-center py-8 text-muted-foreground">
-                        <p>No weekly projections available</p>
                     </div>
                 @endif
             </flux:callout>
