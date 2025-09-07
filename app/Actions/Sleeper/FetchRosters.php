@@ -16,9 +16,10 @@ class FetchRosters
 
         return Cache::remember($cacheKey, now()->addSeconds($this->ttlSeconds ?? 60), function () use ($leagueId) {
             try {
-                $resp = Sleeper::league()->rosters($leagueId);
+                $resp = Sleeper::leagues()->rosters($leagueId);
                 if ($resp->successful()) {
                     $data = $resp->json();
+
                     return is_array($data) ? $data : [];
                 }
 
