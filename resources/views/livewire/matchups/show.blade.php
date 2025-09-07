@@ -108,26 +108,13 @@ new class extends Component
                     </svg>
                 </div>
 
-                <!-- Lineup Optimizer Link -->
-                <div class="p-4 rounded-lg border bg-card">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <div class="font-semibold">Lineup Optimization</div>
-                            <div class="text-sm text-muted-foreground">Interactive lineup builder with real-time projections</div>
-                        </div>
-                        <flux:button href="{{ route('lineup-optimizer.current', ['leagueId' => $this->leagueId]) }}" wire:navigate variant="primary" size="sm">
-                            Optimize Lineup
-                        </flux:button>
-                    </div>
-                </div>
-
                 <div class="grid gap-6 md:grid-cols-2">
                     <div>
                         <flux:heading size="md" class="mb-2">Your Starters</flux:heading>
                         <div class="divide-y">
                             @foreach ($this->model['home']['starters'] as $pid)
                                 @php
-                                    $row = $this->model['home']['points'][$pid] ?? null;
+                                    $row = $this->model['home']['starter_points'][$pid] ?? null;
                                     $player = $this->model['players'][$pid] ?? null;
                                 @endphp
                                 <div class="py-2 flex items-center justify-between text-sm">
@@ -161,7 +148,7 @@ new class extends Component
                         <div class="divide-y">
                             @foreach ($this->model['away']['starters'] as $pid)
                                 @php
-                                    $row = $this->model['away']['points'][$pid] ?? null;
+                                    $row = $this->model['away']['starter_points'][$pid] ?? null;
                                     $player = $this->model['players'][$pid] ?? null;
                                 @endphp
                                 <div class="py-2 flex items-center justify-between text-sm">
@@ -183,6 +170,62 @@ new class extends Component
                                                 @endif">
                                                 @if($row['status'] === 'locked') ✓ Locked in @else ⚠ {{ ucfirst($row['risk']) }} @endif
                                             </span>
+                                            <span class="font-medium">{{ $row['range']['display'] }}</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bench Players Section -->
+                <div class="grid gap-6 md:grid-cols-2">
+                    <div>
+                        <flux:heading size="md" class="mb-2">Your Bench</flux:heading>
+                        <div class="divide-y">
+                            @foreach ($this->model['home']['bench'] as $pid)
+                                @php
+                                    $row = $this->model['home']['bench_points'][$pid] ?? null;
+                                    $player = $this->model['players'][$pid] ?? null;
+                                @endphp
+                                <div class="py-2 flex items-center justify-between text-sm">
+                                    <div>
+                                        <div class="font-medium">{{ $player['name'] ?? $pid }}</div>
+                                        @if ($player && ($player['position'] || $player['team']))
+                                            <div class="text-xs text-muted-foreground">
+                                                {{ $player['position'] }}{{ $player['position'] && $player['team'] ? ' • ' : '' }}{{ $player['team'] }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                    @if ($row)
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium">{{ $row['range']['display'] }}</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div>
+                        <flux:heading size="md" class="mb-2">Opponent Bench</flux:heading>
+                        <div class="divide-y">
+                            @foreach ($this->model['away']['bench'] as $pid)
+                                @php
+                                    $row = $this->model['away']['bench_points'][$pid] ?? null;
+                                    $player = $this->model['players'][$pid] ?? null;
+                                @endphp
+                                <div class="py-2 flex items-center justify-between text-sm">
+                                    <div>
+                                        <div class="font-medium">{{ $player['name'] ?? $pid }}</div>
+                                        @if ($player && ($player['position'] || $player['team']))
+                                            <div class="text-xs text-muted-foreground">
+                                                {{ $player['position'] }}{{ $player['position'] && $player['team'] ? ' • ' : '' }}{{ $player['team'] }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                    @if ($row)
+                                        <div class="flex items-center gap-2">
                                             <span class="font-medium">{{ $row['range']['display'] }}</span>
                                         </div>
                                     @endif

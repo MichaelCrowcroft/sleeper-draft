@@ -121,19 +121,24 @@ class AssembleMatchupViewModel
         $homeLineup = $lineups[(int) $home['roster_id']] ?? ['starters' => [], 'bench' => []];
         $awayLineup = $lineups[(int) $away['roster_id']] ?? ['starters' => [], 'bench' => []];
 
-        $homePoints = $this->computePlayerWeekPoints->execute($homeLineup['starters'], $season, $resolvedWeek);
-        $awayPoints = $this->computePlayerWeekPoints->execute($awayLineup['starters'], $season, $resolvedWeek);
+        $homeStarterPoints = $this->computePlayerWeekPoints->execute($homeLineup['starters'], $season, $resolvedWeek);
+        $awayStarterPoints = $this->computePlayerWeekPoints->execute($awayLineup['starters'], $season, $resolvedWeek);
 
-        $homeTotals = $this->aggregateTeamTotals->execute($homePoints);
-        $awayTotals = $this->aggregateTeamTotals->execute($awayPoints);
+        $homeBenchPoints = $this->computePlayerWeekPoints->execute($homeLineup['bench'], $season, $resolvedWeek);
+        $awayBenchPoints = $this->computePlayerWeekPoints->execute($awayLineup['bench'], $season, $resolvedWeek);
+
+        $homeTotals = $this->aggregateTeamTotals->execute($homeStarterPoints);
+        $awayTotals = $this->aggregateTeamTotals->execute($awayStarterPoints);
 
         // Add point ranges and risk indicators to player points
-        $homePoints = $this->enhancePlayerPoints($homePoints);
-        $awayPoints = $this->enhancePlayerPoints($awayPoints);
+        $homeStarterPoints = $this->enhancePlayerPoints($homeStarterPoints);
+        $awayStarterPoints = $this->enhancePlayerPoints($awayStarterPoints);
+        $homeBenchPoints = $this->enhancePlayerPoints($homeBenchPoints);
+        $awayBenchPoints = $this->enhancePlayerPoints($awayBenchPoints);
 
         // Calculate total team point ranges
-        $homeTotals = $this->enhanceTeamTotals($homeTotals, $homePoints);
-        $awayTotals = $this->enhanceTeamTotals($awayTotals, $awayPoints);
+        $homeTotals = $this->enhanceTeamTotals($homeTotals, $homeStarterPoints);
+        $awayTotals = $this->enhanceTeamTotals($awayTotals, $awayStarterPoints);
 
         // Simple variance: assume 6.0 per starter not yet locked
         $estimateVariance = function (array $points): float {
@@ -147,11 +152,11 @@ class AssembleMatchupViewModel
 
         $homeModel = [
             'mean' => $homeTotals['total_estimated'],
-            'variance' => $estimateVariance($homePoints),
+            'variance' => $estimateVariance($homeStarterPoints),
         ];
         $awayModel = [
             'mean' => $awayTotals['total_estimated'],
-            'variance' => $estimateVariance($awayPoints),
+            'variance' => $estimateVariance($awayStarterPoints),
         ];
 
         $prob = app(ComputeWinProbability::class)->execute($homeModel, $awayModel);
@@ -169,8 +174,13 @@ class AssembleMatchupViewModel
 
         // Roster options no longer needed since we removed roster selection functionality
 
-        // Fetch player names for all players in the matchup
-        $allPlayerIds = array_unique(array_merge($homeLineup['starters'], $awayLineup['starters']));
+        // Fetch player names for all players in the matchup (starters and bench)
+        $allPlayerIds = array_unique(array_merge(
+            $homeLineup['starters'],
+            $awayLineup['starters'],
+            $homeLineup['bench'],
+            $awayLineup['bench']
+        ));
         $playerLookup = [];
 
         if (! empty($allPlayerIds)) {
@@ -211,7 +221,9 @@ class AssembleMatchupViewModel
                 'owner_id' => $rosterById[(int) $home['roster_id']]['owner_id'] ?? null,
                 'owner_name' => $ownerName($home),
                 'starters' => $homeLineup['starters'],
-                'points' => $homePoints,
+                'bench' => $homeLineup['bench'],
+                'starter_points' => $homeStarterPoints,
+                'bench_points' => $homeBenchPoints,
                 'totals' => $homeTotals,
             ],
             'away' => [
@@ -219,7 +231,9 @@ class AssembleMatchupViewModel
                 'owner_id' => $rosterById[(int) $away['roster_id']]['owner_id'] ?? null,
                 'owner_name' => $ownerName($away),
                 'starters' => $awayLineup['starters'],
-                'points' => $awayPoints,
+                'bench' => $awayLineup['bench'],
+                'starter_points' => $awayStarterPoints,
+                'bench_points' => $awayBenchPoints,
                 'totals' => $awayTotals,
             ],
             'win_probability' => $prob,
