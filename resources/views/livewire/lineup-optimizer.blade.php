@@ -308,35 +308,35 @@ new class extends Component
             </div>
 
             <!-- Projection Comparison -->
-            <div class="grid gap-4 md:grid-cols-3 mb-6">
-                <flux:callout>
-                    <div class="text-center">
-                        <div class="text-sm text-muted-foreground">Current Lineup</div>
-                        <div class="text-2xl font-bold text-blue-600">{{ number_format($this->current_lineup_total, 1) }}</div>
-                        <div class="text-xs text-muted-foreground">{{ (int) round($this->current_win_probability['home'] * 100) }}% win prob</div>
-                    </div>
-                </flux:callout>
+                    <div class="grid gap-4 md:grid-cols-3 mb-6">
+                        <flux:callout>
+                            <div class="text-center">
+                                <div class="text-sm text-muted-foreground">Current Lineup</div>
+                                <div class="text-2xl font-bold text-blue-600">{{ number_format($this->model['current_lineup_total'], 1) }}</div>
+                                <div class="text-xs text-muted-foreground">{{ (int) round($this->model['current_win_probability']['home'] * 100) }}% win prob</div>
+                            </div>
+                        </flux:callout>
 
-                <flux:callout>
-                    <div class="text-center">
-                        <div class="text-sm text-muted-foreground">Optimized Lineup</div>
-                        <div class="text-2xl font-bold text-green-600">{{ number_format($this->optimized_lineup_total, 1) }}</div>
-                        <div class="text-xs text-muted-foreground">{{ (int) round($this->optimized_win_probability['home'] * 100) }}% win prob</div>
-                    </div>
-                </flux:callout>
+                        <flux:callout>
+                            <div class="text-center">
+                                <div class="text-sm text-muted-foreground">Optimized Lineup</div>
+                                <div class="text-2xl font-bold text-green-600">{{ number_format($this->model['optimized_lineup_total'], 1) }}</div>
+                                <div class="text-xs text-muted-foreground">{{ (int) round($this->model['optimized_win_probability']['home'] * 100) }}% win prob</div>
+                            </div>
+                        </flux:callout>
 
-                <flux:callout>
-                    <div class="text-center">
-                        <div class="text-sm text-muted-foreground">Improvement</div>
-                        <div class="text-2xl font-bold {{ $this->improvement > 0 ? 'text-green-600' : 'text-red-600' }}">
-                            {{ $this->improvement > 0 ? '+' : '' }}{{ number_format($this->improvement, 1) }}
-                        </div>
-                        <div class="text-xs text-muted-foreground">
-                            {{ $this->win_probability_improvement > 0 ? '+' : '' }}{{ number_format($this->win_probability_improvement * 100, 1) }}% win prob
-                        </div>
+                        <flux:callout>
+                            <div class="text-center">
+                                <div class="text-sm text-muted-foreground">Improvement</div>
+                                <div class="text-2xl font-bold {{ $this->model['improvement'] > 0 ? 'text-green-600' : 'text-red-600' }}">
+                                    {{ $this->model['improvement'] > 0 ? '+' : '' }}{{ number_format($this->model['improvement'], 1) }}
+                                </div>
+                                <div class="text-xs text-muted-foreground">
+                                    {{ $this->model['win_probability_improvement'] > 0 ? '+' : '' }}{{ number_format($this->model['win_probability_improvement'] * 100, 1) }}% win prob
+                                </div>
+                            </div>
+                        </flux:callout>
                     </div>
-                </flux:callout>
-            </div>
 
             <!-- Interactive Lineup Builder -->
             <div class="grid gap-6 lg:grid-cols-2">

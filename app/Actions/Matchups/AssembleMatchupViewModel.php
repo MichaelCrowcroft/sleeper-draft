@@ -25,7 +25,7 @@ class AssembleMatchupViewModel
     /**
      * Build a normalized matchup VM for a given league & week for the specified rosterId.
      */
-    public function execute(string $leagueId, ?int $week, int $rosterId): array
+    public function execute(string $leagueId, ?int $week, ?int $rosterId): array
     {
         $state = $this->determineCurrentWeek->execute('nfl');
         $resolvedWeek = $week ?? $state['week'];
@@ -47,6 +47,9 @@ class AssembleMatchupViewModel
         foreach ($users as $u) {
             $userById[(string) ($u['user_id'] ?? '')] = $u;
         }
+
+        // Handle null rosterId by converting to 0 (which triggers auto-detection)
+        $rosterId = $rosterId ?? 0;
 
         // Determine selected roster id robustly
         $allRosterIds = array_map(fn ($r) => (int) ($r['roster_id'] ?? 0), $rosters);
@@ -123,6 +126,14 @@ class AssembleMatchupViewModel
 
         $homeTotals = $this->aggregateTeamTotals->execute($homePoints);
         $awayTotals = $this->aggregateTeamTotals->execute($awayPoints);
+
+        // Add point ranges and risk indicators to player points
+        $homePoints = $this->enhancePlayerPoints($homePoints);
+        $awayPoints = $this->enhancePlayerPoints($awayPoints);
+
+        // Calculate total team point ranges
+        $homeTotals = $this->enhanceTeamTotals($homeTotals, $homePoints);
+        $awayTotals = $this->enhanceTeamTotals($awayTotals, $awayPoints);
 
         // Simple variance: assume 6.0 per starter not yet locked
         $estimateVariance = function (array $points): float {
@@ -224,5 +235,104 @@ class AssembleMatchupViewModel
             'selected_roster_id' => $selectedRosterId,
             'players' => $playerLookup,
         ];
+    }
+
+    /**
+     * Add point ranges and risk indicators to player points data.
+     */
+    private function enhancePlayerPoints(array $playerPoints): array
+    {
+        $enhanced = [];
+
+        foreach ($playerPoints as $playerId => $data) {
+            $enhanced[$playerId] = $data;
+
+            if ($data['status'] === 'locked') {
+                // Locked games: show actual points with minimal range
+                $enhanced[$playerId]['range'] = [
+                    'min' => round($data['actual'], 1),
+                    'max' => round($data['actual'], 1),
+                    'display' => number_format($data['actual'], 1),
+                ];
+                $enhanced[$playerId]['risk'] = 'safe';
+            } else {
+                // Upcoming games: calculate range based on projection
+                $projected = $data['projected'];
+                $stdDev = $this->calculatePlayerStdDev($projected);
+
+                $enhanced[$playerId]['range'] = [
+                    'min' => round(max(0, $projected - $stdDev), 1),
+                    'max' => round($projected + $stdDev, 1),
+                    'display' => number_format($projected, 1).' ('.number_format(max(0, $projected - $stdDev), 1).'-'.number_format($projected + $stdDev, 1).')',
+                ];
+                $enhanced[$playerId]['risk'] = $this->calculatePlayerRisk($projected, $stdDev);
+            }
+        }
+
+        return $enhanced;
+    }
+
+    /**
+     * Calculate standard deviation for a player's projected points.
+     */
+    private function calculatePlayerStdDev(float $projected): float
+    {
+        // Base variance increases with projected points but caps at reasonable levels
+        // Higher projected points generally have higher variance
+        if ($projected <= 5) {
+            return 3.0; // Low projection = lower variance
+        } elseif ($projected <= 15) {
+            return 4.5; // Medium projection = medium variance
+        } elseif ($projected <= 25) {
+            return 6.0; // High projection = higher variance
+        } else {
+            return 7.5; // Very high projection = highest variance
+        }
+    }
+
+    /**
+     * Calculate risk level for a player based on projection and variance.
+     */
+    private function calculatePlayerRisk(float $projected, float $stdDev): string
+    {
+        $cv = $stdDev / max(0.1, $projected); // Coefficient of variation
+
+        if ($cv > 0.4 || $projected < 8) {
+            return 'high';
+        } elseif ($cv > 0.25 || $projected < 12) {
+            return 'medium';
+        } else {
+            return 'low';
+        }
+    }
+
+    /**
+     * Add point range calculations to team totals.
+     */
+    private function enhanceTeamTotals(array $totals, array $playerPoints): array
+    {
+        $enhanced = $totals;
+
+        // Calculate total range by summing individual player ranges
+        $totalMin = 0.0;
+        $totalMax = 0.0;
+
+        foreach ($playerPoints as $data) {
+            if ($data['status'] === 'locked') {
+                $totalMin += $data['actual'];
+                $totalMax += $data['actual'];
+            } else {
+                $totalMin += $data['range']['min'];
+                $totalMax += $data['range']['max'];
+            }
+        }
+
+        $enhanced['range'] = [
+            'min' => round($totalMin, 1),
+            'max' => round($totalMax, 1),
+            'display' => number_format($totals['total_estimated'], 1).' ('.number_format($totalMin, 1).'-'.number_format($totalMax, 1).')',
+        ];
+
+        return $enhanced;
     }
 }

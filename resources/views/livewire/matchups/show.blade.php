@@ -75,7 +75,8 @@ new class extends Component
                                 <div class="text-sm text-muted-foreground">{{ $this->model['home']['owner_name'] ?? ('Roster '.$this->model['home']['roster_id']) }}</div>
                             </div>
                             <div class="text-right">
-                                <div class="text-2xl font-bold">{{ number_format($this->model['home']['totals']['total_estimated'], 1) }}</div>
+                                <div class="text-2xl font-bold">{{ $this->model['home']['totals']['range']['display'] }}</div>
+                                <div class="text-xs text-muted-foreground">Range: {{ number_format($this->model['home']['totals']['range']['min'], 1) }}-{{ number_format($this->model['home']['totals']['range']['max'], 1) }}</div>
                                 <div class="text-xs text-muted-foreground">Actual {{ number_format($this->model['home']['totals']['actual'], 1) }} + Remaining {{ number_format($this->model['home']['totals']['projected_remaining'], 1) }}</div>
                             </div>
                         </div>
@@ -88,7 +89,8 @@ new class extends Component
                                 <div class="text-sm text-muted-foreground">{{ $this->model['away']['owner_name'] ?? ('Roster '.$this->model['away']['roster_id']) }}</div>
                             </div>
                             <div class="text-right">
-                                <div class="text-2xl font-bold">{{ number_format($this->model['away']['totals']['total_estimated'], 1) }}</div>
+                                <div class="text-2xl font-bold">{{ $this->model['away']['totals']['range']['display'] }}</div>
+                                <div class="text-xs text-muted-foreground">Range: {{ number_format($this->model['away']['totals']['range']['min'], 1) }}-{{ number_format($this->model['away']['totals']['range']['max'], 1) }}</div>
                                 <div class="text-xs text-muted-foreground">Actual {{ number_format($this->model['away']['totals']['actual'], 1) }} + Remaining {{ number_format($this->model['away']['totals']['projected_remaining'], 1) }}</div>
                             </div>
                         </div>
@@ -107,6 +109,29 @@ new class extends Component
                         <rect x="0" y="0" width="100" height="6" class="fill-gray-200 dark:fill-gray-800" />
                         <rect x="0" y="0" width="{{ $homePct }}" height="6" class="fill-emerald-600" />
                     </svg>
+                </div>
+
+                <!-- Risk Legend -->
+                <div class="p-4 rounded-lg border bg-card">
+                    <div class="font-semibold mb-2">Risk Indicators</div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 rounded-full bg-green-600 text-white">✓ Safe</span>
+                            <span>Game completed</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 rounded-full bg-blue-600 text-white">⚠ Low</span>
+                            <span>Reliable projection</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 rounded-full bg-yellow-600 text-white">⚠ Medium</span>
+                            <span>Moderate risk</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 rounded-full bg-red-600 text-white">⚠ High</span>
+                            <span>High variance</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Lineup Optimizer Link -->
@@ -141,9 +166,16 @@ new class extends Component
                                         @endif
                                     </div>
                                     @if ($row)
-                                        <div class="flex items-center gap-3">
-                                            <span class="text-xs {{ $row['status']==='locked' ? 'text-gray-500' : 'text-emerald-600' }}">{{ ucfirst($row['status']) }}</span>
-                                            <span class="font-medium">{{ number_format($row['used'], 1) }}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs px-2 py-1 rounded-full text-white
+                                                @if($row['risk'] === 'safe') bg-green-600
+                                                @elseif($row['risk'] === 'low') bg-blue-600
+                                                @elseif($row['risk'] === 'medium') bg-yellow-600
+                                                @else bg-red-600
+                                                @endif">
+                                                @if($row['status'] === 'locked') ✓ Safe @else ⚠ {{ ucfirst($row['risk']) }} @endif
+                                            </span>
+                                            <span class="font-medium">{{ $row['range']['display'] }}</span>
                                         </div>
                                     @endif
                                 </div>
@@ -168,9 +200,16 @@ new class extends Component
                                         @endif
                                     </div>
                                     @if ($row)
-                                        <div class="flex items-center gap-3">
-                                            <span class="text-xs {{ $row['status']==='locked' ? 'text-gray-500' : 'text-emerald-600' }}">{{ ucfirst($row['status']) }}</span>
-                                            <span class="font-medium">{{ number_format($row['used'], 1) }}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs px-2 py-1 rounded-full text-white
+                                                @if($row['risk'] === 'safe') bg-green-600
+                                                @elseif($row['risk'] === 'low') bg-blue-600
+                                                @elseif($row['risk'] === 'medium') bg-yellow-600
+                                                @else bg-red-600
+                                                @endif">
+                                                @if($row['status'] === 'locked') ✓ Safe @else ⚠ {{ ucfirst($row['risk']) }} @endif
+                                            </span>
+                                            <span class="font-medium">{{ $row['range']['display'] }}</span>
                                         </div>
                                     @endif
                                 </div>
