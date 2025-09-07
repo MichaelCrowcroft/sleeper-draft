@@ -458,12 +458,16 @@ new class extends Component {
         </div>
     </div>
 
-    <!-- Main Content Tabs -->
+    <!-- Main Content Navigation -->
     <div class="space-y-6">
-        <flux:tabs value="{{ $activeTab }}" wire:model.live="activeTab">
-            <!-- Overview Tab -->
-            <flux:tab name="overview" heading="Overview">
-                <div class="space-y-6">
+        <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-800 pb-3 sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-gray-900/60 z-10">
+            <flux:button size="sm" variant="{{ $activeTab === 'overview' ? 'primary' : 'ghost' }}" wire:click="$set('activeTab','overview')">Overview</flux:button>
+            <flux:button size="sm" variant="{{ $activeTab === 'weekly' ? 'primary' : 'ghost' }}" wire:click="$set('activeTab','weekly')">Weekly Performance</flux:button>
+            <flux:button size="sm" variant="{{ $activeTab === 'stats' ? 'primary' : 'ghost' }}" wire:click="$set('activeTab','stats')">Detailed Stats</flux:button>
+        </div>
+
+        @if ($activeTab === 'overview')
+            <div class="space-y-6">
                     <!-- Performance Chart -->
                     @if($this->box2024Horizontal['exists'] ?? false)
                         <flux:callout>
@@ -527,11 +531,8 @@ new class extends Component {
                         </flux:callout>
                     </div>
                 </div>
-            </flux:tab>
-
-            <!-- Weekly Performance Tab -->
-            <flux:tab name="weekly" heading="Weekly Performance">
-                <div class="space-y-6">
+        @elseif ($activeTab === 'weekly')
+            <div class="space-y-6">
                     <!-- 2024 Weekly Performance -->
                     <flux:callout>
                         <flux:heading size="md" class="mb-4">2024 Weekly Performance</flux:heading>
@@ -623,12 +624,9 @@ new class extends Component {
                             </div>
                         @endif
                     </flux:callout>
-                </div>
-            </flux:tab>
-
-            <!-- Detailed Stats Tab -->
-            <flux:tab name="stats" heading="Detailed Stats">
-                @if (!empty($this->stats2024))
+            </div>
+        @elseif ($activeTab === 'stats')
+            @if (!empty($this->stats2024))
                     <flux:callout>
                         <flux:heading size="md" class="mb-6">2024 Detailed Stats ({{ $this->position }})</flux:heading>
 
@@ -833,7 +831,7 @@ new class extends Component {
                             </div>
                         @endif
                     </flux:callout>
-                @else
+            @else
                     <flux:callout>
                         <div class="text-center py-12">
                             <div class="text-muted-foreground">
@@ -841,8 +839,7 @@ new class extends Component {
                             </div>
                         </div>
                     </flux:callout>
-                @endif
-            </flux:tab>
-        </flux:tabs>
+            @endif
+        @endif
     </div>
 </section>
