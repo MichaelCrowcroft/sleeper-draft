@@ -26,6 +26,8 @@ new class extends Component
         'age' => true,
         'adp' => true,
         'avg_ppg_2024' => true,
+        'position_rank_2024' => true,
+        'snap_pct_2024' => true,
         'stddev_above' => true,
         'stddev_below' => true,
         'proj_ppg_2025' => true,
@@ -155,10 +157,22 @@ new class extends Component
         $players = $query->with(['stats2024', 'projections2025'])
             ->paginate(25);
 
+        // Get position rankings for 2024 season
+        $positionRankings = Player::calculatePositionRankings2024();
+        $rankingsLookup = [];
+        foreach ($positionRankings as $position => $rankedPlayers) {
+            foreach ($rankedPlayers as $rankedPlayer) {
+                $rankingsLookup[$rankedPlayer['player_id']] = $rankedPlayer['rank'];
+            }
+        }
+
         // Add player stats and roster information for each player
         foreach ($players as $player) {
             $player->season_2024_summary = $player->getSeason2024Summary();
             $player->season_2025_projections = $player->getSeason2025ProjectionSummary();
+
+            // Add position ranking
+            $player->season_2024_summary['position_rank'] = $rankingsLookup[$player->player_id] ?? null;
 
             // Compute projected points for the current week (PPR)
             $player->proj_pts_week = null;
@@ -377,64 +391,85 @@ new class extends Component
             </flux:callout>
         </div>
 
-        <!-- Filters -->
+        <!-- Player Filters -->
         <flux:callout>
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-6 place-items-center">
-                <!-- Search -->
-                <div>
-                    <flux:input
-                        wire:model.live.debounce.300ms="search"
-                        placeholder="Search players..."
-                        type="search"
-                    />
-                </div>
-
-                <!-- Position Filter -->
-                <div>
-                    <flux:select wire:model.live="position">
-                        <flux:select.option value="">All Positions</flux:select.option>
-                        @foreach ($this->availablePositions as $pos)
-                            <flux:select.option value="{{ $pos }}">{{ $pos }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                </div>
-
-                <!-- Team Filter -->
-                <div>
-                    <flux:select wire:model.live="team">
-                        <flux:select.option value="">All Teams</flux:select.option>
-                        @foreach ($this->availableTeams as $teamCode)
-                            <flux:select.option value="{{ $teamCode }}">{{ $teamCode }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                </div>
-
-                <!-- League Selection -->
-                <div>
-                    <flux:select wire:model.live="selectedLeagueId">
-                        <flux:select.option value="">No League Selected</flux:select.option>
-                        @foreach ($this->leagues as $league)
-                            <flux:select.option value="{{ $league['league_id'] }}">{{ $league['name'] }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                </div>
-
-                <!-- Free Agents Only -->
-                @if($selectedLeagueId)
+            <div class="space-y-4">
+                <flux:heading size="sm">Player Filters</flux:heading>
+                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4 place-items-center">
+                    <!-- Search -->
                     <div>
-                        <label class="flex items-center gap-2 text-sm">
-                            <flux:switch wire:model.live="faOnly" />
-                            <span>Free agents only</span>
-                        </label>
+                        <flux:input
+                            wire:model.live.debounce.300ms="search"
+                            placeholder="Search players..."
+                            type="search"
+                        />
                     </div>
-                @endif
 
-                <!-- Filter Button -->
-                <div>
-                    <flux:button variant="primary" wire:loading.attr="disabled">
-                        <span wire:loading.remove>Filter</span>
-                        <span wire:loading>Filtering...</span>
-                    </flux:button>
+                    <!-- Position Filter -->
+                    <div>
+                        <flux:select wire:model.live="position">
+                            <flux:select.option value="">All Positions</flux:select.option>
+                            @foreach ($this->availablePositions as $pos)
+                                <flux:select.option value="{{ $pos }}">{{ $pos }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                    </div>
+
+                    <!-- Team Filter -->
+                    <div>
+                        <flux:select wire:model.live="team">
+                            <flux:select.option value="">All Teams</flux:select.option>
+                            @foreach ($this->availableTeams as $teamCode)
+                                <flux:select.option value="{{ $teamCode }}">{{ $teamCode }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                    </div>
+
+                    <!-- Filter Button -->
+                    <div>
+                        <flux:button variant="primary" wire:loading.attr="disabled">
+                            <span wire:loading.remove>Filter</span>
+                            <span wire:loading>Filtering...</span>
+                        </flux:button>
+                    </div>
+                </div>
+            </div>
+        </flux:callout>
+
+        <!-- League Filters -->
+        <flux:callout>
+            <div class="space-y-4">
+                <flux:heading size="sm">League Filters</flux:heading>
+                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 place-items-center">
+                    <!-- League Selection -->
+                    <div>
+                        <flux:select wire:model.live="selectedLeagueId">
+                            <flux:select.option value="">No League Selected</flux:select.option>
+                            @foreach ($this->leagues as $league)
+                                <flux:select.option value="{{ $league['league_id'] }}">{{ $league['name'] }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                    </div>
+
+                    <!-- Free Agents Only -->
+                    @if($selectedLeagueId)
+                        <div>
+                            <label class="flex items-center gap-2 text-sm">
+                                <flux:switch wire:model.live="faOnly" />
+                                <span>Free agents only</span>
+                            </label>
+                        </div>
+                    @else
+                        <div>
+                            <label class="flex items-center gap-2 text-sm text-muted-foreground">
+                                <flux:switch disabled />
+                                <span>Select a league to filter free agents</span>
+                            </label>
+                        </div>
+                    @endif
+
+                    <!-- Spacer for alignment -->
+                    <div></div>
                 </div>
             </div>
         </flux:callout>
@@ -455,6 +490,14 @@ new class extends Component
                         <label class="flex items-center gap-2 text-sm">
                             <flux:switch wire:model.live="selectedMetrics.avg_ppg_2024" />
                             <span>Avg PPG (2024)</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm">
+                            <flux:switch wire:model.live="selectedMetrics.position_rank_2024" />
+                            <span>Position Rank (2024)</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm">
+                            <flux:switch wire:model.live="selectedMetrics.snap_pct_2024" />
+                            <span>Avg Snap % (2024)</span>
                         </label>
                         <label class="flex items-center gap-2 text-sm">
                             <flux:switch wire:model.live="selectedMetrics.stddev_above" />
@@ -583,6 +626,12 @@ new class extends Component
                     @if($selectedMetrics['avg_ppg_2024'])
                     <flux:table.column>Avg PPG (2024)</flux:table.column>
                     @endif
+                    @if($selectedMetrics['position_rank_2024'])
+                    <flux:table.column>Pos Rank (2024)</flux:table.column>
+                    @endif
+                    @if($selectedMetrics['snap_pct_2024'])
+                    <flux:table.column>Avg Snap % (2024)</flux:table.column>
+                    @endif
                     @if($selectedMetrics['stddev_above'])
                     <flux:table.column>+1σ PPG (2024)</flux:table.column>
                     @endif
@@ -695,6 +744,26 @@ new class extends Component
                             <flux:table.cell>
                                 @if (isset($player->season_2024_summary) && isset($player->season_2024_summary['average_points_per_game']) && $player->season_2024_summary['average_points_per_game'] > 0)
                                     <span class="font-medium text-green-600">{{ number_format($player->season_2024_summary['average_points_per_game'], 1) }}</span>
+                                @else
+                                    <span class="text-muted-foreground">-</span>
+                                @endif
+                            </flux:table.cell>
+                            @endif
+
+                            @if($selectedMetrics['position_rank_2024'])
+                            <flux:table.cell>
+                                @if (isset($player->season_2024_summary) && isset($player->season_2024_summary['position_rank']) && $player->season_2024_summary['position_rank'])
+                                    <flux:badge variant="secondary" color="purple">{{ $player->position }}{{ $player->season_2024_summary['position_rank'] }}</flux:badge>
+                                @else
+                                    <span class="text-muted-foreground">-</span>
+                                @endif
+                            </flux:table.cell>
+                            @endif
+
+                            @if($selectedMetrics['snap_pct_2024'])
+                            <flux:table.cell>
+                                @if (isset($player->season_2024_summary) && isset($player->season_2024_summary['snap_percentage_avg']) && $player->season_2024_summary['snap_percentage_avg'] !== null)
+                                    <span class="font-medium text-blue-600">{{ number_format($player->season_2024_summary['snap_percentage_avg'], 1) }}%</span>
                                 @else
                                     <span class="text-muted-foreground">-</span>
                                 @endif

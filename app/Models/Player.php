@@ -178,7 +178,7 @@ class Player extends Model
     {
         $weekly = $this->getProjectionsForWeek($season, $week);
 
-        if (!$weekly) {
+        if (! $weekly) {
             return null;
         }
 
@@ -261,7 +261,7 @@ class Player extends Model
         if ($flattenedGames > 0) {
             foreach ($flattenedSum as $metric => $sum) {
                 // Prefer nested stats if already computed, otherwise use flattened
-                if (!array_key_exists($metric, $avgByMetric)) {
+                if (! array_key_exists($metric, $avgByMetric)) {
                     $avgByMetric[$metric] = $sum / $flattenedGames;
                 }
             }
@@ -296,6 +296,57 @@ class Player extends Model
     public function stats2024(): HasMany
     {
         return $this->stats()->where('season', 2024);
+    }
+
+    /**
+     * Calculate position-based rankings for 2024 season based on total PPR points.
+     *
+     * @return array Array with player rankings by position
+     */
+    public static function calculatePositionRankings2024(): array
+    {
+        $players = self::where('active', true)
+            ->whereIn('position', ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'])
+            ->with('stats2024')
+            ->get();
+
+        $positionRankings = [];
+        $playersWithPoints = [];
+
+        // First, calculate total points for each player
+        foreach ($players as $player) {
+            $summary = $player->getSeason2024Summary();
+
+            if ($summary['games_active'] > 0) {
+                $playersWithPoints[] = [
+                    'player' => $player,
+                    'total_points' => $summary['total_points'],
+                    'position' => $player->position,
+                    'player_id' => $player->player_id,
+                ];
+            }
+        }
+
+        // Group by position and sort by total points descending
+        $byPosition = collect($playersWithPoints)->groupBy('position');
+
+        foreach ($byPosition as $position => $positionPlayers) {
+            $sortedPlayers = $positionPlayers->sortByDesc('total_points')->values();
+
+            $positionRankings[$position] = [];
+            $rank = 1;
+
+            foreach ($sortedPlayers as $playerData) {
+                $positionRankings[$position][] = [
+                    'player_id' => $playerData['player_id'],
+                    'rank' => $rank,
+                    'total_points' => $playerData['total_points'],
+                ];
+                $rank++;
+            }
+        }
+
+        return $positionRankings;
     }
 
     /**
@@ -336,6 +387,7 @@ class Player extends Model
 
         $points = [];
         $totalGamesActive = 0;
+        $snapData = [];
 
         foreach ($collection as $weeklyStats) {
             $stats = $weeklyStats->stats ?? [];
@@ -349,6 +401,11 @@ class Player extends Model
                 $points[] = $ppr;
                 $totalGamesActive += ($gmsActive !== null ? max(0, (int) $gmsActive) : 1);
             }
+
+            // Collect snap percentage data if available
+            if (isset($stats['snap_pct']) && is_numeric($stats['snap_pct'])) {
+                $snapData[] = (float) $stats['snap_pct'];
+            }
         }
 
         if (empty($points)) {
@@ -360,6 +417,8 @@ class Player extends Model
                 'stddev_below' => 0.0,
                 'stddev_above' => 0.0,
                 'games_active' => 0,
+                'snap_percentage_avg' => null,
+                'position_rank' => null,
             ];
         }
 
@@ -377,6 +436,12 @@ class Player extends Model
         $variance = $n > 0 ? $variance / $n : 0.0; // population variance
         $stddev = sqrt($variance);
 
+        // Calculate average snap percentage
+        $snapPercentageAvg = null;
+        if (! empty($snapData)) {
+            $snapPercentageAvg = array_sum($snapData) / count($snapData);
+        }
+
         return [
             'total_points' => $total,
             'min_points' => $min,
@@ -385,6 +450,8 @@ class Player extends Model
             'stddev_below' => $avg - $stddev,
             'stddev_above' => $avg + $stddev,
             'games_active' => $games,
+            'snap_percentage_avg' => $snapPercentageAvg,
+            'position_rank' => null, // Will be set by calling method
         ];
     }
 }

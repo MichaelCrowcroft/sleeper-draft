@@ -26,16 +26,12 @@ Route::middleware(['auth'])->group(function () {
 
     // Players section
     Volt::route('players', 'players.index')->name('players.index');
-
-    // Position-specific player pages (must come before parameterized routes)
     Volt::route('players/qb', 'players.qb')->name('players.qb');
     Volt::route('players/rb', 'players.rb')->name('players.rb');
     Volt::route('players/wr', 'players.wr')->name('players.wr');
     Volt::route('players/te', 'players.te')->name('players.te');
     Volt::route('players/def', 'players.def')->name('players.def');
     Volt::route('players/k', 'players.k')->name('players.k');
-
-    // Player show route (must come last due to parameter)
     Volt::route('players/{playerId}', 'players.show')->name('players.show');
 
     // Analytics routes
@@ -46,9 +42,9 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('leagues/{leagueId}/week/{week}/matchup', 'matchups.show')->name('matchups.show');
     Volt::route('leagues/{leagueId}/matchup', 'matchups.show')->name('matchups.show.current');
 
-    // Lineup Optimizer routes
-    Volt::route('leagues/{leagueId}/week/{week}/lineup-optimizer', 'lineup-optimizer')->name('lineup-optimizer.show');
-    Volt::route('leagues/{leagueId}/lineup-optimizer', 'lineup-optimizer')->name('lineup-optimizer.current');
+    // // Lineup Optimizer routes
+    // Volt::route('leagues/{leagueId}/week/{week}/lineup-optimizer', 'lineup-optimizer')->name('lineup-optimizer.show');
+    // Volt::route('leagues/{leagueId}/lineup-optimizer', 'lineup-optimizer')->name('lineup-optimizer.current');
 
     // Leagues index
     Volt::route('leagues', 'leagues.index')->name('leagues.index');
