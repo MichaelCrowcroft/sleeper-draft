@@ -3,10 +3,10 @@
 namespace App\Actions\Matchups;
 
 use App\Actions\Sleeper\FetchLeague;
-use App\Actions\Sleeper\FetchMatchups;
 use App\Actions\Sleeper\FetchLeagueUsers;
+use App\Actions\Sleeper\FetchMatchups;
 use App\Actions\Sleeper\FetchRosters;
-use Illuminate\Support\Arr;
+use App\Models\Player;
 use Illuminate\Support\Facades\Auth;
 
 class AssembleMatchupViewModel
@@ -67,9 +67,9 @@ class AssembleMatchupViewModel
 
         if ($selectedRosterId === 0) {
             // fallback to first available in matchups or rosters
-            if (!empty($matchups)) {
+            if (! empty($matchups)) {
                 $selectedRosterId = (int) ($matchups[0]['roster_id'] ?? 0);
-            } elseif (!empty($rosters)) {
+            } elseif (! empty($rosters)) {
                 $selectedRosterId = (int) ($rosters[0]['roster_id'] ?? 0);
             }
         }
@@ -85,7 +85,9 @@ class AssembleMatchupViewModel
         if (count($pair) < 2) {
             $byMatchup = [];
             foreach ($matchups as $m) {
-                if (!isset($m['matchup_id'])) { continue; }
+                if (! isset($m['matchup_id'])) {
+                    continue;
+                }
                 $byMatchup[$m['matchup_id']][] = $m;
             }
             foreach ($byMatchup as $mid => $entries) {
@@ -128,6 +130,7 @@ class AssembleMatchupViewModel
             foreach ($points as $row) {
                 $variance += $row['status'] === 'locked' ? 1.0 : 36.0; // stddev 1 for completed, 6 for remaining
             }
+
             return $variance;
         };
 
@@ -146,8 +149,10 @@ class AssembleMatchupViewModel
             $ownerId = $rosterById[(int) ($r['roster_id'] ?? 0)]['owner_id'] ?? null;
             if ($ownerId && isset($userById[(string) $ownerId])) {
                 $u = $userById[(string) $ownerId];
+
                 return $u['display_name'] ?? ($u['username'] ?? null);
             }
+
             return null;
         };
 
@@ -159,6 +164,36 @@ class AssembleMatchupViewModel
                 ? ($userById[(string) $oid]['display_name'] ?? $userById[(string) $oid]['username'] ?? ('Roster '.$rid))
                 : ('Roster '.$rid);
             $rosterOptions[] = ['value' => $rid, 'label' => $label];
+        }
+
+        // Fetch player names for all players in the matchup
+        $allPlayerIds = array_unique(array_merge($homeLineup['starters'], $awayLineup['starters']));
+        $playerLookup = [];
+
+        if (! empty($allPlayerIds)) {
+            $players = Player::whereIn('player_id', $allPlayerIds)
+                ->select(['player_id', 'full_name', 'first_name', 'last_name', 'team', 'position'])
+                ->get()
+                ->keyBy('player_id');
+
+            foreach ($allPlayerIds as $playerId) {
+                $player = $players->get($playerId);
+                if ($player) {
+                    $displayName = $player->full_name ?: ($player->first_name.' '.$player->last_name);
+                    $playerLookup[$playerId] = [
+                        'name' => trim($displayName) ?: $playerId,
+                        'team' => $player->team,
+                        'position' => $player->position,
+                    ];
+                } else {
+                    // Fallback if player not found in database
+                    $playerLookup[$playerId] = [
+                        'name' => $playerId,
+                        'team' => null,
+                        'position' => null,
+                    ];
+                }
+            }
         }
 
         return [
@@ -187,6 +222,7 @@ class AssembleMatchupViewModel
             'win_probability' => $prob,
             'roster_options' => $rosterOptions,
             'selected_roster_id' => $selectedRosterId,
+            'players' => $playerLookup,
         ];
     }
 }

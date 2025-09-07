@@ -114,9 +114,19 @@ new class extends Component
                         <flux:heading size="md" class="mb-2">Your Starters</flux:heading>
                         <div class="divide-y">
                             @foreach ($this->model['home']['starters'] as $pid)
-                                @php $row = $this->model['home']['points'][$pid] ?? null; @endphp
+                                @php
+                                    $row = $this->model['home']['points'][$pid] ?? null;
+                                    $player = $this->model['players'][$pid] ?? null;
+                                @endphp
                                 <div class="py-2 flex items-center justify-between text-sm">
-                                    <div class="text-muted-foreground">{{ $pid }}</div>
+                                    <div>
+                                        <div class="font-medium">{{ $player['name'] ?? $pid }}</div>
+                                        @if ($player && ($player['position'] || $player['team']))
+                                            <div class="text-xs text-muted-foreground">
+                                                {{ $player['position'] }}{{ $player['position'] && $player['team'] ? ' • ' : '' }}{{ $player['team'] }}
+                                            </div>
+                                        @endif
+                                    </div>
                                     @if ($row)
                                         <div class="flex items-center gap-3">
                                             <span class="text-xs {{ $row['status']==='locked' ? 'text-gray-500' : 'text-emerald-600' }}">{{ ucfirst($row['status']) }}</span>
@@ -131,9 +141,19 @@ new class extends Component
                         <flux:heading size="md" class="mb-2">Opponent Starters</flux:heading>
                         <div class="divide-y">
                             @foreach ($this->model['away']['starters'] as $pid)
-                                @php $row = $this->model['away']['points'][$pid] ?? null; @endphp
+                                @php
+                                    $row = $this->model['away']['points'][$pid] ?? null;
+                                    $player = $this->model['players'][$pid] ?? null;
+                                @endphp
                                 <div class="py-2 flex items-center justify-between text-sm">
-                                    <div class="text-muted-foreground">{{ $pid }}</div>
+                                    <div>
+                                        <div class="font-medium">{{ $player['name'] ?? $pid }}</div>
+                                        @if ($player && ($player['position'] || $player['team']))
+                                            <div class="text-xs text-muted-foreground">
+                                                {{ $player['position'] }}{{ $player['position'] && $player['team'] ? ' • ' : '' }}{{ $player['team'] }}
+                                            </div>
+                                        @endif
+                                    </div>
                                     @if ($row)
                                         <div class="flex items-center gap-3">
                                             <span class="text-xs {{ $row['status']==='locked' ? 'text-gray-500' : 'text-emerald-600' }}">{{ ucfirst($row['status']) }}</span>
