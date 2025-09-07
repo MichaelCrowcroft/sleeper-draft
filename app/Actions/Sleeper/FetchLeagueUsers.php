@@ -31,4 +31,10 @@ class FetchLeagueUsers
             return [];
         });
     }
+
+    public function clearCache(string $leagueId): void
+    {
+        $cacheKey = 'sleeper:league_users:'.$leagueId;
+        Cache::forget($cacheKey);
+    }
 }

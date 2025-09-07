@@ -4,6 +4,7 @@ use App\Actions\Matchups\AssembleMatchupViewModel;
 use App\Actions\Matchups\DetermineCurrentWeek;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 new class extends Component
 {
@@ -23,6 +24,28 @@ new class extends Component
         $roster = $this->rosterId !== null ? (int) $this->rosterId : 0;
         return app(AssembleMatchupViewModel::class)->execute((string) $this->leagueId, $this->week, $roster);
     }
+
+    public function refreshMatchup(): void
+    {
+        // Determine the current week if not specified
+        $currentWeek = $this->week ?? app(DetermineCurrentWeek::class)->execute('nfl')['week'];
+
+        // Clear all relevant cache keys
+        $cacheKeys = [
+            'sleeper:league:' . $this->leagueId,
+            'sleeper:rosters:' . $this->leagueId,
+            'sleeper:league_users:' . $this->leagueId,
+            'sleeper:matchups:' . $this->leagueId . ':week:' . $currentWeek,
+            'sleeper:state:current:nfl',
+        ];
+
+        foreach ($cacheKeys as $key) {
+            Cache::forget($key);
+        }
+
+        // Clear cached model property and refresh
+        unset($this->model);
+    }
 }; ?>
 
 <section class="w-full" wire:poll.30s>
@@ -32,7 +55,10 @@ new class extends Component
             <p class="text-muted-foreground">Week {{ $this->model['week'] }} • {{ $this->model['league']['name'] ?? 'League' }}</p>
         </div>
         <div class="flex items-center gap-2">
-            <flux:button wire:click="$refresh" variant="ghost" size="sm">Refresh</flux:button>
+            <flux:button wire:click="refreshMatchup" variant="ghost" size="sm" wire:loading.attr="disabled" wire:target="refreshMatchup">
+                <span wire:loading.remove wire:target="refreshMatchup">Refresh</span>
+                <span wire:loading wire:target="refreshMatchup">Refreshing...</span>
+            </flux:button>
         </div>
     </div>
 

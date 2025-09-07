@@ -16,9 +16,10 @@ class FetchMatchups
 
         return Cache::remember($cacheKey, now()->addSeconds($this->ttlSeconds ?? 60), function () use ($leagueId, $week) {
             try {
-                $resp = Sleeper::league()->matchups($leagueId, $week);
+                $resp = Sleeper::leagues()->matchups($leagueId, $week);
                 if ($resp->successful()) {
                     $data = $resp->json();
+
                     return is_array($data) ? $data : [];
                 }
 
@@ -29,5 +30,11 @@ class FetchMatchups
 
             return [];
         });
+    }
+
+    public function clearCache(string $leagueId, int $week): void
+    {
+        $cacheKey = 'sleeper:matchups:'.$leagueId.':week:'.$week;
+        Cache::forget($cacheKey);
     }
 }

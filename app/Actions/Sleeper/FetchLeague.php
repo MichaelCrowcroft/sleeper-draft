@@ -31,4 +31,10 @@ class FetchLeague
             return [];
         });
     }
+
+    public function clearCache(string $leagueId): void
+    {
+        $cacheKey = 'sleeper:league:'.$leagueId;
+        Cache::forget($cacheKey);
+    }
 }

@@ -31,4 +31,10 @@ class FetchRosters
             return [];
         });
     }
+
+    public function clearCache(string $leagueId): void
+    {
+        $cacheKey = 'sleeper:rosters:'.$leagueId;
+        Cache::forget($cacheKey);
+    }
 }
