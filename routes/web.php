@@ -33,6 +33,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('players/def', 'players.def')->name('players.def');
     Volt::route('players/k', 'players.k')->name('players.k');
     Volt::route('players/{playerId}', 'players.show')->name('players.show');
+    Volt::route('players/{playerId}/2024', 'players.2024')->name('players.2024');
 
     // Analytics routes
     Volt::route('analytics', 'analytics.index')->name('analytics.index');
