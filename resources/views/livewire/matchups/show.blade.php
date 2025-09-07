@@ -10,19 +10,16 @@ new class extends Component
 {
     public int|string $leagueId;
     public ?int $week = null;
-    public ?int $rosterId = null;
 
-    public function mount(string $leagueId, ?int $week = null, ?int $rosterId = null): void
+    public function mount(string $leagueId, ?int $week = null): void
     {
         $this->leagueId = $leagueId;
         $this->week = $week;
-        $this->rosterId = $rosterId;
     }
 
     public function getModelProperty(): array
     {
-        $roster = $this->rosterId !== null ? (int) $this->rosterId : 0;
-        return app(AssembleMatchupViewModel::class)->execute((string) $this->leagueId, $this->week, $roster);
+        return app(AssembleMatchupViewModel::class)->execute((string) $this->leagueId, $this->week, null);
     }
 
     public function refreshMatchup(): void
@@ -46,13 +43,50 @@ new class extends Component
         // Clear cached model property and refresh
         unset($this->model);
     }
+
+    public function previousWeek(): void
+    {
+        $currentWeek = $this->week ?? app(DetermineCurrentWeek::class)->execute('nfl')['week'];
+        if ($currentWeek > 1) {
+            $this->week = $currentWeek - 1;
+        }
+    }
+
+    public function nextWeek(): void
+    {
+        $currentWeek = $this->week ?? app(DetermineCurrentWeek::class)->execute('nfl')['week'];
+        // Allow navigation up to week 18 (typical NFL season length)
+        if ($currentWeek < 18) {
+            $this->week = $currentWeek + 1;
+        }
+    }
 }; ?>
 
 <section class="w-full" wire:poll.30s>
     <div class="flex items-center justify-between mb-4">
-        <div>
-            <flux:heading size="xl">Matchup</flux:heading>
-            <p class="text-muted-foreground">Week {{ $this->model['week'] }} • {{ $this->model['league']['name'] ?? 'League' }}</p>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <flux:button
+                    wire:click="previousWeek"
+                    variant="outline"
+                    size="sm"
+                    :disabled="$this->model['week'] <= 1"
+                    class="disabled:opacity-50">
+                    ← Previous Week
+                </flux:button>
+                <flux:button
+                    wire:click="nextWeek"
+                    variant="outline"
+                    size="sm"
+                    :disabled="$this->model['week'] >= 18"
+                    class="disabled:opacity-50">
+                    Next Week →
+                </flux:button>
+            </div>
+            <div>
+                <flux:heading size="xl">Matchup</flux:heading>
+                <p class="text-muted-foreground">Week {{ $this->model['week'] }} • {{ $this->model['league']['name'] ?? 'League' }}</p>
+            </div>
         </div>
         <div class="flex items-center gap-2">
             <flux:button wire:click="refreshMatchup" variant="ghost" size="sm" wire:loading.attr="disabled" wire:target="refreshMatchup">
@@ -202,16 +236,6 @@ new class extends Component
                         <div><span class="font-medium">League:</span> {{ $this->model['league']['name'] ?? 'N/A' }} ({{ $this->model['league']['id'] }})</div>
                         <div><span class="font-medium">Season:</span> {{ $this->model['season'] }}</div>
                         <div><span class="font-medium">Week:</span> {{ $this->model['week'] }}</div>
-                        @if (!empty($this->model['roster_options']))
-                            <div class="mt-2">
-                                <label class="text-xs text-muted-foreground">Select roster</label>
-                                <select class="mt-1 block w-full rounded border bg-background p-2" wire:model="rosterId">
-                                    @foreach ($this->model['roster_options'] as $opt)
-                                        <option value="{{ $opt['value'] }}">{{ $opt['label'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        @endif
                     </div>
                 </flux:callout>
             </div>

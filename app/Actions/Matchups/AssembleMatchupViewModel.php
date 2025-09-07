@@ -167,15 +167,7 @@ class AssembleMatchupViewModel
             return null;
         };
 
-        $rosterOptions = [];
-        foreach ($rosters as $r) {
-            $rid = (int) ($r['roster_id'] ?? 0);
-            $oid = $r['owner_id'] ?? null;
-            $label = isset($userById[(string) $oid])
-                ? ($userById[(string) $oid]['display_name'] ?? $userById[(string) $oid]['username'] ?? ('Roster '.$rid))
-                : ('Roster '.$rid);
-            $rosterOptions[] = ['value' => $rid, 'label' => $label];
-        }
+        // Roster options no longer needed since we removed roster selection functionality
 
         // Fetch player names for all players in the matchup
         $allPlayerIds = array_unique(array_merge($homeLineup['starters'], $awayLineup['starters']));
@@ -231,8 +223,6 @@ class AssembleMatchupViewModel
                 'totals' => $awayTotals,
             ],
             'win_probability' => $prob,
-            'roster_options' => $rosterOptions,
-            'selected_roster_id' => $selectedRosterId,
             'players' => $playerLookup,
         ];
     }
