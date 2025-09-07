@@ -42,9 +42,14 @@ new class extends Component
                             <div class="font-semibold">{{ $league['name'] ?? 'League' }}</div>
                             <div class="text-xs text-muted-foreground">{{ $league['league_id'] ?? '' }}</div>
                         </div>
-                        <flux:button href="{{ route('matchups.show.current', ['leagueId' => $league['league_id'] ?? '']) }}" wire:navigate variant="primary" size="sm">
-                            View Matchup
-                        </flux:button>
+                        <div class="flex gap-2">
+                            <flux:button href="{{ route('matchups.show.current', ['leagueId' => $league['league_id'] ?? '']) }}" wire:navigate variant="outline" size="sm">
+                                View Matchup
+                            </flux:button>
+                            <flux:button href="{{ route('lineup-optimizer.current', ['leagueId' => $league['league_id'] ?? '']) }}" wire:navigate variant="primary" size="sm">
+                                Optimize Lineup
+                            </flux:button>
+                        </div>
                     </div>
                 </flux:callout>
             @endforeach

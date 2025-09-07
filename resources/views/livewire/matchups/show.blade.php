@@ -109,137 +109,16 @@ new class extends Component
                     </svg>
                 </div>
 
-                <!-- Lineup Optimization Tool -->
+                <!-- Lineup Optimizer Link -->
                 <div class="p-4 rounded-lg border bg-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="font-semibold">Lineup Optimization</div>
-                        <div class="text-sm text-muted-foreground">Factor in player volatility</div>
-                    </div>
-
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <!-- Your Team Optimization -->
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <div class="font-medium text-sm">Your Optimized Lineup</div>
-                                @if (($this->model['home']['lineup_optimization']['optimized_lineup']['improvement'] ?? 0) > 0)
-                                    <div class="text-sm font-medium text-emerald-600">
-                                        +{{ number_format($this->model['home']['lineup_optimization']['optimized_lineup']['improvement'], 1) }} pts
-                                    </div>
-                                @endif
-                            </div>
-
-                            @if (!empty($this->model['home']['lineup_optimization']['recommendations'] ?? []))
-                                <div class="space-y-2">
-                                    @foreach ($this->model['home']['lineup_optimization']['recommendations'] as $playerId => $rec)
-                                        <div class="flex items-center justify-between text-sm p-2 rounded bg-gray-50 dark:bg-gray-800">
-                                            <div class="flex items-center gap-2">
-                                                <div class="font-medium">{{ $rec['name'] }}</div>
-                                                <div class="text-xs text-muted-foreground">{{ $rec['position'] }}</div>
-                                                @if (!$rec['is_current_starter'])
-                                                    <span class="text-xs bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">NEW</span>
-                                                @endif
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                <div class="text-xs text-muted-foreground">
-                                                    {{ number_format($rec['projected_points'], 1) }}
-                                                    @if ($rec['confidence_score'] > 0.7)
-                                                        <span class="text-emerald-600">●</span>
-                                                    @elseif ($rec['confidence_score'] > 0.5)
-                                                        <span class="text-yellow-600">●</span>
-                                                    @else
-                                                        <span class="text-red-600">●</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-
-                                <!-- Risk Assessment -->
-                                @php
-                                    $risk = $this->model['home']['lineup_optimization']['risk_assessment'] ?? [];
-                                @endphp
-                                <div class="mt-3 p-2 rounded text-xs {{ $risk['level'] === 'low' ? 'bg-emerald-50 text-emerald-800' : ($risk['level'] === 'medium' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800') }}">
-                                    <div class="font-medium">Risk: {{ ucfirst($risk['level']) }}</div>
-                                    <div>{{ $risk['description'] }}</div>
-                                </div>
-                            @else
-                                <div class="text-sm text-muted-foreground p-2">
-                                    No optimization suggestions available
-                                </div>
-                            @endif
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="font-semibold">Lineup Optimization</div>
+                            <div class="text-sm text-muted-foreground">Interactive lineup builder with real-time projections</div>
                         </div>
-
-                        <!-- Opponent Optimization -->
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <div class="font-medium text-sm">Opponent Optimized Lineup</div>
-                                @if (($this->model['away']['lineup_optimization']['optimized_lineup']['improvement'] ?? 0) > 0)
-                                    <div class="text-sm font-medium text-red-600">
-                                        +{{ number_format($this->model['away']['lineup_optimization']['optimized_lineup']['improvement'], 1) }} pts
-                                    </div>
-                                @endif
-                            </div>
-
-                            @if (!empty($this->model['away']['lineup_optimization']['recommendations'] ?? []))
-                                <div class="space-y-2">
-                                    @foreach ($this->model['away']['lineup_optimization']['recommendations'] as $playerId => $rec)
-                                        <div class="flex items-center justify-between text-sm p-2 rounded bg-gray-50 dark:bg-gray-800">
-                                            <div class="flex items-center gap-2">
-                                                <div class="font-medium">{{ $rec['name'] }}</div>
-                                                <div class="text-xs text-muted-foreground">{{ $rec['position'] }}</div>
-                                                @if (!$rec['is_current_starter'])
-                                                    <span class="text-xs bg-red-100 text-red-800 px-1.5 py-0.5 rounded">NEW</span>
-                                                @endif
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                <div class="text-xs text-muted-foreground">
-                                                    {{ number_format($rec['projected_points'], 1) }}
-                                                    @if ($rec['confidence_score'] > 0.7)
-                                                        <span class="text-emerald-600">●</span>
-                                                    @elseif ($rec['confidence_score'] > 0.5)
-                                                        <span class="text-yellow-600">●</span>
-                                                    @else
-                                                        <span class="text-red-600">●</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-
-                                <!-- Opponent Risk Assessment -->
-                                @php
-                                    $opponentRisk = $this->model['away']['lineup_optimization']['risk_assessment'] ?? [];
-                                @endphp
-                                <div class="mt-3 p-2 rounded text-xs {{ $opponentRisk['level'] === 'low' ? 'bg-emerald-50 text-emerald-800' : ($opponentRisk['level'] === 'medium' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800') }}">
-                                    <div class="font-medium">Opponent Risk: {{ ucfirst($opponentRisk['level']) }}</div>
-                                    <div>{{ $opponentRisk['description'] }}</div>
-                                </div>
-                            @else
-                                <div class="text-sm text-muted-foreground p-2">
-                                    No optimization data for opponent
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    <!-- Legend -->
-                    <div class="mt-4 pt-3 border-t text-xs text-muted-foreground">
-                        <div class="flex items-center gap-4">
-                            <div class="flex items-center gap-1">
-                                <span class="text-emerald-600">●</span>
-                                <span>High confidence</span>
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <span class="text-yellow-600">●</span>
-                                <span>Medium confidence</span>
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <span class="text-red-600">●</span>
-                                <span>Low confidence</span>
-                            </div>
-                        </div>
+                        <flux:button href="{{ route('lineup-optimizer.current', ['leagueId' => $this->leagueId]) }}" wire:navigate variant="primary" size="sm">
+                            Optimize Lineup
+                        </flux:button>
                     </div>
                 </div>
 

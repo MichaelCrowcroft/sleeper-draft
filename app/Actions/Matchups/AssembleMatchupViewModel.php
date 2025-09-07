@@ -20,7 +20,6 @@ class AssembleMatchupViewModel
         public BuildLineupsFromRosters $buildLineupsFromRosters,
         public ComputePlayerWeekPoints $computePlayerWeekPoints,
         public AggregateTeamTotals $aggregateTeamTotals,
-        public OptimizeLineup $optimizeLineup,
     ) {}
 
     /**
@@ -146,26 +145,6 @@ class AssembleMatchupViewModel
 
         $prob = app(ComputeWinProbability::class)->execute($homeModel, $awayModel);
 
-        // Generate lineup optimization recommendations for both teams
-        $homeBench = array_diff($homeLineup['bench'] ?? [], $homeLineup['starters'] ?? []);
-        $awayBench = array_diff($awayLineup['bench'] ?? [], $awayLineup['starters'] ?? []);
-
-        $homeOptimization = $this->optimizeLineup->execute(
-            $homeLineup['starters'],
-            array_values($homeBench),
-            $homePoints,
-            $season,
-            $resolvedWeek
-        );
-
-        $awayOptimization = $this->optimizeLineup->execute(
-            $awayLineup['starters'],
-            array_values($awayBench),
-            $awayPoints,
-            $season,
-            $resolvedWeek
-        );
-
         $ownerName = function (array $r) use ($rosterById, $userById): ?string {
             $ownerId = $rosterById[(int) ($r['roster_id'] ?? 0)]['owner_id'] ?? null;
             if ($ownerId && isset($userById[(string) $ownerId])) {
@@ -231,7 +210,6 @@ class AssembleMatchupViewModel
                 'starters' => $homeLineup['starters'],
                 'points' => $homePoints,
                 'totals' => $homeTotals,
-                'lineup_optimization' => $homeOptimization,
             ],
             'away' => [
                 'roster_id' => (int) $away['roster_id'],
@@ -240,7 +218,6 @@ class AssembleMatchupViewModel
                 'starters' => $awayLineup['starters'],
                 'points' => $awayPoints,
                 'totals' => $awayTotals,
-                'lineup_optimization' => $awayOptimization,
             ],
             'win_probability' => $prob,
             'roster_options' => $rosterOptions,
