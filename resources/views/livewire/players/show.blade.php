@@ -567,10 +567,17 @@ new class extends Component {
                                         @foreach ($this->weeklyStats->sortBy('week') as $weekStat)
                                             @php
                                                 $stats = $weekStat->stats ?? [];
-                                                $snap = isset($stats['snap_pct']) && is_numeric($stats['snap_pct']) ? number_format($stats['snap_pct'], 1) . '%'
-                                                    : (isset($stats['snap']) && isset($stats['off_snp']) && is_numeric($stats['snap']) && is_numeric($stats['off_snp']) && $stats['off_snp'] > 0
-                                                        ? number_format(($stats['snap'] / $stats['off_snp']) * 100, 1) . '%'
-                                                        : '—');
+                                                // Determine snap percentage from available fields
+                                                if (isset($stats['snap_pct']) && is_numeric($stats['snap_pct'])) {
+                                                    $snap = number_format($stats['snap_pct'], 1) . '%';
+                                                } elseif (isset($stats['off_snp']) && isset($stats['tm_off_snp']) && is_numeric($stats['off_snp']) && is_numeric($stats['tm_off_snp']) && (float)$stats['tm_off_snp'] > 0) {
+                                                    $snap = number_format(((float)$stats['off_snp'] / (float)$stats['tm_off_snp']) * 100, 1) . '%';
+                                                } elseif (isset($stats['snap_share']) && is_numeric($stats['snap_share'])) {
+                                                    // Some providers give 0-1 share
+                                                    $snap = number_format(((float)$stats['snap_share']) * 100, 1) . '%';
+                                                } else {
+                                                    $snap = '—';
+                                                }
                                                 $rank = $weeklyRanks[$weekStat->week] ?? null;
                                             @endphp
                                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
