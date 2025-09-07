@@ -460,7 +460,7 @@ new class extends Component {
     <div class="space-y-6">
         <div class="sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-gray-900/60 z-10 pb-3">
             <flux:tabs>
-                <flux:tab href="{{ route('players.show', $player->player_id) }}" current>Overview</flux:tab>
+                <flux:tab href="{{ route('players.show', $player->player_id) }}" accent>Overview</flux:tab>
                 <flux:tab href="{{ route('players.show.2024', $player->player_id) }}">2024 Performance</flux:tab>
             </flux:tabs>
         </div>

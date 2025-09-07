@@ -83,7 +83,7 @@ new class extends Component {
     <div class="space-y-6">
         <flux:tabs>
             <flux:tab href="{{ route('players.show', $player->player_id) }}">Overview</flux:tab>
-            <flux:tab href="{{ route('players.show.2024', $player->player_id) }}" current>2024 Performance</flux:tab>
+            <flux:tab href="{{ route('players.show.2024', $player->player_id) }}" accent>2024 Performance</flux:tab>
         </flux:tabs>
 
         <!-- 2024 Performance Content -->
