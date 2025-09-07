@@ -43,50 +43,13 @@ new class extends Component
         // Clear cached model property and refresh
         unset($this->model);
     }
-
-    public function previousWeek(): void
-    {
-        $currentWeek = $this->week ?? app(DetermineCurrentWeek::class)->execute('nfl')['week'];
-        if ($currentWeek > 1) {
-            $this->week = $currentWeek - 1;
-        }
-    }
-
-    public function nextWeek(): void
-    {
-        $currentWeek = $this->week ?? app(DetermineCurrentWeek::class)->execute('nfl')['week'];
-        // Allow navigation up to week 18 (typical NFL season length)
-        if ($currentWeek < 18) {
-            $this->week = $currentWeek + 1;
-        }
-    }
 }; ?>
 
 <section class="w-full" wire:poll.30s>
     <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2">
-                <flux:button
-                    wire:click="previousWeek"
-                    variant="outline"
-                    size="sm"
-                    :disabled="$this->model['week'] <= 1"
-                    class="disabled:opacity-50">
-                    ← Previous Week
-                </flux:button>
-                <flux:button
-                    wire:click="nextWeek"
-                    variant="outline"
-                    size="sm"
-                    :disabled="$this->model['week'] >= 18"
-                    class="disabled:opacity-50">
-                    Next Week →
-                </flux:button>
-            </div>
-            <div>
-                <flux:heading size="xl">Matchup</flux:heading>
-                <p class="text-muted-foreground">Week {{ $this->model['week'] }} • {{ $this->model['league']['name'] ?? 'League' }}</p>
-            </div>
+        <div>
+            <flux:heading size="xl">Matchup</flux:heading>
+            <p class="text-muted-foreground">Week {{ $this->model['week'] }} • {{ $this->model['league']['name'] ?? 'League' }}</p>
         </div>
         <div class="flex items-center gap-2">
             <flux:button wire:click="refreshMatchup" variant="ghost" size="sm" wire:loading.attr="disabled" wire:target="refreshMatchup">
@@ -236,6 +199,33 @@ new class extends Component
                         <div><span class="font-medium">League:</span> {{ $this->model['league']['name'] ?? 'N/A' }} ({{ $this->model['league']['id'] }})</div>
                         <div><span class="font-medium">Season:</span> {{ $this->model['season'] }}</div>
                         <div><span class="font-medium">Week:</span> {{ $this->model['week'] }}</div>
+                    </div>
+                </flux:callout>
+
+                <!-- Week Navigation -->
+                <flux:callout>
+                    <div class="space-y-2">
+                        <div class="text-sm font-medium">Navigate to Week</div>
+                        <div class="grid grid-cols-6 gap-1">
+                            @for ($i = 1; $i <= 18; $i++)
+                                @php
+                                    $isCurrentWeek = $i === $this->model['week'];
+                                    $routeName = $i === app(DetermineCurrentWeek::class)->execute('nfl')['week'] ? 'matchups.show.current' : 'matchups.show';
+                                    $routeParams = $i === app(DetermineCurrentWeek::class)->execute('nfl')['week']
+                                        ? ['leagueId' => $this->leagueId]
+                                        : ['leagueId' => $this->leagueId, 'week' => $i];
+                                @endphp
+                                <flux:button
+                                    :href="route($routeName, $routeParams)"
+                                    wire:navigate
+                                    variant="{{ $isCurrentWeek ? 'primary' : 'ghost' }}"
+                                    size="sm"
+                                    class="text-xs px-2 py-1 h-8 {{ $isCurrentWeek ? 'pointer-events-none' : '' }}"
+                                >
+                                    {{ $i }}
+                                </flux:button>
+                            @endfor
+                        </div>
                     </div>
                 </flux:callout>
             </div>
