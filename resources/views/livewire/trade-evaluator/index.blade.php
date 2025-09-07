@@ -20,6 +20,7 @@ new class extends Component {
     {
         if (strlen($this->searchQuery) >= 2) {
             $this->searchResults = Player::where('active', true)
+                ->whereIn('position', ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'])
                 ->where(function ($query) {
                     $query->whereRaw('LOWER(CONCAT(first_name, " ", last_name)) LIKE ?', ['%' . strtolower($this->searchQuery) . '%'])
                         ->orWhereRaw('LOWER(team) LIKE ?', ['%' . strtolower($this->searchQuery) . '%'])
@@ -268,16 +269,16 @@ new class extends Component {
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Trade Value -->
                     <div class="text-center">
-                        <div class="text-2xl font-bold {{ $tradeAnalysis['trade_value'] > 0 ? 'text-green-600' : ($tradeAnalysis['trade_value'] < 0 ? 'text-red-600' : 'text-gray-600') }}">
-                            {{ $tradeAnalysis['trade_value'] > 0 ? '+' : '' }}{{ number_format($tradeAnalysis['trade_value'], 1) }}
+                        <div class="text-2xl font-bold {{ tradeAnalysis['trade_value'] > 0 ? 'text-green-600' : (tradeAnalysis['trade_value'] < 0 ? 'text-red-600' : 'text-gray-600') }}">
+                            {{ tradeAnalysis['trade_value'] > 0 ? '+' : '' }}{{ number_format(tradeAnalysis['trade_value'], 1) }}
                         </div>
                         <div class="text-sm text-muted-foreground">Trade Value Differential</div>
                     </div>
 
                     <!-- Risk Differential -->
                     <div class="text-center">
-                        <div class="text-2xl font-bold {{ $tradeAnalysis['risk_differential'] < 0 ? 'text-green-600' : ($tradeAnalysis['risk_differential'] > 0 ? 'text-red-600' : 'text-gray-600') }}">
-                            {{ $tradeAnalysis['risk_differential'] > 0 ? '+' : '' }}{{ number_format($tradeAnalysis['risk_differential'], 2) }}
+                        <div class="text-2xl font-bold {{ tradeAnalysis['risk_differential'] < 0 ? 'text-green-600' : (tradeAnalysis['risk_differential'] > 0 ? 'text-red-600' : 'text-gray-600') }}">
+                            {{ tradeAnalysis['risk_differential'] > 0 ? '+' : '' }}{{ number_format(tradeAnalysis['risk_differential'], 2) }}
                         </div>
                         <div class="text-sm text-muted-foreground">Risk Differential</div>
                     </div>
@@ -285,11 +286,11 @@ new class extends Component {
                     <!-- Recommendation -->
                     <div class="text-center">
                         <div class="text-lg font-semibold">
-                            @if ($tradeAnalysis['trade_value'] > 5)
+                            @if (tradeAnalysis['trade_value'] > 5)
                                 <span class="text-green-600">Strong Trade</span>
-                            @elseif ($tradeAnalysis['trade_value'] > 2)
+                            @elseif (tradeAnalysis['trade_value'] > 2)
                                 <span class="text-blue-600">Fair Trade</span>
-                            @elseif ($tradeAnalysis['trade_value'] < -5)
+                            @elseif (tradeAnalysis['trade_value'] < -5)
                                 <span class="text-red-600">Poor Trade</span>
                             @else
                                 <span class="text-gray-600">Even Trade</span>
@@ -507,29 +508,29 @@ new class extends Component {
                 <div class="mt-8">
                     <flux:heading size="sm" class="mb-4">Trade Insights</flux:heading>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @if ($tradeAnalysis['trade_value'] > 2)
+                        @if (tradeAnalysis['trade_value'] > 2)
                             <div class="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
                                 <div class="flex items-start gap-3">
                                     <span class="text-green-600 text-xl">✓</span>
                                     <div>
                                         <div class="font-medium text-green-800 dark:text-green-200">Good Trade Value</div>
-                                        <div class="text-sm text-green-700 dark:text-green-300">You're receiving {{ number_format(abs($tradeAnalysis['trade_value']), 1) }} more value than you're giving up</div>
+                                        <div class="text-sm text-green-700 dark:text-green-300">You're receiving {{ number_format(abs(tradeAnalysis['trade_value']), 1) }} more value than you're giving up</div>
                                     </div>
                                 </div>
                             </div>
-                        @elseif ($tradeAnalysis['trade_value'] < -2)
+                        @elseif (tradeAnalysis['trade_value'] < -2)
                             <div class="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
                                 <div class="flex items-start gap-3">
                                     <span class="text-red-600 text-xl">⚠</span>
                                     <div>
                                         <div class="font-medium text-red-800 dark:text-red-200">Poor Trade Value</div>
-                                        <div class="text-sm text-red-700 dark:text-red-300">You're giving up {{ number_format(abs($tradeAnalysis['trade_value']), 1) }} more value than you're receiving</div>
+                                        <div class="text-sm text-red-700 dark:text-red-300">You're giving up {{ number_format(abs(tradeAnalysis['trade_value']), 1) }} more value than you're receiving</div>
                                     </div>
                                 </div>
                             </div>
                         @endif
 
-                        @if ($tradeAnalysis['risk_differential'] < -0.5)
+                        @if (tradeAnalysis['risk_differential'] < -0.5)
                             <div class="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
                                 <div class="flex items-start gap-3">
                                     <span class="text-green-600 text-xl">✓</span>
@@ -539,7 +540,7 @@ new class extends Component {
                                     </div>
                                 </div>
                             </div>
-                        @elseif ($tradeAnalysis['risk_differential'] > 0.5)
+                        @elseif (tradeAnalysis['risk_differential'] > 0.5)
                             <div class="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
                                 <div class="flex items-start gap-3">
                                     <span class="text-red-600 text-xl">⚠</span>
