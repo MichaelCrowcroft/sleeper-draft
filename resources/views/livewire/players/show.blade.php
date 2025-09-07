@@ -544,6 +544,7 @@ new class extends Component {
                                             <th class="px-3 py-3 text-left font-semibold">Week</th>
                                             <th class="px-3 py-3 text-left font-semibold">Pos Rank</th>
                                             <th class="px-3 py-3 text-left font-semibold">Points</th>
+                                            <th class="px-3 py-3 text-left font-semibold">Target %</th>
                                             <th class="px-3 py-3 text-left font-semibold">Snap %</th>
                                             @if ($this->position === 'QB')
                                                 <th class="px-3 py-3 text-left font-semibold">Pass Yds</th>
@@ -579,11 +580,20 @@ new class extends Component {
                                                     $snap = '—';
                                                 }
                                                 $rank = $weeklyRanks[$weekStat->week] ?? null;
+                                                // Target share for the week if team totals available
+                                                $tgtShare = null;
+                                                if (isset($stats['rec_tgt']) && is_numeric($stats['rec_tgt']) && $player->team) {
+                                                    $teamTotalTgt = \App\Models\Player::getTeamTargetsForWeek(2024, (int) $weekStat->week, (string) $player->team);
+                                                    if ($teamTotalTgt > 0) {
+                                                        $tgtShare = number_format(((float) $stats['rec_tgt'] / $teamTotalTgt) * 100.0, 1) . '%';
+                                                    }
+                                                }
                                             @endphp
                                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
                                                 <td class="px-3 py-2 font-medium">{{ $weekStat->week }}</td>
                                                 <td class="px-3 py-2">@if($rank) {{ $player->position }}{{ $rank }} @else — @endif</td>
                                                 <td class="px-3 py-2 font-semibold">{{ isset($stats['pts_ppr']) ? number_format($stats['pts_ppr'], 1) : '—' }}</td>
+                                                <td class="px-3 py-2">{{ $tgtShare ?? '—' }}</td>
                                                 <td class="px-3 py-2">{{ $snap }}</td>
                                                 @if ($this->position === 'QB')
                                                     <td class="px-3 py-2">{{ $stats['pass_yd'] ?? '—' }}</td>

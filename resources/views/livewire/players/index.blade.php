@@ -28,6 +28,7 @@ new class extends Component
         'avg_ppg_2024' => true,
         'position_rank_2024' => true,
         'snap_pct_2024' => true,
+        'target_share_2024' => true,
         'stddev_above' => true,
         'stddev_below' => true,
         'proj_ppg_2025' => true,
@@ -183,6 +184,7 @@ new class extends Component
         foreach ($players as $player) {
             $player->season_2024_summary = $player->getSeason2024Summary();
             $player->season_2025_projections = $player->getSeason2025ProjectionSummary();
+            $player->season_2024_target_share_avg = $player->getSeason2024AverageTargetShare();
 
             // Add position ranking to the array (create a new array to avoid overloaded property error)
             $summaryWithRank = $player->season_2024_summary;
@@ -518,6 +520,10 @@ new class extends Component
                             <span>Avg Snap % (2024)</span>
                         </label>
                         <label class="flex items-center gap-2 text-sm">
+                            <flux:switch wire:model.live="selectedMetrics.target_share_2024" />
+                            <span>Avg Target % (2024)</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm">
                             <flux:switch wire:model.live="selectedMetrics.stddev_above" />
                             <span>+1σ PPG (2024)</span>
                         </label>
@@ -654,6 +660,9 @@ new class extends Component
                     @if($selectedMetrics['snap_pct_2024'])
                     <flux:table.column>Avg Snap % (2024)</flux:table.column>
                     @endif
+                    @if($selectedMetrics['target_share_2024'])
+                    <flux:table.column>Avg Target % (2024)</flux:table.column>
+                    @endif
                     @if($selectedMetrics['stddev_above'])
                     <flux:table.column>+1σ PPG (2024)</flux:table.column>
                     @endif
@@ -789,6 +798,16 @@ new class extends Component
                             <flux:table.cell>
                                 @if (isset($player->season_2024_summary) && isset($player->season_2024_summary['snap_percentage_avg']) && $player->season_2024_summary['snap_percentage_avg'] !== null)
                                     <span class="font-medium text-blue-600">{{ number_format($player->season_2024_summary['snap_percentage_avg'], 1) }}%</span>
+                                @else
+                                    <span class="text-muted-foreground">-</span>
+                                @endif
+                            </flux:table.cell>
+                            @endif
+
+                            @if($selectedMetrics['target_share_2024'])
+                            <flux:table.cell>
+                                @if (!is_null($player->season_2024_target_share_avg))
+                                    <span class="font-medium text-purple-600">{{ number_format($player->season_2024_target_share_avg, 1) }}%</span>
                                 @else
                                     <span class="text-muted-foreground">-</span>
                                 @endif

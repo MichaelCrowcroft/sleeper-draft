@@ -299,6 +299,109 @@ class Player extends Model
     }
 
     /**
+     * Memoized cache for team targets by (season, week, team) during a single request.
+     *
+     * @var array<string, float>
+     */
+    protected static array $teamTargetsMemo = [];
+
+    /**
+     * Get total team targets for a week (sum of rec_tgt across all players for the team/week).
+     */
+    public static function getTeamTargetsForWeek(int $season, int $week, string $team): float
+    {
+        $key = $season.'-'.$week.'-'.$team;
+        if (array_key_exists($key, self::$teamTargetsMemo)) {
+            return self::$teamTargetsMemo[$key];
+        }
+
+        $rows = PlayerStats::query()
+            ->where('season', $season)
+            ->where('week', $week)
+            ->where('team', $team)
+            ->get(['stats']);
+
+        $sum = 0.0;
+        foreach ($rows as $row) {
+            $s = is_array($row->stats ?? null) ? $row->stats : [];
+            if (isset($s['rec_tgt']) && is_numeric($s['rec_tgt'])) {
+                $sum += (float) $s['rec_tgt'];
+            }
+        }
+
+        self::$teamTargetsMemo[$key] = $sum;
+
+        return $sum;
+    }
+
+    /**
+     * Compute weekly target shares (percent) for a given season.
+     *
+     * @return array<int, float> week => percent 0-100
+     */
+    public function getWeeklyTargetSharesForSeason(int $season): array
+    {
+        $collection = $this->getStatsForSeason($season)->get();
+        if ($collection->isEmpty()) {
+            return [];
+        }
+
+        $shares = [];
+        foreach ($collection as $weeklyStats) {
+            $stats = is_array($weeklyStats->stats ?? null) ? $weeklyStats->stats : [];
+            if (! isset($stats['rec_tgt']) || ! is_numeric($stats['rec_tgt'])) {
+                continue;
+            }
+            $team = $weeklyStats->team ?? $this->team;
+            $week = (int) $weeklyStats->week;
+            if (! $team) {
+                continue;
+            }
+            $teamTotal = self::getTeamTargetsForWeek($season, $week, (string) $team);
+            if ($teamTotal > 0) {
+                $shares[$week] = ((float) $stats['rec_tgt'] / $teamTotal) * 100.0;
+            }
+        }
+
+        return $shares;
+    }
+
+    /**
+     * Compute season average target share for 2024.
+     */
+    public function getSeason2024AverageTargetShare(): ?float
+    {
+        $collection = $this->relationLoaded('stats2024') ? $this->getRelation('stats2024') : $this->stats2024()->get();
+        if ($collection->isEmpty()) {
+            return null;
+        }
+
+        $sumShare = 0.0;
+        $count = 0;
+        foreach ($collection as $weeklyStats) {
+            $stats = is_array($weeklyStats->stats ?? null) ? $weeklyStats->stats : [];
+            if (! isset($stats['rec_tgt']) || ! is_numeric($stats['rec_tgt'])) {
+                continue;
+            }
+            $team = $weeklyStats->team ?? $this->team;
+            if (! $team) {
+                continue;
+            }
+            $teamTotal = self::getTeamTargetsForWeek(2024, (int) $weeklyStats->week, (string) $team);
+            if ($teamTotal > 0) {
+                $sumShare += ((float) $stats['rec_tgt'] / $teamTotal);
+                $count++;
+            }
+        }
+
+        if ($count <= 0) {
+            return null;
+        }
+
+        return ($sumShare / $count) * 100.0;
+    }
+
+    /**
      * Compute weekly position ranks for a given season based on actual PPR points.
      * Returns an associative array keyed by week (int) with rank (int) values.
      */
@@ -526,9 +629,19 @@ class Player extends Model
                 $totalGamesActive += ($gmsActive !== null ? max(0, (int) $gmsActive) : 1);
             }
 
-            // Collect snap percentage data if available
+            // Collect snap percentage data from multiple possible schemas
             if (isset($stats['snap_pct']) && is_numeric($stats['snap_pct'])) {
+                // Already a percent 0-100
                 $snapData[] = (float) $stats['snap_pct'];
+            } elseif (
+                isset($stats['off_snp']) && isset($stats['tm_off_snp']) &&
+                is_numeric($stats['off_snp']) && is_numeric($stats['tm_off_snp']) && (float) $stats['tm_off_snp'] > 0
+            ) {
+                // Convert snaps / team snaps to percent
+                $snapData[] = ((float) $stats['off_snp'] / (float) $stats['tm_off_snp']) * 100.0;
+            } elseif (isset($stats['snap_share']) && is_numeric($stats['snap_share'])) {
+                // Some providers send a 0-1 share
+                $snapData[] = ((float) $stats['snap_share']) * 100.0;
             }
         }
 
