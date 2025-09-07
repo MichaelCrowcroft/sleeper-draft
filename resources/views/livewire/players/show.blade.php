@@ -542,7 +542,9 @@ new class extends Component {
                                     <thead>
                                         <tr class="border-b border-gray-200 dark:border-gray-700">
                                             <th class="px-3 py-3 text-left font-semibold">Week</th>
+                                            <th class="px-3 py-3 text-left font-semibold">Pos Rank</th>
                                             <th class="px-3 py-3 text-left font-semibold">Points</th>
+                                            <th class="px-3 py-3 text-left font-semibold">Snap %</th>
                                             @if ($this->position === 'QB')
                                                 <th class="px-3 py-3 text-left font-semibold">Pass Yds</th>
                                                 <th class="px-3 py-3 text-left font-semibold">Pass TDs</th>
@@ -558,11 +560,24 @@ new class extends Component {
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                        @php
+                                            // Precompute weekly ranks once for performance
+                                            $weeklyRanks = $player->getWeeklyPositionRanksForSeason(2024);
+                                        @endphp
                                         @foreach ($this->weeklyStats->sortBy('week') as $weekStat)
-                                            @php $stats = $weekStat->stats ?? []; @endphp
+                                            @php
+                                                $stats = $weekStat->stats ?? [];
+                                                $snap = isset($stats['snap_pct']) && is_numeric($stats['snap_pct']) ? number_format($stats['snap_pct'], 1) . '%'
+                                                    : (isset($stats['snap']) && isset($stats['off_snp']) && is_numeric($stats['snap']) && is_numeric($stats['off_snp']) && $stats['off_snp'] > 0
+                                                        ? number_format(($stats['snap'] / $stats['off_snp']) * 100, 1) . '%'
+                                                        : '—');
+                                                $rank = $weeklyRanks[$weekStat->week] ?? null;
+                                            @endphp
                                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
                                                 <td class="px-3 py-2 font-medium">{{ $weekStat->week }}</td>
+                                                <td class="px-3 py-2">@if($rank) {{ $player->position }}{{ $rank }} @else — @endif</td>
                                                 <td class="px-3 py-2 font-semibold">{{ isset($stats['pts_ppr']) ? number_format($stats['pts_ppr'], 1) : '—' }}</td>
+                                                <td class="px-3 py-2">{{ $snap }}</td>
                                                 @if ($this->position === 'QB')
                                                     <td class="px-3 py-2">{{ $stats['pass_yd'] ?? '—' }}</td>
                                                     <td class="px-3 py-2">{{ $stats['pass_td'] ?? '—' }}</td>

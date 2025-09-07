@@ -299,6 +299,64 @@ class Player extends Model
     }
 
     /**
+     * Compute weekly position ranks for a given season based on actual PPR points.
+     * Returns an associative array keyed by week (int) with rank (int) values.
+     */
+    public function getWeeklyPositionRanksForSeason(int $season): array
+    {
+        $position = $this->position ?? null;
+        if (! $position) {
+            return [];
+        }
+
+        // Fetch all weekly stats for the season for players at this position
+        $weeklyStats = PlayerStats::query()
+            ->where('season', $season)
+            ->whereHas('player', function ($q) use ($position) {
+                $q->where('position', $position);
+            })
+            ->get(['player_id', 'season', 'week', 'stats']);
+
+        if ($weeklyStats->isEmpty()) {
+            return [];
+        }
+
+        // Group by week, then rank by pts_ppr descending
+        $byWeek = $weeklyStats->groupBy('week');
+        $ranksByWeek = [];
+
+        foreach ($byWeek as $week => $items) {
+            $scored = [];
+            foreach ($items as $ws) {
+                $stats = is_array($ws->stats ?? null) ? $ws->stats : [];
+                if (isset($stats['pts_ppr']) && is_numeric($stats['pts_ppr'])) {
+                    $scored[] = [
+                        'player_id' => $ws->player_id,
+                        'pts' => (float) $stats['pts_ppr'],
+                    ];
+                }
+            }
+
+            if (empty($scored)) {
+                continue;
+            }
+
+            usort($scored, fn ($a, $b) => $b['pts'] <=> $a['pts']);
+
+            $rank = 1;
+            foreach ($scored as $row) {
+                if ($row['player_id'] === $this->player_id) {
+                    $ranksByWeek[(int) $week] = $rank;
+                    break;
+                }
+                $rank++;
+            }
+        }
+
+        return $ranksByWeek;
+    }
+
+    /**
      * Calculate position-based rankings for 2024 season based on total PPR points.
      *
      * @return array Array with player rankings by position
