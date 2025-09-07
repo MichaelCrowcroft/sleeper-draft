@@ -20,8 +20,8 @@ new class extends Component
 
     public function getModelProperty(): array
     {
-        $roster = $this->rosterId ?? 1;
-        return app(AssembleMatchupViewModel::class)->execute((string) $this->leagueId, $this->week, (int) $roster);
+        $roster = $this->rosterId !== null ? (int) $this->rosterId : 0;
+        return app(AssembleMatchupViewModel::class)->execute((string) $this->leagueId, $this->week, $roster);
     }
 }; ?>
 
