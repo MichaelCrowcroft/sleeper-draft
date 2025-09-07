@@ -602,6 +602,262 @@ class Player extends Model
     }
 
     /**
+     * Calculate comprehensive volatility metrics for 2024 season.
+     */
+    public function getVolatilityMetrics(): array
+    {
+        if ($this->relationLoaded('stats2024')) {
+            $collection = $this->getRelation('stats2024');
+        } else {
+            $collection = $this->stats2024()->get();
+        }
+
+        $points = [];
+        $snapPercentages = [];
+        $targets = [];
+        $rushAttempts = [];
+        $activeWeeks = 0;
+
+        // Position-specific thresholds for consistency analysis
+        $thresholds = $this->getPositionThresholds();
+
+        foreach ($collection as $weeklyStats) {
+            $stats = $weeklyStats->stats ?? [];
+            $ppr = isset($stats['pts_ppr']) && is_numeric($stats['pts_ppr']) ? (float) $stats['pts_ppr'] : null;
+            $gmsActive = isset($stats['gms_active']) && is_numeric($stats['gms_active']) ? (int) $stats['gms_active'] : null;
+
+            // Consider a game active if gms_active >= 1, otherwise if pts exist assume 1
+            $isActive = ($gmsActive !== null ? $gmsActive >= 1 : ($ppr !== null));
+
+            if ($isActive && $ppr !== null) {
+                $points[] = $ppr;
+                $activeWeeks++;
+
+                // Collect usage metrics
+                if (isset($stats['snap_pct']) && is_numeric($stats['snap_pct'])) {
+                    $snapPercentages[] = (float) $stats['snap_pct'];
+                } elseif (isset($stats['off_snp']) && isset($stats['tm_off_snp']) &&
+                         is_numeric($stats['off_snp']) && is_numeric($stats['tm_off_snp']) && (float) $stats['tm_off_snp'] > 0) {
+                    $snapPercentages[] = ((float) $stats['off_snp'] / (float) $stats['tm_off_snp']) * 100.0;
+                }
+
+                if (isset($stats['rec_tgt']) && is_numeric($stats['rec_tgt'])) {
+                    $targets[] = (float) $stats['rec_tgt'];
+                }
+
+                if (isset($stats['rush_att']) && is_numeric($stats['rush_att'])) {
+                    $rushAttempts[] = (float) $stats['rush_att'];
+                }
+            }
+        }
+
+        if (empty($points)) {
+            return [
+                'coefficient_of_variation' => null,
+                'median_absolute_deviation' => null,
+                'interquartile_range' => null,
+                'consistency_rate' => null,
+                'boom_rate' => null,
+                'bust_rate' => null,
+                'downside_volatility' => null,
+                'usage_volatility' => null,
+                'recency_volatility' => null,
+                'steadiness_score' => null,
+                'safe_floor' => null,
+                'spike_factor' => null,
+                'boom_bust_ratio' => null,
+            ];
+        }
+
+        // Basic statistical calculations
+        $mean = array_sum($points) / count($points);
+        $median = $this->calculateMedian($points);
+
+        // Coefficient of Variation (CV)
+        $cv = $mean > 0 ? ($this->calculateStandardDeviation($points, $mean) / $mean) : null;
+
+        // Median Absolute Deviation (MAD)
+        $mad = $this->calculateMAD($points, $median);
+
+        // Interquartile Range (IQR)
+        $iqr = $this->calculateIQR($points);
+
+        // Consistency/Boom/Bust rates vs position thresholds
+        $consistencyRate = null;
+        $boomRate = null;
+        $bustRate = null;
+
+        if ($thresholds) {
+            $startableCount = 0;
+            $boomCount = 0;
+            $bustCount = 0;
+
+            foreach ($points as $point) {
+                if ($point >= $thresholds['startable']) $startableCount++;
+                if ($point >= $thresholds['boom']) $boomCount++;
+                if ($point < $thresholds['bust']) $bustCount++;
+            }
+
+            $consistencyRate = ($startableCount / count($points)) * 100;
+            $boomRate = ($boomCount / count($points)) * 100;
+            $bustRate = ($bustCount / count($points)) * 100;
+        }
+
+        // Downside volatility (MAD for weeks below mean)
+        $downsidePoints = array_filter($points, fn($p) => $p < $mean);
+        $downsideVolatility = !empty($downsidePoints) ? $this->calculateMAD($downsidePoints, $this->calculateMedian($downsidePoints)) : null;
+
+        // Usage volatility (coefficient of variation of snap percentages)
+        $usageVolatility = null;
+        if (!empty($snapPercentages)) {
+            $snapMean = array_sum($snapPercentages) / count($snapPercentages);
+            $usageVolatility = $snapMean > 0 ? ($this->calculateStandardDeviation($snapPercentages, $snapMean) / $snapMean) : null;
+        }
+
+        // Recency-weighted volatility (4-week rolling MAD)
+        $recencyVolatility = $this->calculateRecencyVolatility($points);
+
+        // Dashboard-friendly metrics
+        $steadinessScore = $cv > 0 ? (1 / $cv) : null;
+        $safeFloor = $median - $mad;
+        $p90 = $this->calculatePercentile($points, 90);
+        $spikeFactor = $mad > 0 ? (($p90 - $median) / $mad) : null;
+        $boomBustRatio = ($bustRate > 0 && $boomRate !== null) ? ($boomRate / $bustRate) : null;
+
+        return [
+            'coefficient_of_variation' => $cv,
+            'median_absolute_deviation' => $mad,
+            'interquartile_range' => $iqr,
+            'consistency_rate' => $consistencyRate,
+            'boom_rate' => $boomRate,
+            'bust_rate' => $bustRate,
+            'downside_volatility' => $downsideVolatility,
+            'usage_volatility' => $usageVolatility,
+            'recency_volatility' => $recencyVolatility,
+            'steadiness_score' => $steadinessScore,
+            'safe_floor' => $safeFloor,
+            'spike_factor' => $spikeFactor,
+            'boom_bust_ratio' => $boomBustRatio,
+        ];
+    }
+
+    /**
+     * Get position-specific thresholds for consistency analysis.
+     */
+    private function getPositionThresholds(): ?array
+    {
+        $position = $this->position ?? $this->fantasy_positions[0] ?? null;
+
+        // Position-specific weekly PPR thresholds (approximate RB/WR2 lines)
+        $thresholds = [
+            'QB' => ['startable' => 15.0, 'boom' => 25.0, 'bust' => 10.0],
+            'RB' => ['startable' => 12.0, 'boom' => 20.0, 'bust' => 6.0],
+            'WR' => ['startable' => 10.0, 'boom' => 18.0, 'bust' => 5.0],
+            'TE' => ['startable' => 8.0, 'boom' => 15.0, 'bust' => 4.0],
+            'K' => ['startable' => 8.0, 'boom' => 12.0, 'bust' => 5.0],
+            'DEF' => ['startable' => 8.0, 'boom' => 15.0, 'bust' => 4.0],
+        ];
+
+        return $thresholds[$position] ?? null;
+    }
+
+    /**
+     * Calculate median of an array.
+     */
+    private function calculateMedian(array $values): float
+    {
+        sort($values);
+        $count = count($values);
+        $middle = intdiv($count, 2);
+
+        if ($count % 2 === 0) {
+            return ($values[$middle - 1] + $values[$middle]) / 2.0;
+        }
+
+        return $values[$middle];
+    }
+
+    /**
+     * Calculate standard deviation.
+     */
+    private function calculateStandardDeviation(array $values, float $mean): float
+    {
+        if (empty($values)) return 0.0;
+
+        $variance = 0.0;
+        foreach ($values as $value) {
+            $variance += pow($value - $mean, 2);
+        }
+
+        return sqrt($variance / count($values));
+    }
+
+    /**
+     * Calculate Median Absolute Deviation (MAD).
+     */
+    private function calculateMAD(array $values, float $median): float
+    {
+        $deviations = array_map(fn($v) => abs($v - $median), $values);
+        return $this->calculateMedian($deviations);
+    }
+
+    /**
+     * Calculate Interquartile Range (IQR).
+     */
+    private function calculateIQR(array $values): float
+    {
+        sort($values);
+        $count = count($values);
+        $q1Index = intdiv($count, 4);
+        $q3Index = intdiv($count * 3, 4);
+
+        $q1 = $values[$q1Index];
+        $q3 = $values[$q3Index];
+
+        return $q3 - $q1;
+    }
+
+    /**
+     * Calculate nth percentile.
+     */
+    private function calculatePercentile(array $values, int $percentile): float
+    {
+        sort($values);
+        $count = count($values);
+        $index = ($percentile / 100) * ($count - 1);
+
+        $lower = intdiv((int) $index, 1);
+        $upper = $lower + 1;
+        $weight = $index - $lower;
+
+        if ($upper >= $count) {
+            return $values[$lower];
+        }
+
+        return $values[$lower] * (1 - $weight) + $values[$upper] * $weight;
+    }
+
+    /**
+     * Calculate recency-weighted volatility (4-week rolling MAD).
+     */
+    private function calculateRecencyVolatility(array $points): ?float
+    {
+        if (count($points) < 4) {
+            return null;
+        }
+
+        // Get last 4 weeks (assuming points are in chronological order)
+        $recentPoints = array_slice($points, -4);
+
+        if (count($recentPoints) < 4) {
+            return null;
+        }
+
+        $median = $this->calculateMedian($recentPoints);
+        return $this->calculateMAD($recentPoints, $median);
+    }
+
+    /**
      * Compute PPR summary for 2024 season: totals/min/max/avg/stddev.
      */
     public function getSeason2024Summary(): array
@@ -679,6 +935,9 @@ class Player extends Model
             $snapPercentageAvg = array_sum($snapData) / count($snapData);
         }
 
+        // Get volatility metrics
+        $volatilityMetrics = $this->getVolatilityMetrics();
+
         return [
             'total_points' => $total,
             'min_points' => $min,
@@ -689,6 +948,7 @@ class Player extends Model
             'games_active' => $games,
             'snap_percentage_avg' => $snapPercentageAvg,
             'position_rank' => null, // Will be set by calling method
+            'volatility' => $volatilityMetrics,
         ];
     }
 }
