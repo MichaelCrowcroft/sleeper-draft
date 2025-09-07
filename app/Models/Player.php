@@ -350,6 +350,72 @@ class Player extends Model
     }
 
     /**
+     * Calculate position-based rankings for weekly projections based on current week PPR points.
+     *
+     * @param  int  $season  The season year (e.g., 2025)
+     * @param  int  $week  The week number
+     * @return array Array with player rankings by position for the specified week
+     */
+    public static function calculateWeeklyPositionRankings(int $season, int $week): array
+    {
+        $players = self::where('active', true)
+            ->whereIn('position', ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'])
+            ->with(['projections' => function ($query) use ($season, $week) {
+                $query->where('season', $season)->where('week', $week);
+            }])
+            ->get();
+
+        $positionRankings = [];
+        $playersWithPoints = [];
+
+        // First, calculate projected points for each player for this week
+        foreach ($players as $player) {
+            $weeklyProjection = $player->projections->first();
+
+            if ($weeklyProjection) {
+                $stats = is_array($weeklyProjection->stats ?? null) ? $weeklyProjection->stats : null;
+                $pts = null;
+
+                if ($stats && isset($stats['pts_ppr']) && is_numeric($stats['pts_ppr'])) {
+                    $pts = (float) $stats['pts_ppr'];
+                } elseif (isset($weeklyProjection->pts_ppr) && is_numeric($weeklyProjection->pts_ppr)) {
+                    $pts = (float) $weeklyProjection->pts_ppr;
+                }
+
+                if ($pts !== null && $pts > 0) {
+                    $playersWithPoints[] = [
+                        'player' => $player,
+                        'weekly_points' => $pts,
+                        'position' => $player->position,
+                        'player_id' => $player->player_id,
+                    ];
+                }
+            }
+        }
+
+        // Group by position and sort by weekly points descending
+        $byPosition = collect($playersWithPoints)->groupBy('position');
+
+        foreach ($byPosition as $position => $positionPlayers) {
+            $sortedPlayers = $positionPlayers->sortByDesc('weekly_points')->values();
+
+            $positionRankings[$position] = [];
+            $rank = 1;
+
+            foreach ($sortedPlayers as $playerData) {
+                $positionRankings[$position][] = [
+                    'player_id' => $playerData['player_id'],
+                    'rank' => $rank,
+                    'weekly_points' => $playerData['weekly_points'],
+                ];
+                $rank++;
+            }
+        }
+
+        return $positionRankings;
+    }
+
+    /**
      * Accessor-like helper that returns aggregated season stats for 2024 if the relation is (pre)loaded.
      * If not loaded, it will load from DB efficiently and compute totals.
      */
@@ -410,7 +476,7 @@ class Player extends Model
 
         if (empty($points)) {
             return [
-                'total_points' => 0.0,
+                'total_points' => 'rookie',
                 'min_points' => 0.0,
                 'max_points' => 0.0,
                 'average_points_per_game' => 0.0,

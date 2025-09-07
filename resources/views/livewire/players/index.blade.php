@@ -35,6 +35,7 @@ new class extends Component
         'status' => true,
         // Additional metrics (default off)
         'proj_pts_week' => false,
+        'weekly_position_rank' => false,
         // 2025 projection averages (per-game)
         'rec' => false,
         'rec_0_4' => false,
@@ -166,6 +167,18 @@ new class extends Component
             }
         }
 
+        // Get weekly position rankings for current week projections
+        $weeklyPositionRankings = [];
+        $weeklyRankingsLookup = [];
+        if ($this->resolvedWeek) {
+            $weeklyPositionRankings = Player::calculateWeeklyPositionRankings(2025, (int) $this->resolvedWeek);
+            foreach ($weeklyPositionRankings as $position => $rankedPlayers) {
+                foreach ($rankedPlayers as $rankedPlayer) {
+                    $weeklyRankingsLookup[$rankedPlayer['player_id']] = $rankedPlayer['rank'];
+                }
+            }
+        }
+
         // Add player stats and roster information for each player
         foreach ($players as $player) {
             $player->season_2024_summary = $player->getSeason2024Summary();
@@ -175,6 +188,9 @@ new class extends Component
             $summaryWithRank = $player->season_2024_summary;
             $summaryWithRank['position_rank'] = $rankingsLookup[$player->player_id] ?? null;
             $player->season_2024_summary = $summaryWithRank;
+
+            // Add weekly position rank
+            $player->weekly_position_rank = $weeklyRankingsLookup[$player->player_id] ?? null;
 
             // Compute projected points for the current week (PPR)
             $player->proj_pts_week = null;
@@ -525,6 +541,10 @@ new class extends Component
                         <flux:switch wire:model.live="selectedMetrics.proj_pts_week" />
                         <span>Projected Points (This Week)</span>
                         </label>
+                        <label class="flex items-center gap-2 text-sm">
+                        <flux:switch wire:model.live="selectedMetrics.weekly_position_rank" />
+                        <span>Weekly Position Rank</span>
+                        </label>
                 </div>
 
                 <div class="mt-4">
@@ -645,6 +665,9 @@ new class extends Component
                     @endif
                     @if($selectedMetrics['proj_pts_week'])
                     <flux:table.column>Proj Pts (This Week)</flux:table.column>
+                    @endif
+                    @if($selectedMetrics['weekly_position_rank'])
+                    <flux:table.column>Weekly Pos Rank</flux:table.column>
                     @endif
                     @if($selectedMetrics['owner'])
                     <flux:table.column>Owner</flux:table.column>
@@ -810,6 +833,16 @@ new class extends Component
                             <flux:table.cell>
                                 @if (!is_null($player->proj_pts_week))
                                     <span class="font-medium text-blue-700">{{ number_format($player->proj_pts_week, 1) }}</span>
+                                @else
+                                    <span class="text-muted-foreground">-</span>
+                                @endif
+                            </flux:table.cell>
+                            @endif
+
+                            @if($selectedMetrics['weekly_position_rank'])
+                            <flux:table.cell>
+                                @if ($player->weekly_position_rank)
+                                    <flux:badge variant="secondary" color="purple">{{ $player->position }}{{ $player->weekly_position_rank }}</flux:badge>
                                 @else
                                     <span class="text-muted-foreground">-</span>
                                 @endif
