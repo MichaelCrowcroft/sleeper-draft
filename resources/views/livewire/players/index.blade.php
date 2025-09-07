@@ -171,8 +171,10 @@ new class extends Component
             $player->season_2024_summary = $player->getSeason2024Summary();
             $player->season_2025_projections = $player->getSeason2025ProjectionSummary();
 
-            // Add position ranking
-            $player->season_2024_summary['position_rank'] = $rankingsLookup[$player->player_id] ?? null;
+            // Add position ranking to the array (create a new array to avoid overloaded property error)
+            $summaryWithRank = $player->season_2024_summary;
+            $summaryWithRank['position_rank'] = $rankingsLookup[$player->player_id] ?? null;
+            $player->season_2024_summary = $summaryWithRank;
 
             // Compute projected points for the current week (PPR)
             $player->proj_pts_week = null;

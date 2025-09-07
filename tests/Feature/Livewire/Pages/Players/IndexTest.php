@@ -3,7 +3,7 @@
 use Livewire\Volt\Volt;
 
 it('can render', function () {
-    $component = Volt::test('pages.players.index');
+    $component = Volt::test('players.index');
 
     $component->assertSee('');
 });

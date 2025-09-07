@@ -46,9 +46,6 @@ new class extends Component
                             <flux:button href="{{ route('matchups.show.current', ['leagueId' => $league['league_id'] ?? '']) }}" wire:navigate variant="outline" size="sm">
                                 View Matchup
                             </flux:button>
-                            <flux:button href="{{ route('lineup-optimizer.current', ['leagueId' => $league['league_id'] ?? '']) }}" wire:navigate variant="primary" size="sm">
-                                Optimize Lineup
-                            </flux:button>
                         </div>
                     </div>
                 </flux:callout>
