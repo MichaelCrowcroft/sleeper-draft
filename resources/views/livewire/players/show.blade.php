@@ -435,74 +435,62 @@ new class extends Component {
         <flux:tab name="overview" heading="Overview">
             <div class="space-y-6">
                 <!-- Performance Distribution -->
-                <flux:card>
-                    <flux:card.header>
-                        <flux:heading size="md">Performance Distribution</flux:heading>
-                    </flux:card.header>
-                    <flux:card.content>
-                        <x-box-whisker-chart :data="$this->box2024Horizontal" />
-                    </flux:card.content>
-                </flux:card>
+                <flux:callout>
+                    <flux:heading size="md" class="mb-4">Performance Distribution</flux:heading>
+                    <x-box-whisker-chart :data="$this->box2024Horizontal" />
+                </flux:callout>
 
                 <!-- Key Insights Grid -->
                 <div class="grid gap-6 md:grid-cols-2">
-                    <flux:card>
-                        <flux:card.header>
-                            <flux:heading size="md">2025 Projections</flux:heading>
-                        </flux:card.header>
-                        <flux:card.content>
+                    <flux:callout>
+                        <flux:heading size="md" class="mb-4">2025 Projections</flux:heading>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span>Total Points:</span>
+                                <span class="font-semibold">{{ number_format($this->projections2025['total_points'] ?? 0, 1) }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Average PPG:</span>
+                                <span class="font-semibold">{{ number_format($this->projections2025['average_points_per_game'] ?? 0, 1) }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Range (1σ):</span>
+                                <span class="font-semibold">{{ number_format($this->projectionDistribution['lower'] ?? 0, 1) }} – {{ number_format($this->projectionDistribution['upper'] ?? 0, 1) }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Weekly Min/Max:</span>
+                                <span class="font-semibold">{{ number_format($this->projections2025['min_points'] ?? 0, 1) }} / {{ number_format($this->projections2025['max_points'] ?? 0, 1) }}</span>
+                            </div>
+                        </div>
+                    </flux:callout>
+
+                    <flux:callout>
+                        <flux:heading size="md" class="mb-4">2024 Season Summary</flux:heading>
+                        @if (!empty($this->stats2024))
                             <div class="space-y-3">
                                 <div class="flex justify-between">
                                     <span>Total Points:</span>
-                                    <span class="font-semibold">{{ number_format($this->projections2025['total_points'] ?? 0, 1) }}</span>
-                        </div>
+                                    <span class="font-semibold">{{ number_format($this->summary2024['total_points'] ?? 0, 1) }}</span>
+                                </div>
                                 <div class="flex justify-between">
                                     <span>Average PPG:</span>
-                                    <span class="font-semibold">{{ number_format($this->projections2025['average_points_per_game'] ?? 0, 1) }}</span>
+                                    <span class="font-semibold">{{ number_format($this->summary2024['average_points_per_game'] ?? 0, 1) }}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span>Range (1σ):</span>
-                                    <span class="font-semibold">{{ number_format($this->projectionDistribution['lower'] ?? 0, 1) }} – {{ number_format($this->projectionDistribution['upper'] ?? 0, 1) }}</span>
+                                    <span>Games Played:</span>
+                                    <span class="font-semibold">{{ $this->summary2024['games_active'] ?? 0 }}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span>Weekly Min/Max:</span>
-                                    <span class="font-semibold">{{ number_format($this->projections2025['min_points'] ?? 0, 1) }} / {{ number_format($this->projections2025['max_points'] ?? 0, 1) }}</span>
+                                    <span>Best Game:</span>
+                                    <span class="font-semibold">{{ number_format($this->summary2024['max_points'] ?? 0, 1) }}</span>
                                 </div>
                             </div>
-                        </flux:card.content>
-                    </flux:card>
-
-                    <flux:card>
-                        <flux:card.header>
-                            <flux:heading size="md">2024 Season Summary</flux:heading>
-                        </flux:card.header>
-                        <flux:card.content>
-                            @if (!empty($this->stats2024))
-                                <div class="space-y-3">
-                                    <div class="flex justify-between">
-                                        <span>Total Points:</span>
-                                        <span class="font-semibold">{{ number_format($this->summary2024['total_points'] ?? 0, 1) }}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span>Average PPG:</span>
-                                        <span class="font-semibold">{{ number_format($this->summary2024['average_points_per_game'] ?? 0, 1) }}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span>Games Played:</span>
-                                        <span class="font-semibold">{{ $this->summary2024['games_active'] ?? 0 }}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span>Best Game:</span>
-                                        <span class="font-semibold">{{ number_format($this->summary2024['max_points'] ?? 0, 1) }}</span>
-                                    </div>
-                                </div>
-                            @else
-                                <div class="text-center py-8 text-muted-foreground">
-                                    No 2024 season data available
-                        </div>
-                    @endif
-                        </flux:card.content>
-                    </flux:card>
+                        @else
+                            <div class="text-center py-8 text-muted-foreground">
+                                No 2024 season data available
+                            </div>
+                        @endif
+                    </flux:callout>
                 </div>
             </div>
         </flux:tab>
@@ -510,11 +498,8 @@ new class extends Component {
         <!-- Weekly Performance Tab -->
         <flux:tab name="weekly" heading="Weekly Performance">
             <div class="space-y-6">
-                <flux:card>
-                    <flux:card.header>
-                        <flux:heading size="md">2024 Weekly Performance</flux:heading>
-                    </flux:card.header>
-                    <flux:card.content>
+                <flux:callout>
+                    <flux:heading size="md" class="mb-4">2024 Weekly Performance</flux:heading>
                         @if ($this->weeklyStats->count() > 0)
                             <div class="overflow-x-auto">
                                 <table class="w-full text-sm">
@@ -562,54 +547,46 @@ new class extends Component {
                         @else
                             <div class="text-center py-8 text-muted-foreground">
                                 No weekly performance data available
+                            </div>
+                        @endif>
+                </flux:callout>
+
+                <flux:callout>
+                    <flux:heading size="md" class="mb-4">2025 Weekly Projections</flux:heading>
+                    @if ($this->weeklyProjections->count() > 0)
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="border-b">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left">Week</th>
+                                        <th class="px-3 py-2 text-left">Projected PPR</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @foreach ($this->weeklyProjections->sortBy('week') as $proj)
+                                        @php $stats = $proj->stats ?? []; @endphp
+                                        <tr>
+                                            <td class="px-3 py-2 font-medium">{{ $proj->week }}</td>
+                                            <td class="px-3 py-2">@if(isset($stats['pts_ppr'])) {{ number_format($stats['pts_ppr'], 1) }} @elseif(isset($proj->pts_ppr)) {{ number_format($proj->pts_ppr, 1) }} @else - @endif</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="text-center py-8 text-muted-foreground">
+                            No weekly projections available
                         </div>
                     @endif
-                    </flux:card.content>
-                </flux:card>
-
-                <flux:card>
-                    <flux:card.header>
-                        <flux:heading size="md">2025 Weekly Projections</flux:heading>
-                    </flux:card.header>
-                    <flux:card.content>
-                        @if ($this->weeklyProjections->count() > 0)
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm">
-                                    <thead class="border-b">
-                                        <tr>
-                                            <th class="px-3 py-2 text-left">Week</th>
-                                            <th class="px-3 py-2 text-left">Projected PPR</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y">
-                                        @foreach ($this->weeklyProjections->sortBy('week') as $proj)
-                                            @php $stats = $proj->stats ?? []; @endphp
-                                            <tr>
-                                                <td class="px-3 py-2 font-medium">{{ $proj->week }}</td>
-                                                <td class="px-3 py-2">@if(isset($stats['pts_ppr'])) {{ number_format($stats['pts_ppr'], 1) }} @elseif(isset($proj->pts_ppr)) {{ number_format($proj->pts_ppr, 1) }} @else - @endif</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                </div>
-                        @else
-                            <div class="text-center py-8 text-muted-foreground">
-                                No weekly projections available
-            </div>
-                        @endif
-                    </flux:card.content>
-                </flux:card>
+                </flux:callout>
         </div>
         </flux:tab>
 
         <!-- Detailed Stats Tab -->
         <flux:tab name="stats" heading="Detailed Stats">
             @if (!empty($this->stats2024))
-                <flux:card>
-                    <flux:card.header>
-                        <flux:heading size="md">2024 Detailed Stats ({{ $this->position }})</flux:heading>
-                    </flux:card.header>
-                    <flux:card.content>
+                <flux:callout>
+                    <flux:heading size="md" class="mb-4">2024 Detailed Stats ({{ $this->position }})</flux:heading>
                         <!-- QB Stats -->
                         @if ($this->position === 'QB')
                             <div class="grid gap-6 md:grid-cols-2">
@@ -810,16 +787,13 @@ new class extends Component {
                                 @endif
                             </div>
                         @endif
-                    </flux:card.content>
-                </flux:card>
+                </flux:callout>
             @else
-                <flux:card>
-                    <flux:card.content>
-                        <div class="text-center py-8 text-muted-foreground">
-                            No detailed stats available for this player.
-                        </div>
-                    </flux:card.content>
-                </flux:card>
+                <flux:callout>
+                    <div class="text-center py-8 text-muted-foreground">
+                        No detailed stats available for this player.
+                    </div>
+                </flux:callout>
             @endif
         </flux:tab>
     </flux:tabs>
