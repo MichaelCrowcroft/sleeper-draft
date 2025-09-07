@@ -372,172 +372,207 @@ new class extends Component {
     }
 }; ?>
 
-<section class="w-full">
+<section class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Back Navigation -->
-    <flux:button variant="ghost" href="{{ route('players.index') }}" class="mb-6">
+    <div class="mb-6">
+        <flux:button variant="ghost" href="{{ route('players.index') }}">
             ← Back to Players
         </flux:button>
+    </div>
 
     <!-- Hero Section -->
-    <div class="rounded-lg border bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 p-8 mb-6">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+    <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl border p-6 sm:p-8 mb-8">
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <!-- Player Info -->
             <div class="space-y-4">
-                <div class="flex items-center gap-4">
-                    <flux:heading size="xl" class="text-3xl">{{ $player->first_name }} {{ $player->last_name }}</flux:heading>
-                    <flux:badge variant="primary" size="lg">{{ $player->position }}</flux:badge>
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <flux:heading size="xl" class="text-2xl sm:text-3xl font-bold">
+                        {{ $player->first_name }} {{ $player->last_name }}
+                    </flux:heading>
+                    <div class="flex items-center gap-2">
+                        <flux:badge variant="primary" size="lg">{{ $player->position }}</flux:badge>
+                        <flux:badge variant="outline">{{ $player->team }}</flux:badge>
+                    </div>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                        <flux:badge variant="outline">{{ $player->team }}</flux:badge>
-                        @if ($player->age)
-                            <span>{{ $player->age }} years old</span>
-                        @endif
+                    @if ($player->age)
+                        <span class="flex items-center gap-1">
+                            <span class="font-medium">Age:</span> {{ $player->age }}
+                        </span>
+                    @endif
                     @if ($player->height && $player->weight)
-                        <span>{{ $player->height }}, {{ $player->weight }} lbs</span>
-                        @endif
+                        <span class="flex items-center gap-1">
+                            <span class="font-medium">Size:</span> {{ $player->height }}, {{ $player->weight }} lbs
+                        </span>
+                    @endif
                     @if ($player->college)
-                        <span>{{ $player->college }}</span>
-                        @endif
-                    </div>
+                        <span class="flex items-center gap-1">
+                            <span class="font-medium">College:</span> {{ $player->college }}
+                        </span>
+                    @endif
+                </div>
 
                 @if ($player->injury_status && $player->injury_status !== 'Healthy')
-                    <flux:badge variant="destructive">{{ $player->injury_status }} @if ($player->injury_body_part) - {{ $player->injury_body_part }} @endif</flux:badge>
-                        @endif
+                    <div class="pt-2">
+                        <flux:badge variant="destructive">
+                            {{ $player->injury_status }}@if ($player->injury_body_part) - {{ $player->injury_body_part }}@endif
+                        </flux:badge>
+                    </div>
+                @endif
             </div>
 
-            <!-- Key Stats -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-green-600">{{ number_format($this->projectionDistribution['avg'] ?? 0, 1) }}</div>
-                    <div class="text-xs text-muted-foreground">Projected PPG</div>
+            <!-- Key Stats Grid -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 min-w-0 lg:min-w-[400px]">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border">
+                    <div class="text-xl sm:text-2xl font-bold text-green-600">
+                        {{ number_format($this->projectionDistribution['avg'] ?? 0, 1) }}
+                    </div>
+                    <div class="text-xs text-muted-foreground">2025 Proj PPG</div>
                 </div>
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-blue-600">@if(!is_null($this->actualMedian2024)) {{ number_format($this->actualMedian2024, 1) }} @else — @endif</div>
-                    <div class="text-xs text-muted-foreground">2024 Median PPG</div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border">
+                    <div class="text-xl sm:text-2xl font-bold text-blue-600">
+                        @if(!is_null($this->actualMedian2024))
+                            {{ number_format($this->actualMedian2024, 1) }}
+                        @else
+                            —
+                        @endif
+                    </div>
+                    <div class="text-xs text-muted-foreground">2024 Median</div>
                 </div>
                 @if ($player->adp_formatted || $player->adp)
-                    <div class="text-center">
-                        <div class="text-2xl font-bold">{{ $player->adp_formatted ?? number_format($player->adp, 1) }}</div>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border">
+                        <div class="text-xl sm:text-2xl font-bold text-purple-600">
+                            {{ $player->adp_formatted ?? number_format($player->adp, 1) }}
+                        </div>
                         <div class="text-xs text-muted-foreground">ADP</div>
                     </div>
                 @endif
-                <div class="text-center">
-                    <div class="text-2xl font-bold">{{ $this->projections2025['games'] ?? 0 }}</div>
-                    <div class="text-xs text-muted-foreground">Projected Games</div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border">
+                    <div class="text-xl sm:text-2xl font-bold text-orange-600">
+                        {{ $this->projections2025['games'] ?? 0 }}
+                    </div>
+                    <div class="text-xs text-muted-foreground">Proj Games</div>
                 </div>
             </div>
-                    </div>
-                </div>
+        </div>
+    </div>
 
     <!-- Main Content Tabs -->
-    <flux:tabs value="{{ $activeTab }}" wire:model.live="activeTab" class="space-y-6">
-        <!-- Overview Tab -->
-        <flux:tab name="overview" heading="Overview">
-            <div class="space-y-6">
-                <!-- Performance Distribution -->
-                <flux:callout>
-                    <flux:heading size="md" class="mb-4">Performance Distribution</flux:heading>
-                    <x-box-whisker-chart :data="$this->box2024Horizontal" />
-                </flux:callout>
+    <div class="space-y-6">
+        <flux:tabs value="{{ $activeTab }}" wire:model.live="activeTab">
+            <!-- Overview Tab -->
+            <flux:tab name="overview" heading="Overview">
+                <div class="space-y-6">
+                    <!-- Performance Chart -->
+                    @if($this->box2024Horizontal['exists'] ?? false)
+                        <flux:callout>
+                            <flux:heading size="md" class="mb-4">2024 Performance Distribution</flux:heading>
+                            <x-box-whisker-chart :data="$this->box2024Horizontal" />
+                        </flux:callout>
+                    @endif
 
-                <!-- Key Insights Grid -->
-                <div class="grid gap-6 md:grid-cols-2">
-                    <flux:callout>
-                        <flux:heading size="md" class="mb-4">2025 Projections</flux:heading>
-                        <div class="space-y-3">
-                            <div class="flex justify-between">
-                                <span>Total Points:</span>
-                                <span class="font-semibold">{{ number_format($this->projections2025['total_points'] ?? 0, 1) }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>Average PPG:</span>
-                                <span class="font-semibold">{{ number_format($this->projections2025['average_points_per_game'] ?? 0, 1) }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>Range (1σ):</span>
-                                <span class="font-semibold">{{ number_format($this->projectionDistribution['lower'] ?? 0, 1) }} – {{ number_format($this->projectionDistribution['upper'] ?? 0, 1) }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>Weekly Min/Max:</span>
-                                <span class="font-semibold">{{ number_format($this->projections2025['min_points'] ?? 0, 1) }} / {{ number_format($this->projections2025['max_points'] ?? 0, 1) }}</span>
-                            </div>
-                        </div>
-                    </flux:callout>
-
-                    <flux:callout>
-                        <flux:heading size="md" class="mb-4">2024 Season Summary</flux:heading>
-                        @if (!empty($this->stats2024))
+                    <!-- Key Insights Grid -->
+                    <div class="grid gap-6 lg:grid-cols-2">
+                        <!-- 2025 Projections -->
+                        <flux:callout>
+                            <flux:heading size="md" class="mb-4">2025 Season Projections</flux:heading>
                             <div class="space-y-3">
-                                <div class="flex justify-between">
-                                    <span>Total Points:</span>
-                                    <span class="font-semibold">{{ number_format($this->summary2024['total_points'] ?? 0, 1) }}</span>
+                                <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                                    <span class="text-sm font-medium">Total Points</span>
+                                    <span class="font-bold text-green-600">{{ number_format($this->projections2025['total_points'] ?? 0, 1) }}</span>
                                 </div>
-                                <div class="flex justify-between">
-                                    <span>Average PPG:</span>
-                                    <span class="font-semibold">{{ number_format($this->summary2024['average_points_per_game'] ?? 0, 1) }}</span>
+                                <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                                    <span class="text-sm font-medium">Average PPG</span>
+                                    <span class="font-bold">{{ number_format($this->projections2025['average_points_per_game'] ?? 0, 1) }}</span>
                                 </div>
-                                <div class="flex justify-between">
-                                    <span>Games Played:</span>
-                                    <span class="font-semibold">{{ $this->summary2024['games_active'] ?? 0 }}</span>
+                                <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                                    <span class="text-sm font-medium">Range (±1σ)</span>
+                                    <span class="font-bold">{{ number_format($this->projectionDistribution['lower'] ?? 0, 1) }}–{{ number_format($this->projectionDistribution['upper'] ?? 0, 1) }}</span>
                                 </div>
-                                <div class="flex justify-between">
-                                    <span>Best Game:</span>
-                                    <span class="font-semibold">{{ number_format($this->summary2024['max_points'] ?? 0, 1) }}</span>
+                                <div class="flex justify-between items-center py-2">
+                                    <span class="text-sm font-medium">Weekly Min/Max</span>
+                                    <span class="font-bold">{{ number_format($this->projections2025['min_points'] ?? 0, 1) }}/{{ number_format($this->projections2025['max_points'] ?? 0, 1) }}</span>
                                 </div>
                             </div>
-                        @else
-                            <div class="text-center py-8 text-muted-foreground">
-                                No 2024 season data available
-                            </div>
-                        @endif
-                    </flux:callout>
-                </div>
-            </div>
-        </flux:tab>
+                        </flux:callout>
 
-        <!-- Weekly Performance Tab -->
-        <flux:tab name="weekly" heading="Weekly Performance">
-            <div class="space-y-6">
-                <flux:callout>
-                    <flux:heading size="md" class="mb-4">2024 Weekly Performance</flux:heading>
+                        <!-- 2024 Season Summary -->
+                        <flux:callout>
+                            <flux:heading size="md" class="mb-4">2024 Season Results</flux:heading>
+                            @if (!empty($this->stats2024))
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span class="text-sm font-medium">Total Points</span>
+                                        <span class="font-bold text-blue-600">{{ number_format($this->summary2024['total_points'] ?? 0, 1) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span class="text-sm font-medium">Average PPG</span>
+                                        <span class="font-bold">{{ number_format($this->summary2024['average_points_per_game'] ?? 0, 1) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span class="text-sm font-medium">Games Played</span>
+                                        <span class="font-bold">{{ $this->summary2024['games_active'] ?? 0 }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-2">
+                                        <span class="text-sm font-medium">Best Game</span>
+                                        <span class="font-bold">{{ number_format($this->summary2024['max_points'] ?? 0, 1) }}</span>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="text-center py-8 text-muted-foreground">
+                                    <p>No 2024 season data available</p>
+                                </div>
+                            @endif
+                        </flux:callout>
+                    </div>
+                </div>
+            </flux:tab>
+
+            <!-- Weekly Performance Tab -->
+            <flux:tab name="weekly" heading="Weekly Performance">
+                <div class="space-y-6">
+                    <!-- 2024 Weekly Performance -->
+                    <flux:callout>
+                        <flux:heading size="md" class="mb-4">2024 Weekly Performance</flux:heading>
                         @if ($this->weeklyStats->count() > 0)
                             <div class="overflow-x-auto">
                                 <table class="w-full text-sm">
-                                    <thead class="border-b">
-                                        <tr>
-                                            <th class="px-3 py-2 text-left">Week</th>
-                                            <th class="px-3 py-2 text-left">Points</th>
+                                    <thead>
+                                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                                            <th class="px-3 py-3 text-left font-semibold">Week</th>
+                                            <th class="px-3 py-3 text-left font-semibold">Points</th>
                                             @if ($this->position === 'QB')
-                                                <th class="px-3 py-2 text-left">Pass Yds</th>
-                                                <th class="px-3 py-2 text-left">Pass TDs</th>
+                                                <th class="px-3 py-3 text-left font-semibold">Pass Yds</th>
+                                                <th class="px-3 py-3 text-left font-semibold">Pass TDs</th>
                                             @elseif ($this->position === 'RB')
-                                                <th class="px-3 py-2 text-left">Rush Yds</th>
-                                                <th class="px-3 py-2 text-left">Rush TDs</th>
-                                                <th class="px-3 py-2 text-left">Rec</th>
+                                                <th class="px-3 py-3 text-left font-semibold">Rush Yds</th>
+                                                <th class="px-3 py-3 text-left font-semibold">Rush TDs</th>
+                                                <th class="px-3 py-3 text-left font-semibold">Rec</th>
                                             @elseif (in_array($this->position, ['WR', 'TE']))
-                                                <th class="px-3 py-2 text-left">Rec</th>
-                                                <th class="px-3 py-2 text-left">Rec Yds</th>
-                                                <th class="px-3 py-2 text-left">TDs</th>
-                            @endif
+                                                <th class="px-3 py-3 text-left font-semibold">Rec</th>
+                                                <th class="px-3 py-3 text-left font-semibold">Rec Yds</th>
+                                                <th class="px-3 py-3 text-left font-semibold">TDs</th>
+                                            @endif
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y">
+                                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                                         @foreach ($this->weeklyStats->sortBy('week') as $weekStat)
                                             @php $stats = $weekStat->stats ?? []; @endphp
-                                            <tr>
+                                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
                                                 <td class="px-3 py-2 font-medium">{{ $weekStat->week }}</td>
-                                                <td class="px-3 py-2">{{ isset($stats['pts_ppr']) ? number_format($stats['pts_ppr'], 1) : '-' }}</td>
+                                                <td class="px-3 py-2 font-semibold">{{ isset($stats['pts_ppr']) ? number_format($stats['pts_ppr'], 1) : '—' }}</td>
                                                 @if ($this->position === 'QB')
-                                                    <td class="px-3 py-2">{{ $stats['pass_yd'] ?? '-' }}</td>
-                                                    <td class="px-3 py-2">{{ $stats['pass_td'] ?? '-' }}</td>
+                                                    <td class="px-3 py-2">{{ $stats['pass_yd'] ?? '—' }}</td>
+                                                    <td class="px-3 py-2">{{ $stats['pass_td'] ?? '—' }}</td>
                                                 @elseif ($this->position === 'RB')
-                                                    <td class="px-3 py-2">{{ $stats['rush_yd'] ?? '-' }}</td>
-                                                    <td class="px-3 py-2">{{ $stats['rush_td'] ?? '-' }}</td>
-                                                    <td class="px-3 py-2">{{ $stats['rec'] ?? '-' }}</td>
+                                                    <td class="px-3 py-2">{{ $stats['rush_yd'] ?? '—' }}</td>
+                                                    <td class="px-3 py-2">{{ $stats['rush_td'] ?? '—' }}</td>
+                                                    <td class="px-3 py-2">{{ $stats['rec'] ?? '—' }}</td>
                                                 @elseif (in_array($this->position, ['WR', 'TE']))
-                                                    <td class="px-3 py-2">{{ $stats['rec'] ?? '-' }}</td>
-                                                    <td class="px-3 py-2">{{ $stats['rec_yd'] ?? '-' }}</td>
-                                                    <td class="px-3 py-2">{{ $stats['rec_td'] ?? '-' }}</td>
+                                                    <td class="px-3 py-2">{{ $stats['rec'] ?? '—' }}</td>
+                                                    <td class="px-3 py-2">{{ $stats['rec_yd'] ?? '—' }}</td>
+                                                    <td class="px-3 py-2">{{ $stats['rec_td'] ?? '—' }}</td>
                                                 @endif
                                             </tr>
                                         @endforeach
@@ -546,255 +581,268 @@ new class extends Component {
                             </div>
                         @else
                             <div class="text-center py-8 text-muted-foreground">
-                                No weekly performance data available
+                                <p>No weekly performance data available</p>
                             </div>
-                        @endif>
-                </flux:callout>
+                        @endif
+                    </flux:callout>
 
-                <flux:callout>
-                    <flux:heading size="md" class="mb-4">2025 Weekly Projections</flux:heading>
-                    @if ($this->weeklyProjections->count() > 0)
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead class="border-b">
-                                    <tr>
-                                        <th class="px-3 py-2 text-left">Week</th>
-                                        <th class="px-3 py-2 text-left">Projected PPR</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y">
-                                    @foreach ($this->weeklyProjections->sortBy('week') as $proj)
-                                        @php $stats = $proj->stats ?? []; @endphp
-                                        <tr>
-                                            <td class="px-3 py-2 font-medium">{{ $proj->week }}</td>
-                                            <td class="px-3 py-2">@if(isset($stats['pts_ppr'])) {{ number_format($stats['pts_ppr'], 1) }} @elseif(isset($proj->pts_ppr)) {{ number_format($proj->pts_ppr, 1) }} @else - @endif</td>
+                    <!-- 2025 Weekly Projections -->
+                    <flux:callout>
+                        <flux:heading size="md" class="mb-4">2025 Weekly Projections</flux:heading>
+                        @if ($this->weeklyProjections->count() > 0)
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                                            <th class="px-3 py-3 text-left font-semibold">Week</th>
+                                            <th class="px-3 py-3 text-left font-semibold">Projected PPR</th>
                                         </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @else
-                        <div class="text-center py-8 text-muted-foreground">
-                            No weekly projections available
-                        </div>
-                    @endif
-                </flux:callout>
-        </div>
-        </flux:tab>
-
-        <!-- Detailed Stats Tab -->
-        <flux:tab name="stats" heading="Detailed Stats">
-            @if (!empty($this->stats2024))
-                <flux:callout>
-                    <flux:heading size="md" class="mb-4">2024 Detailed Stats ({{ $this->position }})</flux:heading>
-                        <!-- QB Stats -->
-                        @if ($this->position === 'QB')
-                            <div class="grid gap-6 md:grid-cols-2">
-                                <div class="space-y-3">
-                                    <h4 class="font-medium text-sm text-muted-foreground">Passing</h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span>Passing Yards:</span>
-                                            <span class="font-semibold">{{ number_format($this->qbStats['pass_yd']) }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Passing TDs:</span>
-                                            <span class="font-semibold">{{ $this->qbStats['pass_td'] }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Interceptions:</span>
-                                            <span class="font-semibold">{{ $this->qbStats['pass_int'] }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Completions:</span>
-                                            <span class="font-semibold">{{ $this->qbStats['pass_cmp'] }}/{{ $this->qbStats['pass_att'] }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="space-y-3">
-                                    <h4 class="font-medium text-sm text-muted-foreground">Rushing</h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span>Rushing Yards:</span>
-                                            <span class="font-semibold">{{ number_format($this->qbStats['rush_yd']) }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Rushing TDs:</span>
-                                            <span class="font-semibold">{{ $this->qbStats['rush_td'] }}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                        @foreach ($this->weeklyProjections->sortBy('week') as $proj)
+                                            @php $stats = $proj->stats ?? []; @endphp
+                                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                                <td class="px-3 py-2 font-medium">{{ $proj->week }}</td>
+                                                <td class="px-3 py-2 font-semibold">
+                                                    @if(isset($stats['pts_ppr']))
+                                                        {{ number_format($stats['pts_ppr'], 1) }}
+                                                    @elseif(isset($proj->pts_ppr))
+                                                        {{ number_format($proj->pts_ppr, 1) }}
+                                                    @else
+                                                        —
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
                             </div>
-
-                        <!-- RB Stats -->
-                        @elseif ($this->position === 'RB')
-                            <div class="grid gap-6 md:grid-cols-2">
-                                <div class="space-y-3">
-                                    <h4 class="font-medium text-sm text-muted-foreground">Rushing</h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span>Rushing Yards:</span>
-                                            <span class="font-semibold">{{ number_format($this->rbStats['rush_yd']) }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Rushing TDs:</span>
-                                            <span class="font-semibold">{{ $this->rbStats['rush_td'] }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Carries:</span>
-                                            <span class="font-semibold">{{ $this->rbStats['rush_att'] }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="space-y-3">
-                                    <h4 class="font-medium text-sm text-muted-foreground">Receiving</h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span>Receptions:</span>
-                                            <span class="font-semibold">{{ $this->rbStats['rec'] }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Receiving Yards:</span>
-                                            <span class="font-semibold">{{ number_format($this->rbStats['rec_yd']) }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Receiving TDs:</span>
-                                            <span class="font-semibold">{{ $this->rbStats['rec_td'] }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Targets:</span>
-                                            <span class="font-semibold">{{ $this->rbStats['rec_tgt'] }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        <!-- WR/TE Stats -->
-                        @elseif (in_array($this->position, ['WR', 'TE']))
-                            <div class="grid gap-6 md:grid-cols-2">
-                                <div class="space-y-3">
-                                    <h4 class="font-medium text-sm text-muted-foreground">Receiving Stats</h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span>Receptions:</span>
-                                            <span class="font-semibold">{{ $this->wrTeStats['rec'] }}</span>
-                    </div>
-                                        <div class="flex justify-between">
-                                            <span>Receiving Yards:</span>
-                                            <span class="font-semibold">{{ number_format($this->wrTeStats['rec_yd']) }}</span>
-                    </div>
-                                        <div class="flex justify-between">
-                                            <span>Receiving TDs:</span>
-                                            <span class="font-semibold">{{ $this->wrTeStats['rec_td'] }}</span>
-                    </div>
-                                    </div>
-                                </div>
-                                <div class="space-y-3">
-                                    <h4 class="font-medium text-sm text-muted-foreground">Efficiency</h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span>Targets:</span>
-                                            <span class="font-semibold">{{ $this->wrTeStats['rec_tgt'] }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Longest Reception:</span>
-                                            <span class="font-semibold">{{ $this->wrTeStats['rec_lng'] }} yds</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Yards Per Reception:</span>
-                                            <span class="font-semibold">{{ number_format($this->wrTeStats['rec_ypr'], 1) }}</span>
-                                        </div>
-                                    </div>
-                    </div>
-                </div>
-
-                        <!-- K Stats -->
-                        @elseif ($this->position === 'K')
-                            <div class="grid gap-6 md:grid-cols-2">
-                                <div class="space-y-3">
-                                    <h4 class="font-medium text-sm text-muted-foreground">Field Goals</h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span>Field Goals Made:</span>
-                                            <span class="font-semibold">{{ $this->kStats['fgm'] }}/{{ $this->kStats['fga'] }}</span>
-                </div>
-                                        <div class="flex justify-between">
-                                            <span>FG Percentage:</span>
-                                            <span class="font-semibold">{{ $this->kStats['fg_pct'] }}%</span>
-            </div>
-                                    </div>
-                                </div>
-                                <div class="space-y-3">
-                                    <h4 class="font-medium text-sm text-muted-foreground">Extra Points</h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span>Extra Points Made:</span>
-                                            <span class="font-semibold">{{ $this->kStats['xpm'] }}/{{ $this->kStats['xpa'] }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        <!-- DEF Stats -->
-                        @elseif ($this->position === 'DEF')
-                            <div class="grid gap-6 md:grid-cols-2">
-                                <div class="space-y-3">
-                                    <h4 class="font-medium text-sm text-muted-foreground">Defensive Stats</h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span>Interceptions:</span>
-                                            <span class="font-semibold">{{ $this->defStats['def_int'] }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Sacks:</span>
-                                            <span class="font-semibold">{{ number_format($this->defStats['def_sack'], 1) }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Tackles:</span>
-                                            <span class="font-semibold">{{ $this->defStats['def_tkl'] }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="space-y-3">
-                                    <h4 class="font-medium text-sm text-muted-foreground">Turnovers & TDs</h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span>Forced Fumbles:</span>
-                                            <span class="font-semibold">{{ $this->defStats['def_ff'] }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Defensive TDs:</span>
-                                            <span class="font-semibold">{{ $this->defStats['def_td'] }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Points Against:</span>
-                                            <span class="font-semibold">{{ $this->defStats['def_pa'] }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        <!-- Default/Unknown Position -->
                         @else
-                            <div class="space-y-4">
-                                <div class="text-center py-8 text-muted-foreground">
-                                    Position-specific stats not available for {{ $this->position }} position.
+                            <div class="text-center py-8 text-muted-foreground">
+                                <p>No weekly projections available</p>
+                            </div>
+                        @endif
+                    </flux:callout>
+                </div>
+            </flux:tab>
+
+            <!-- Detailed Stats Tab -->
+            <flux:tab name="stats" heading="Detailed Stats">
+                @if (!empty($this->stats2024))
+                    <flux:callout>
+                        <flux:heading size="md" class="mb-6">2024 Detailed Stats ({{ $this->position }})</flux:heading>
+
+                        @if ($this->position === 'QB')
+                            <!-- QB Stats -->
+                            <div class="grid gap-6 lg:grid-cols-2">
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold text-base text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Passing</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Passing Yards</span>
+                                            <span class="font-bold">{{ number_format($this->qbStats['pass_yd']) }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Passing TDs</span>
+                                            <span class="font-bold">{{ $this->qbStats['pass_td'] }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Interceptions</span>
+                                            <span class="font-bold">{{ $this->qbStats['pass_int'] }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Completions</span>
+                                            <span class="font-bold">{{ $this->qbStats['pass_cmp'] }}/{{ $this->qbStats['pass_att'] }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold text-base text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Rushing</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Rushing Yards</span>
+                                            <span class="font-bold">{{ number_format($this->qbStats['rush_yd']) }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Rushing TDs</span>
+                                            <span class="font-bold">{{ $this->qbStats['rush_td'] }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        @elseif ($this->position === 'RB')
+                            <!-- RB Stats -->
+                            <div class="grid gap-6 lg:grid-cols-2">
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold text-base text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Rushing</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Rushing Yards</span>
+                                            <span class="font-bold">{{ number_format($this->rbStats['rush_yd']) }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Rushing TDs</span>
+                                            <span class="font-bold">{{ $this->rbStats['rush_td'] }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Carries</span>
+                                            <span class="font-bold">{{ $this->rbStats['rush_att'] }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold text-base text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Receiving</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Receptions</span>
+                                            <span class="font-bold">{{ $this->rbStats['rec'] }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Receiving Yards</span>
+                                            <span class="font-bold">{{ number_format($this->rbStats['rec_yd']) }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Receiving TDs</span>
+                                            <span class="font-bold">{{ $this->rbStats['rec_td'] }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Targets</span>
+                                            <span class="font-bold">{{ $this->rbStats['rec_tgt'] }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        @elseif (in_array($this->position, ['WR', 'TE']))
+                            <!-- WR/TE Stats -->
+                            <div class="grid gap-6 lg:grid-cols-2">
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold text-base text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Receiving</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Receptions</span>
+                                            <span class="font-bold">{{ $this->wrTeStats['rec'] }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Receiving Yards</span>
+                                            <span class="font-bold">{{ number_format($this->wrTeStats['rec_yd']) }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Receiving TDs</span>
+                                            <span class="font-bold">{{ $this->wrTeStats['rec_td'] }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold text-base text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Efficiency</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Targets</span>
+                                            <span class="font-bold">{{ $this->wrTeStats['rec_tgt'] }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Longest Reception</span>
+                                            <span class="font-bold">{{ $this->wrTeStats['rec_lng'] }} yds</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Yards Per Reception</span>
+                                            <span class="font-bold">{{ number_format($this->wrTeStats['rec_ypr'], 1) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        @elseif ($this->position === 'K')
+                            <!-- K Stats -->
+                            <div class="grid gap-6 lg:grid-cols-2">
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold text-base text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Field Goals</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Field Goals Made</span>
+                                            <span class="font-bold">{{ $this->kStats['fgm'] }}/{{ $this->kStats['fga'] }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">FG Percentage</span>
+                                            <span class="font-bold">{{ $this->kStats['fg_pct'] }}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold text-base text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Extra Points</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Extra Points Made</span>
+                                            <span class="font-bold">{{ $this->kStats['xpm'] }}/{{ $this->kStats['xpa'] }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        @elseif ($this->position === 'DEF')
+                            <!-- DEF Stats -->
+                            <div class="grid gap-6 lg:grid-cols-2">
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold text-base text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Defensive Stats</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Interceptions</span>
+                                            <span class="font-bold">{{ $this->defStats['def_int'] }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Sacks</span>
+                                            <span class="font-bold">{{ number_format($this->defStats['def_sack'], 1) }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Tackles</span>
+                                            <span class="font-bold">{{ $this->defStats['def_tkl'] }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold text-base text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Turnovers & TDs</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Forced Fumbles</span>
+                                            <span class="font-bold">{{ $this->defStats['def_ff'] }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Defensive TDs</span>
+                                            <span class="font-bold">{{ $this->defStats['def_td'] }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-1">
+                                            <span class="text-sm">Points Against</span>
+                                            <span class="font-bold">{{ $this->defStats['def_pa'] }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        @else
+                            <!-- Default/Unknown Position -->
+                            <div class="text-center py-12">
+                                <div class="text-muted-foreground mb-4">
+                                    <p class="text-lg">Position-specific stats not available for {{ $this->position }} position.</p>
                                 </div>
                                 @if (!empty($this->stats2024))
-                                    <div class="text-xs">
-                                        <strong>Available stats:</strong> {{ implode(', ', array_keys($this->stats2024)) }}
+                                    <div class="text-xs text-muted-foreground">
+                                        <p><strong>Available stats:</strong> {{ implode(', ', array_keys($this->stats2024)) }}</p>
                                     </div>
                                 @endif
                             </div>
                         @endif
-                </flux:callout>
-            @else
-                <flux:callout>
-                    <div class="text-center py-8 text-muted-foreground">
-                        No detailed stats available for this player.
-                    </div>
-                </flux:callout>
-            @endif
-        </flux:tab>
-    </flux:tabs>
+                    </flux:callout>
+                @else
+                    <flux:callout>
+                        <div class="text-center py-12">
+                            <div class="text-muted-foreground">
+                                <p class="text-lg">No detailed stats available for this player.</p>
+                            </div>
+                        </div>
+                    </flux:callout>
+                @endif
+            </flux:tab>
+        </flux:tabs>
+    </div>
 </section>
