@@ -269,16 +269,16 @@ new class extends Component {
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Trade Value -->
                     <div class="text-center">
-                        <div class="text-2xl font-bold {{ tradeAnalysis['trade_value'] > 0 ? 'text-green-600' : (tradeAnalysis['trade_value'] < 0 ? 'text-red-600' : 'text-gray-600') }}">
-                            {{ tradeAnalysis['trade_value'] > 0 ? '+' : '' }}{{ number_format(tradeAnalysis['trade_value'], 1) }}
+                        <div class="text-2xl font-bold {{ $this->tradeAnalysis['trade_value'] > 0 ? 'text-green-600' : ($this->tradeAnalysis['trade_value'] < 0 ? 'text-red-600' : 'text-gray-600') }}">
+                            {{ $this->tradeAnalysis['trade_value'] > 0 ? '+' : '' }}{{ number_format($this->tradeAnalysis['trade_value'], 1) }}
                         </div>
                         <div class="text-sm text-muted-foreground">Trade Value Differential</div>
                     </div>
 
                     <!-- Risk Differential -->
                     <div class="text-center">
-                        <div class="text-2xl font-bold {{ tradeAnalysis['risk_differential'] < 0 ? 'text-green-600' : (tradeAnalysis['risk_differential'] > 0 ? 'text-red-600' : 'text-gray-600') }}">
-                            {{ tradeAnalysis['risk_differential'] > 0 ? '+' : '' }}{{ number_format(tradeAnalysis['risk_differential'], 2) }}
+                        <div class="text-2xl font-bold {{ $this->tradeAnalysis['risk_differential'] < 0 ? 'text-green-600' : ($this->tradeAnalysis['risk_differential'] > 0 ? 'text-red-600' : 'text-gray-600') }}">
+                            {{ $this->tradeAnalysis['risk_differential'] > 0 ? '+' : '' }}{{ number_format($this->tradeAnalysis['risk_differential'], 2) }}
                         </div>
                         <div class="text-sm text-muted-foreground">Risk Differential</div>
                     </div>
@@ -286,11 +286,11 @@ new class extends Component {
                     <!-- Recommendation -->
                     <div class="text-center">
                         <div class="text-lg font-semibold">
-                            @if (tradeAnalysis['trade_value'] > 5)
+                            @if ($this->tradeAnalysis['trade_value'] > 5)
                                 <span class="text-green-600">Strong Trade</span>
-                            @elseif (tradeAnalysis['trade_value'] > 2)
+                            @elseif ($this->tradeAnalysis['trade_value'] > 2)
                                 <span class="text-blue-600">Fair Trade</span>
-                            @elseif (tradeAnalysis['trade_value'] < -5)
+                            @elseif ($this->tradeAnalysis['trade_value'] < -5)
                                 <span class="text-red-600">Poor Trade</span>
                             @else
                                 <span class="text-gray-600">Even Trade</span>
@@ -358,19 +358,19 @@ new class extends Component {
                             <div class="grid grid-cols-2 gap-4 text-sm">
                                 <div>
                                     <span class="text-muted-foreground">Total Value:</span>
-                                    <span class="font-medium">{{ number_format($givingTradeSummary['total_value'], 1) }}</span>
+                                    <span class="font-medium">{{ number_format($this->givingTradeSummary['total_value'], 1) }}</span>
                                 </div>
                                 <div>
                                     <span class="text-muted-foreground">Risk Score:</span>
-                                    <span class="font-medium">{{ number_format($givingTradeSummary['risk_score'], 2) }}</span>
+                                    <span class="font-medium">{{ number_format($this->givingTradeSummary['risk_score'], 2) }}</span>
                                 </div>
                                 <div>
                                     <span class="text-muted-foreground">Boom Potential:</span>
-                                    <span class="font-medium">{{ number_format($givingTradeSummary['boom_potential'], 1) }}%</span>
+                                    <span class="font-medium">{{ number_format($this->givingTradeSummary['boom_potential'], 1) }}%</span>
                                 </div>
                                 <div>
                                     <span class="text-muted-foreground">Bust Risk:</span>
-                                    <span class="font-medium">{{ number_format($givingTradeSummary['bust_risk'], 1) }}%</span>
+                                    <span class="font-medium">{{ number_format($this->givingTradeSummary['bust_risk'], 1) }}%</span>
                                 </div>
                             </div>
                         </div>
@@ -432,19 +432,19 @@ new class extends Component {
                             <div class="grid grid-cols-2 gap-4 text-sm">
                                 <div>
                                     <span class="text-muted-foreground">Total Value:</span>
-                                    <span class="font-medium">{{ number_format($receivingTradeSummary['total_value'], 1) }}</span>
+                                    <span class="font-medium">{{ number_format($this->receivingTradeSummary['total_value'], 1) }}</span>
                                 </div>
                                 <div>
                                     <span class="text-muted-foreground">Risk Score:</span>
-                                    <span class="font-medium">{{ number_format($receivingTradeSummary['risk_score'], 2) }}</span>
+                                    <span class="font-medium">{{ number_format($this->receivingTradeSummary['risk_score'], 2) }}</span>
                                 </div>
                                 <div>
                                     <span class="text-muted-foreground">Boom Potential:</span>
-                                    <span class="font-medium">{{ number_format($receivingTradeSummary['boom_potential'], 1) }}%</span>
+                                    <span class="font-medium">{{ number_format($this->receivingTradeSummary['boom_potential'], 1) }}%</span>
                                 </div>
                                 <div>
                                     <span class="text-muted-foreground">Bust Risk:</span>
-                                    <span class="font-medium">{{ number_format($receivingTradeSummary['bust_risk'], 1) }}%</span>
+                                    <span class="font-medium">{{ number_format($this->receivingTradeSummary['bust_risk'], 1) }}%</span>
                                 </div>
                             </div>
                         </div>
@@ -467,16 +467,16 @@ new class extends Component {
                         <div class="space-y-4">
                             <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                 <span class="font-medium">Giving Total Projection:</span>
-                                <span class="text-red-600 font-bold">{{ number_format($givingTradeSummary['total_projection'], 1) }} pts</span>
+                                <span class="text-red-600 font-bold">{{ number_format($this->givingTradeSummary['total_projection'], 1) }} pts</span>
                             </div>
                             <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                 <span class="font-medium">Receiving Total Projection:</span>
-                                <span class="text-green-600 font-bold">{{ number_format($receivingTradeSummary['total_projection'], 1) }} pts</span>
+                                <span class="text-green-600 font-bold">{{ number_format($this->receivingTradeSummary['total_projection'], 1) }} pts</span>
                             </div>
                             <div class="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                                 <span class="font-medium">Projection Differential:</span>
-                                <span class="font-bold {{ ($receivingTradeSummary['total_projection'] - $givingTradeSummary['total_projection']) > 0 ? 'text-green-600' : 'text-red-600' }}">
-                                    {{ ($receivingTradeSummary['total_projection'] - $givingTradeSummary['total_projection']) > 0 ? '+' : '' }}{{ number_format($receivingTradeSummary['total_projection'] - $givingTradeSummary['total_projection'], 1) }} pts
+                                <span class="font-bold {{ ($this->receivingTradeSummary['total_projection'] - $this->givingTradeSummary['total_projection']) > 0 ? 'text-green-600' : 'text-red-600' }}">
+                                    {{ ($this->receivingTradeSummary['total_projection'] - $this->givingTradeSummary['total_projection']) > 0 ? '+' : '' }}{{ number_format($this->receivingTradeSummary['total_projection'] - $this->givingTradeSummary['total_projection'], 1) }} pts
                                 </span>
                             </div>
                         </div>
@@ -488,16 +488,16 @@ new class extends Component {
                         <div class="space-y-4">
                             <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                 <span class="font-medium">Giving Risk Score:</span>
-                                <span class="text-red-600 font-bold">{{ number_format($givingTradeSummary['risk_score'], 2) }}</span>
+                                <span class="text-red-600 font-bold">{{ number_format($this->givingTradeSummary['risk_score'], 2) }}</span>
                             </div>
                             <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                 <span class="font-medium">Receiving Risk Score:</span>
-                                <span class="text-green-600 font-bold">{{ number_format($receivingTradeSummary['risk_score'], 2) }}</span>
+                                <span class="text-green-600 font-bold">{{ number_format($this->receivingTradeSummary['risk_score'], 2) }}</span>
                             </div>
                             <div class="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                                 <span class="font-medium">Risk Differential:</span>
-                                <span class="font-bold {{ ($receivingTradeSummary['risk_score'] - $givingTradeSummary['risk_score']) < 0 ? 'text-green-600' : 'text-red-600' }}">
-                                    {{ ($receivingTradeSummary['risk_score'] - $givingTradeSummary['risk_score']) > 0 ? '+' : '' }}{{ number_format($receivingTradeSummary['risk_score'] - $givingTradeSummary['risk_score'], 2) }}
+                                <span class="font-bold {{ ($this->receivingTradeSummary['risk_score'] - $this->givingTradeSummary['risk_score']) < 0 ? 'text-green-600' : 'text-red-600' }}">
+                                    {{ ($this->receivingTradeSummary['risk_score'] - $this->givingTradeSummary['risk_score']) > 0 ? '+' : '' }}{{ number_format($this->receivingTradeSummary['risk_score'] - $this->givingTradeSummary['risk_score'], 2) }}
                                 </span>
                             </div>
                         </div>
@@ -508,29 +508,29 @@ new class extends Component {
                 <div class="mt-8">
                     <flux:heading size="sm" class="mb-4">Trade Insights</flux:heading>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @if (tradeAnalysis['trade_value'] > 2)
+                        @if ($this->tradeAnalysis['trade_value'] > 2)
                             <div class="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
                                 <div class="flex items-start gap-3">
                                     <span class="text-green-600 text-xl">✓</span>
                                     <div>
                                         <div class="font-medium text-green-800 dark:text-green-200">Good Trade Value</div>
-                                        <div class="text-sm text-green-700 dark:text-green-300">You're receiving {{ number_format(abs(tradeAnalysis['trade_value']), 1) }} more value than you're giving up</div>
+                                        <div class="text-sm text-green-700 dark:text-green-300">You're receiving {{ number_format(abs($this->tradeAnalysis['trade_value']), 1) }} more value than you're giving up</div>
                                     </div>
                                 </div>
                             </div>
-                        @elseif (tradeAnalysis['trade_value'] < -2)
+                        @elseif ($this->tradeAnalysis['trade_value'] < -2)
                             <div class="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
                                 <div class="flex items-start gap-3">
                                     <span class="text-red-600 text-xl">⚠</span>
                                     <div>
                                         <div class="font-medium text-red-800 dark:text-red-200">Poor Trade Value</div>
-                                        <div class="text-sm text-red-700 dark:text-red-300">You're giving up {{ number_format(abs(tradeAnalysis['trade_value']), 1) }} more value than you're receiving</div>
+                                        <div class="text-sm text-red-700 dark:text-red-300">You're giving up {{ number_format(abs($this->tradeAnalysis['trade_value']), 1) }} more value than you're receiving</div>
                                     </div>
                                 </div>
                             </div>
                         @endif
 
-                        @if (tradeAnalysis['risk_differential'] < -0.5)
+                        @if ($this->tradeAnalysis['risk_differential'] < -0.5)
                             <div class="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
                                 <div class="flex items-start gap-3">
                                     <span class="text-green-600 text-xl">✓</span>
@@ -540,7 +540,7 @@ new class extends Component {
                                     </div>
                                 </div>
                             </div>
-                        @elseif (tradeAnalysis['risk_differential'] > 0.5)
+                        @elseif ($this->tradeAnalysis['risk_differential'] > 0.5)
                             <div class="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
                                 <div class="flex items-start gap-3">
                                     <span class="text-red-600 text-xl">⚠</span>
