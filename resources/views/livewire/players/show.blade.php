@@ -458,9 +458,11 @@ new class extends Component {
 
     <!-- Navigation Tabs -->
     <div class="space-y-6">
-        <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-800 pb-3 sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-gray-900/60 z-10">
-            <flux:button size="sm" variant="primary" href="{{ route('players.show', $player->player_id) }}">Overview</flux:button>
-            <flux:button size="sm" variant="ghost" href="{{ route('players.show.2024', $player->player_id) }}">2024 Performance</flux:button>
+        <div class="sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-gray-900/60 z-10 pb-3">
+            <flux:tabs>
+                <flux:tab href="{{ route('players.show', $player->player_id) }}" current>Overview</flux:tab>
+                <flux:tab href="{{ route('players.show.2024', $player->player_id) }}">2024 Performance</flux:tab>
+            </flux:tabs>
         </div>
 
         <!-- Main Overview Content -->
