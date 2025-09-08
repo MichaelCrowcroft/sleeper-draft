@@ -15,11 +15,9 @@ return [
     |
     */
     'servers' => [
-        'puppeteer' => [
-            'transport' => Transport::Stdio,
-            'command' => ['npx', '-y', '@modelcontextprotocol/server-puppeteer'],
-            'timeout' => env('RELAY_PUPPETEER_SERVER_TIMEOUT', 60),
-            'env' => [],
+        'sleeperdraft' => [
+            'transport' => Transport::Http,
+            'url' => 'https://www.sleeperdraft.com/mcp',
         ],
     ],
 
