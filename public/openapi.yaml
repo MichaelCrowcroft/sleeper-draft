@@ -55,30 +55,7 @@ paths:
   /mcp/tools/fetch-trending-players:
     post:
       summary: Fetch trending players
-      description: |
-        # Get Trending Fantasy Football Players
-
-        Retrieves a list of players who are currently trending in fantasy football based on waiver wire activity in the last 24 hours. This endpoint is essential for identifying breakout players, injury replacements, and emerging opportunities.
-
-        ## Trending Types
-        - **add**: Players being picked up from waivers (trending up)
-        - **drop**: Players being dropped to waivers (trending down)
-
-        ## Use Cases
-        - **Waiver Wire Strategy**: Identify players to target before they become widely owned
-        - **Injury Monitoring**: Find replacement players when starters get injured
-        - **Breakout Detection**: Spot emerging talent before the competition
-        - **Market Analysis**: Understand fantasy football community sentiment
-
-        ## Data Freshness
-        Trending data is updated every hour and reflects activity from the previous 24-hour period. The trending value represents the net change in roster additions or drops across all Sleeper leagues.
-
-        ## Response Details
-        Results are ordered by trending value in descending order (highest activity first). Each player includes:
-        - Basic player information (name, position, team)
-        - Current trending metrics (adds/drops in 24h)
-        - ADP data for context
-        - Age and other relevant fantasy metrics
+      description: "Get trending fantasy football players based on waiver wire activity in the last 24 hours. Returns players being added (trending up) or dropped (trending down) with complete player profiles and trending metrics."
       operationId: fetchTrendingPlayers
       tags:
         - Player Data
@@ -103,32 +80,7 @@ paths:
   /mcp/tools/fetch-adp-players:
     post:
       summary: Fetch players by ADP
-      description: |
-        # Get Players Ranked by Average Draft Position (ADP)
-
-        Retrieves players ordered by their Average Draft Position, which represents the average round and pick where players are being selected in fantasy football drafts. This is essential data for draft preparation and player valuation.
-
-        ## What is ADP?
-        Average Draft Position is calculated from thousands of fantasy football drafts and represents:
-        - **Lower ADP = Higher Value**: ADP 1.01 means first overall pick
-        - **Round.Pick Format**: ADP 3.05 means 5th pick of the 3rd round
-        - **Consensus Ranking**: Community-driven player valuations
-
-        ## Filtering Options
-        - **All Positions**: Get a comprehensive ranking across all positions
-        - **Position-Specific**: Filter by QB, RB, WR, TE, K, or DEF
-
-        ## Use Cases
-        - **Draft Preparation**: Know when to target specific players
-        - **Value Identification**: Find players being drafted later than their production suggests
-        - **Positional Strategy**: Understand when to draft each position
-        - **Mock Draft Practice**: Simulate realistic draft scenarios
-
-        ## Data Source
-        ADP data is aggregated from recent drafts across multiple fantasy football platforms and is updated daily during draft season. The data reflects current market consensus and adjusts for recent news, injuries, and performance.
-
-        ## Response Format
-        Results are ordered by ADP in ascending order (lowest ADP first). Each player includes complete fantasy-relevant information including projected statistics and historical performance.
+      description: "Get players ranked by Average Draft Position (ADP) for draft preparation. Returns players ordered by consensus draft value with optional position filtering (QB, RB, WR, TE, K, DEF)."
       operationId: fetchADPPlayers
       tags:
         - Player Data
@@ -154,42 +106,7 @@ paths:
   /mcp/tools/fetch-players-season-data:
     post:
       summary: Fetch players season data
-      description: |
-        # Get Comprehensive Player Season Data
-
-        Retrieves detailed season statistics and projections for multiple players. This endpoint combines historical performance with current season projections to provide a complete picture of player value and potential.
-
-        ## Data Included
-        ### Historical Stats (Previous Season)
-        - **Total Points**: Complete fantasy points scored
-        - **Games Played**: Active games and total appearances
-        - **Average Points Per Game**: Consistency metric
-        - **High/Low Games**: Best and worst performances
-        - **Standard Deviation**: Volatility and reliability metrics
-
-        ### Current Season Projections
-        - **Projected Total Points**: Expected full-season production
-        - **Projected PPG**: Per-game expectation
-        - **Injury Risk Assessment**: Health and durability factors
-        - **Strength of Schedule**: Opponent difficulty analysis
-
-        ## Filtering and Pagination
-        - **Position Filter**: Limit results to specific positions (QB, RB, WR, TE, K, DEF)
-        - **Pagination Support**: Handle large datasets with offset/limit or cursor-based pagination
-        - **League Context**: Optional league-specific data when league_id provided
-
-        ## Use Cases
-        - **Season-Long Strategy**: Identify consistent performers vs. boom/bust players
-        - **Trade Analysis**: Compare player values using historical and projected data
-        - **Waiver Wire Decisions**: Evaluate pickup candidates with full context
-        - **Draft Research**: Deep dive into player profiles for draft preparation
-
-        ## Data Freshness
-        Historical stats are final season data. Projections are updated weekly based on:
-        - Recent performance trends
-        - Injury reports and team news
-        - Matchup analysis and strength of schedule
-        - Advanced analytics and machine learning models
+      description: "Get comprehensive season data for multiple players including historical stats and current projections. Supports position filtering and pagination for efficient data access."
       operationId: fetchPlayersSeasonData
       tags:
         - Player Data
@@ -214,42 +131,7 @@ paths:
   /mcp/tools/fetch-player-season-data:
     post:
       summary: Fetch a player's season data
-      description: |
-        # Get Individual Player Season Analysis
-
-        Retrieves comprehensive season data for a specific player, including historical performance and current projections. This endpoint is perfect for detailed player research and analysis.
-
-        ## Search Methods
-        ### By Player ID
-        - **Exact Match**: Use Sleeper's unique player identifier
-        - **Fastest Response**: Direct database lookup
-        - **Guaranteed Unique**: Returns exactly one player
-
-        ### By Player Name
-        - **Flexible Search**: Case-insensitive partial matching
-        - **Multiple Results**: Returns all players matching the search term
-        - **Fuzzy Matching**: Handles common name variations and nicknames
-
-        ## Data Depth
-        Each player result includes:
-        - **Complete Profile**: Name, position, team, age, physical stats
-        - **2024 Season Stats**: Final performance data with game logs
-        - **2025 Projections**: Expected performance with confidence intervals
-        - **Fantasy Metrics**: Points per game, consistency scores, ceiling/floor analysis
-        - **Advanced Analytics**: Target share, red zone usage, snap counts
-
-        ## Statistical Summaries
-        - **Total Points**: Season-long fantasy production
-        - **Per-Game Averages**: Consistency and weekly value
-        - **Volatility Metrics**: Standard deviation and boom/bust rates
-        - **Situational Stats**: Red zone, goal line, and high-leverage opportunities
-
-        ## Use Cases
-        - **Player Research**: Deep dive into specific player performance
-        - **Trade Evaluation**: Analyze players involved in potential trades
-        - **Start/Sit Decisions**: Compare players for weekly lineup decisions
-        - **Waiver Claims**: Research potential pickup targets
-        - **Dynasty Analysis**: Long-term player value assessment
+      description: "Get detailed season analysis for a specific player by ID or name. Returns historical stats, current projections, and advanced fantasy metrics for individual player research."
       operationId: fetchPlayerSeasonData
       tags:
         - Player Data
@@ -274,46 +156,7 @@ paths:
   /mcp/tools/fetch-league:
     post:
       summary: Fetch league details and users
-      description: |
-        # Get Complete League Information
-
-        Retrieves comprehensive league data including league settings, all league members, and their team information. This endpoint first finds the target league from a user's league list, then provides complete league context.
-
-        ## League Discovery Process
-        1. **Fetch User's Leagues**: Gets all leagues for the specified user ID
-        2. **Match League**: Finds league by exact name match or league ID
-        3. **Gather Details**: Retrieves complete league information and all members
-        4. **Enhance Data**: Adds roster records, team names, and performance data
-
-        ## League Identification
-        ### By League ID
-        - **Direct Match**: Use Sleeper's unique league identifier
-        - **Fastest Method**: Direct API lookup
-        - **Most Reliable**: Guaranteed unique identification
-
-        ### By League Name
-        - **Flexible Search**: Case-insensitive name matching
-        - **User Context**: Searches within user's leagues only
-        - **Common Usage**: Natural language league identification
-
-        ## Data Returned
-        ### League Information
-        - **Settings**: Scoring system, roster requirements, playoff format
-        - **Metadata**: League name, season, sport, creation date
-        - **Rules**: Waiver settings, trade deadlines, lineup requirements
-
-        ### User/Team Data
-        - **Member Roster**: All league participants with team information
-        - **Team Names**: Custom team names or fallback to display names
-        - **Records**: Wins, losses, and total fantasy points scored
-        - **User Profiles**: Display names, usernames, and avatar information
-
-        ## Use Cases
-        - **League Overview**: Get complete picture of league composition
-        - **Member Analysis**: Understand competition and team strength
-        - **Settings Review**: Verify scoring and rule configurations
-        - **Social Features**: Display league member information
-        - **Competition Tracking**: Monitor standings and performance
+      description: "Get complete league information including settings, all members, and team data. Finds league by name or ID from user's league list and returns comprehensive league context."
       operationId: fetchLeague
       tags:
         - League Data
@@ -338,49 +181,7 @@ paths:
   /mcp/tools/fetch-matchups:
     post:
       summary: Fetch league matchups
-      description: |
-        # Get Weekly Fantasy Matchup Data
-
-        Retrieves head-to-head matchup information for a specific week in a fantasy league. This endpoint provides complete scoring data and opponent information for analyzing weekly performance and competition.
-
-        ## Matchup Structure
-        Fantasy football leagues use head-to-head matchups where:
-        - **Teams are Paired**: Each team faces one opponent per week
-        - **Shared Matchup ID**: Opponents share the same `matchup_id` value
-        - **Scoring Comparison**: Higher points wins the matchup
-        - **Weekly Format**: Different opponents each week of the season
-
-        ## Week Selection
-        ### Automatic Week Detection
-        - **Current Week**: Defaults to the current NFL/fantasy week
-        - **Season Context**: Automatically determines regular season vs. playoffs
-        - **Real-time Updates**: Reflects the actual fantasy football calendar
-
-        ### Manual Week Selection
-        - **Week Range**: Specify weeks 1-18 for regular season and playoffs
-        - **Historical Data**: Access past weeks for analysis
-        - **Future Planning**: View scheduled matchups for upcoming weeks
-
-        ## Data Enhancement
-        Raw matchup data is enriched with:
-        - **User Information**: Team owner details and display names
-        - **Team Names**: Custom team names or fallback identifiers
-        - **Scoring Details**: Both standard and custom scoring systems
-        - **Avatar Data**: User profile images for display purposes
-
-        ## Response Format
-        Matchups are grouped by `matchup_id` with each group containing:
-        - **Two Teams**: The head-to-head opponents
-        - **Points Scored**: Fantasy points for each team
-        - **User Context**: Owner information and team identification
-        - **Custom Scoring**: League-specific scoring when applicable
-
-        ## Use Cases
-        - **Weekly Results**: View completed matchup scores
-        - **Opponent Analysis**: Research upcoming opponents
-        - **League Standings**: Calculate win-loss records
-        - **Scoring Trends**: Analyze weekly scoring patterns
-        - **Playoff Brackets**: Track postseason matchups
+      description: "Get weekly head-to-head matchup data for a fantasy league. Returns scoring information and team details for all matchups, with automatic current week detection or manual week selection."
       operationId: fetchMatchups
       tags:
         - League Data
@@ -405,52 +206,7 @@ paths:
   /mcp/tools/fetch-roster:
     post:
       summary: Fetch user roster
-      description: |
-        # Get Complete Team Roster Information
-
-        Retrieves comprehensive roster data for a specific team owner in a fantasy league. This endpoint combines Sleeper's roster structure with enhanced player information from the internal database to provide complete team analysis.
-
-        ## Roster Components
-        Fantasy football rosters typically include:
-        - **Starting Lineup**: Players in active scoring positions
-        - **Bench Players**: Inactive players available for lineup changes
-        - **All Players**: Complete roster including starters and bench
-        - **Position Requirements**: QB, RB, WR, TE, K, DEF slots
-
-        ## Data Enhancement Options
-        ### Player Details (Default: Enabled)
-        When enabled, each player includes:
-        - **Complete Profile**: Name, position, team, age, physical stats
-        - **Season Statistics**: Current and historical performance data
-        - **Projections**: Expected future performance and trends
-        - **Advanced Metrics**: Target share, snap counts, usage rates
-        - **Fantasy Relevance**: ADP, trending data, ownership percentages
-
-        ### Owner Details (Default: Enabled)
-        When enabled, roster includes:
-        - **User Profile**: Username, display name, avatar
-        - **Team Identity**: Custom team name or generated identifier
-        - **League Context**: User's role and league membership info
-        - **Social Data**: Profile customizations and preferences
-
-        ## Response Structure
-        The enhanced roster includes:
-        - **Original Roster**: Raw Sleeper roster data (player IDs, positions)
-        - **Detailed Arrays**: Enhanced versions with complete player data
-        - **Owner Information**: Team owner profile and customizations
-        - **Organization**: Starters and bench clearly separated
-
-        ## Performance Optimization
-        - **Batch Processing**: Single database query for all roster players
-        - **Efficient Caching**: Player data cached for faster subsequent requests
-        - **Selective Enhancement**: Disable enhancements for faster basic roster data
-
-        ## Use Cases
-        - **Roster Analysis**: Evaluate team strength and composition
-        - **Trade Research**: Analyze potential trade partners' rosters
-        - **Lineup Optimization**: Review starter vs. bench player options
-        - **Team Comparison**: Compare rosters across league members
-        - **Player Valuation**: Assess roster value and potential improvements
+      description: "Get complete roster information for a team owner including starters, bench players, and enhanced player details. Combines roster structure with detailed player statistics and owner information."
       operationId: fetchRoster
       tags:
         - League Data
@@ -475,55 +231,7 @@ paths:
   /mcp/tools/fetch-user-leagues:
     post:
       summary: Fetch user leagues
-      description: |
-        # Get All Leagues for a User
-
-        Retrieves a complete list of fantasy leagues associated with a specific user account. This endpoint supports both username and user ID lookup, making it flexible for different integration scenarios.
-
-        ## User Identification Methods
-        ### By Username
-        - **Human-Readable**: Use the player's chosen username (e.g., "fantasyfan123")
-        - **Public Identifier**: Visible in league rosters and public profiles
-        - **Case-Insensitive**: Handles variations in capitalization
-        - **Resolution Process**: Automatically converts username to internal user ID
-
-        ### By User ID
-        - **Direct Lookup**: Use Sleeper's internal numeric user identifier
-        - **Fastest Method**: No additional lookup required
-        - **API Efficiency**: Direct database access for optimal performance
-        - **Guaranteed Unique**: Each user ID corresponds to exactly one account
-
-        ## Filtering Options
-        ### Sport Selection
-        - **NFL (Default)**: National Football League fantasy leagues
-        - **NBA**: Basketball leagues (when supported)
-        - **MLB**: Baseball leagues (when supported)
-        - **Multi-Sport Users**: Users often participate in multiple sports
-
-        ### Season Context
-        - **Current Season (Default)**: Automatically detects active fantasy season
-        - **Historical Seasons**: Access past league participation
-        - **Season Format**: Typically year-based (e.g., "2024", "2025")
-        - **Cross-Season Analysis**: Track user's league history over time
-
-        ## League Information Returned
-        Each league in the response includes:
-        - **League ID**: Unique identifier for API calls
-        - **League Name**: User-friendly league title
-        - **Basic Metadata**: Season, sport, league type
-        - **Membership Context**: User's role in the league
-
-        ## Use Cases
-        - **League Discovery**: Find all leagues a user participates in
-        - **Multi-League Management**: Manage multiple fantasy teams
-        - **League Selection**: Choose which league to analyze or manage
-        - **Social Features**: Discover mutual leagues between users
-        - **Historical Analysis**: Track user's fantasy football participation over time
-
-        ## Error Handling
-        - **User Not Found**: Clear error when username/ID doesn't exist
-        - **No Leagues**: Empty result when user has no leagues for specified criteria
-        - **Season Validation**: Handles invalid season parameters gracefully
+      description: "Get all fantasy leagues for a user by username or ID. Returns league IDs and names with support for sport and season filtering. Handles both direct user ID lookup and username resolution."
       operationId: fetchUserLeagues
       tags:
         - League Data
@@ -600,15 +308,8 @@ components:
           example: "add"
       required:
         - type
-      examples:
-        trending_adds:
-          summary: Get players trending up (being added)
-          value:
-            type: "add"
-        trending_drops:
-          summary: Get players trending down (being dropped)
-          value:
-            type: "drop"
+      example:
+        type: "add"
 
     FetchADPPlayersRequest:
       type: object
@@ -631,22 +332,8 @@ components:
             When omitted, returns players from all positions ranked by overall ADP.
           example: "QB"
           enum: ["QB", "RB", "WR", "TE", "K", "DEF"]
-      examples:
-        all_positions:
-          summary: Get all players ranked by ADP
-          value: {}
-        quarterbacks_only:
-          summary: Get only quarterbacks by ADP
-          value:
-            position: "QB"
-        running_backs_only:
-          summary: Get only running backs by ADP
-          value:
-            position: "RB"
-        wide_receivers_only:
-          summary: Get only wide receivers by ADP
-          value:
-            position: "WR"
+      example:
+        position: "QB"
 
 
 
@@ -708,26 +395,10 @@ components:
             - **Availability**: Indicates if players are free agents
             - **League Settings**: Applies league-specific scoring context
           example: "987654321"
-      examples:
-        basic_request:
-          summary: Get first 10 players with default settings
-          value: {}
-        position_filtered:
-          summary: Get 25 running backs with pagination
-          value:
-            position: "RB"
-            limit: 25
-            offset: 0
-        large_dataset:
-          summary: Get 100 players using cursor pagination
-          value:
-            limit: 100
-            cursor: "eyJwbGF5ZXJfaWQiOjEyMzQ1fQ=="
-        league_context:
-          summary: Get players with league ownership context
-          value:
-            limit: 50
-            league_id: "987654321"
+      example:
+        position: "RB"
+        limit: 25
+        offset: 0
 
     FetchPlayerSeasonDataRequest:
       type: object
@@ -759,23 +430,8 @@ components:
       anyOf:
         - required: [player_id]
         - required: [name]
-      examples:
-        by_player_id:
-          summary: Search by exact Sleeper player ID
-          value:
-            player_id: "4046"
-        by_full_name:
-          summary: Search by complete player name
-          value:
-            name: "Patrick Mahomes"
-        by_partial_name:
-          summary: Search by partial name (may return multiple results)
-          value:
-            name: "Mahomes"
-        by_nickname:
-          summary: Search by common nickname
-          value:
-            name: "CMC"
+      example:
+        player_id: "4046"
 
     FetchLeagueRequest:
       type: object
@@ -790,12 +446,12 @@ components:
           example: "My Fantasy League"
         sport:
           type: string
-          description: Sport type (default: nfl)
+          description: "Sport type (default: nfl)"
           default: nfl
           example: "nfl"
         season:
           type: string
-          description: Season year (default: current season)
+          description: "Season year (default: current season)"
           example: "2024"
       required:
         - user_id
@@ -809,17 +465,20 @@ components:
           description: Sleeper league ID to fetch matchups for
           example: "987654321"
         week:
-          oneOf:
-            - type: integer
-              minimum: 1
-              maximum: 18
-              description: Week number to fetch matchups for
-              example: 5
-            - type: "null"
-              description: Defaults to current week
+          type: integer
+          minimum: 1
+          maximum: 18
+          nullable: true
+          description: |
+            Week number to fetch matchups for (1-18).
+            - **Null/Omitted**: Defaults to current NFL week
+            - **Regular Season**: Weeks 1-14 typically
+            - **Playoffs**: Weeks 15-18 for fantasy playoffs
+            - **Historical**: Access past weeks for analysis
+          example: 5
         sport:
           type: string
-          description: Sport type (default: nfl)
+          description: "Sport type (default: nfl)"
           default: nfl
           example: "nfl"
       required:
@@ -838,12 +497,12 @@ components:
           example: "123456789"
         include_player_details:
           type: boolean
-          description: Whether to include detailed player information from database (default: true)
+          description: "Whether to include detailed player information from database (default: true)"
           default: true
           example: true
         include_owner_details:
           type: boolean
-          description: Whether to include owner/user details from Sleeper API (default: true)
+          description: "Whether to include owner/user details from Sleeper API (default: true)"
           default: true
           example: true
       required:
@@ -859,12 +518,12 @@ components:
           example: "fantasyfan123"
         sport:
           type: string
-          description: Sport type (default: nfl)
+          description: "Sport type (default: nfl)"
           default: nfl
           example: "nfl"
         season:
           type: string
-          description: Season year (default: current season)
+          description: "Season year (default: current season)"
           example: "2024"
       required:
         - user_identifier
