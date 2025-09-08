@@ -2,7 +2,43 @@ openapi: 3.1.0
 info:
   title: Sleeper Draft MCP Actions API
   description: |
-    REST shim for the Sleeper Draft MCP server. Simplified endpoints for player data: ADP rankings, trending players, and comprehensive player statistics with pagination. Designed for OpenAI Actions or any HTTP client.
+    # Sleeper Draft Fantasy Football API
+
+    A comprehensive REST API providing access to fantasy football data from the Sleeper platform. This API serves as a bridge between the Sleeper Draft MCP (Model Context Protocol) server and HTTP clients, offering simplified endpoints for player statistics, league management, and fantasy football analytics.
+
+    ## Core Features
+
+    ### Player Data
+    - **Trending Players**: Get players being added or dropped in the last 24 hours
+    - **ADP Rankings**: Average Draft Position data for draft preparation
+    - **Season Statistics**: Historical performance data and current season projections
+    - **Player Search**: Find players by name or Sleeper ID with detailed stats
+
+    ### League Management
+    - **League Information**: Access league details, settings, and metadata
+    - **User Rosters**: Complete roster data with player details and owner information
+    - **Matchups**: Weekly head-to-head matchup data with scoring
+    - **User Leagues**: Find all leagues for a specific user
+
+    ## Data Sources
+    This API aggregates data from multiple sources:
+    - Sleeper API for real-time league and player data
+    - Internal database for enhanced player statistics and projections
+    - Fantasy football analytics for trending and ADP calculations
+
+    ## Authentication
+    No authentication required for public endpoints. All data is publicly available fantasy football information.
+
+    ## Rate Limits
+    Standard rate limiting applies to prevent abuse. Contact support if you need higher limits for commercial use.
+
+    ## Response Format
+    All endpoints return JSON with a consistent structure:
+    - `success`: Boolean indicating operation success
+    - `data`: The requested data (array or object)
+    - `count`: Number of items returned (when applicable)
+    - `message`: Human-readable success/error message
+    - `metadata`: Additional context about the request and response
   version: 1.0.0
   contact:
     name: API Support
@@ -20,7 +56,29 @@ paths:
     post:
       summary: Fetch trending players
       description: |
-        Get trending players by adds or drops in the last 24 hours. Results are ordered by trending value descending.
+        # Get Trending Fantasy Football Players
+
+        Retrieves a list of players who are currently trending in fantasy football based on waiver wire activity in the last 24 hours. This endpoint is essential for identifying breakout players, injury replacements, and emerging opportunities.
+
+        ## Trending Types
+        - **add**: Players being picked up from waivers (trending up)
+        - **drop**: Players being dropped to waivers (trending down)
+
+        ## Use Cases
+        - **Waiver Wire Strategy**: Identify players to target before they become widely owned
+        - **Injury Monitoring**: Find replacement players when starters get injured
+        - **Breakout Detection**: Spot emerging talent before the competition
+        - **Market Analysis**: Understand fantasy football community sentiment
+
+        ## Data Freshness
+        Trending data is updated every hour and reflects activity from the previous 24-hour period. The trending value represents the net change in roster additions or drops across all Sleeper leagues.
+
+        ## Response Details
+        Results are ordered by trending value in descending order (highest activity first). Each player includes:
+        - Basic player information (name, position, team)
+        - Current trending metrics (adds/drops in 24h)
+        - ADP data for context
+        - Age and other relevant fantasy metrics
       operationId: fetchTrendingPlayers
       tags:
         - Player Data
@@ -46,7 +104,31 @@ paths:
     post:
       summary: Fetch players by ADP
       description: |
-        Get top players by Average Draft Position (ADP). Results are ordered by ADP ascending (lower ADP first).
+        # Get Players Ranked by Average Draft Position (ADP)
+
+        Retrieves players ordered by their Average Draft Position, which represents the average round and pick where players are being selected in fantasy football drafts. This is essential data for draft preparation and player valuation.
+
+        ## What is ADP?
+        Average Draft Position is calculated from thousands of fantasy football drafts and represents:
+        - **Lower ADP = Higher Value**: ADP 1.01 means first overall pick
+        - **Round.Pick Format**: ADP 3.05 means 5th pick of the 3rd round
+        - **Consensus Ranking**: Community-driven player valuations
+
+        ## Filtering Options
+        - **All Positions**: Get a comprehensive ranking across all positions
+        - **Position-Specific**: Filter by QB, RB, WR, TE, K, or DEF
+
+        ## Use Cases
+        - **Draft Preparation**: Know when to target specific players
+        - **Value Identification**: Find players being drafted later than their production suggests
+        - **Positional Strategy**: Understand when to draft each position
+        - **Mock Draft Practice**: Simulate realistic draft scenarios
+
+        ## Data Source
+        ADP data is aggregated from recent drafts across multiple fantasy football platforms and is updated daily during draft season. The data reflects current market consensus and adjusts for recent news, injuries, and performance.
+
+        ## Response Format
+        Results are ordered by ADP in ascending order (lowest ADP first). Each player includes complete fantasy-relevant information including projected statistics and historical performance.
       operationId: fetchADPPlayers
       tags:
         - Player Data
@@ -73,7 +155,41 @@ paths:
     post:
       summary: Fetch players season data
       description: |
-        Returns players with last season stats + summary and current season projections + summary. Optional position filter and pagination.
+        # Get Comprehensive Player Season Data
+
+        Retrieves detailed season statistics and projections for multiple players. This endpoint combines historical performance with current season projections to provide a complete picture of player value and potential.
+
+        ## Data Included
+        ### Historical Stats (Previous Season)
+        - **Total Points**: Complete fantasy points scored
+        - **Games Played**: Active games and total appearances
+        - **Average Points Per Game**: Consistency metric
+        - **High/Low Games**: Best and worst performances
+        - **Standard Deviation**: Volatility and reliability metrics
+
+        ### Current Season Projections
+        - **Projected Total Points**: Expected full-season production
+        - **Projected PPG**: Per-game expectation
+        - **Injury Risk Assessment**: Health and durability factors
+        - **Strength of Schedule**: Opponent difficulty analysis
+
+        ## Filtering and Pagination
+        - **Position Filter**: Limit results to specific positions (QB, RB, WR, TE, K, DEF)
+        - **Pagination Support**: Handle large datasets with offset/limit or cursor-based pagination
+        - **League Context**: Optional league-specific data when league_id provided
+
+        ## Use Cases
+        - **Season-Long Strategy**: Identify consistent performers vs. boom/bust players
+        - **Trade Analysis**: Compare player values using historical and projected data
+        - **Waiver Wire Decisions**: Evaluate pickup candidates with full context
+        - **Draft Research**: Deep dive into player profiles for draft preparation
+
+        ## Data Freshness
+        Historical stats are final season data. Projections are updated weekly based on:
+        - Recent performance trends
+        - Injury reports and team news
+        - Matchup analysis and strength of schedule
+        - Advanced analytics and machine learning models
       operationId: fetchPlayersSeasonData
       tags:
         - Player Data
@@ -99,7 +215,41 @@ paths:
     post:
       summary: Fetch a player's season data
       description: |
-        Returns last season stats + summary and current season projections + summary for a specific player by player_id or by name. If name matches multiple, all matches are returned.
+        # Get Individual Player Season Analysis
+
+        Retrieves comprehensive season data for a specific player, including historical performance and current projections. This endpoint is perfect for detailed player research and analysis.
+
+        ## Search Methods
+        ### By Player ID
+        - **Exact Match**: Use Sleeper's unique player identifier
+        - **Fastest Response**: Direct database lookup
+        - **Guaranteed Unique**: Returns exactly one player
+
+        ### By Player Name
+        - **Flexible Search**: Case-insensitive partial matching
+        - **Multiple Results**: Returns all players matching the search term
+        - **Fuzzy Matching**: Handles common name variations and nicknames
+
+        ## Data Depth
+        Each player result includes:
+        - **Complete Profile**: Name, position, team, age, physical stats
+        - **2024 Season Stats**: Final performance data with game logs
+        - **2025 Projections**: Expected performance with confidence intervals
+        - **Fantasy Metrics**: Points per game, consistency scores, ceiling/floor analysis
+        - **Advanced Analytics**: Target share, red zone usage, snap counts
+
+        ## Statistical Summaries
+        - **Total Points**: Season-long fantasy production
+        - **Per-Game Averages**: Consistency and weekly value
+        - **Volatility Metrics**: Standard deviation and boom/bust rates
+        - **Situational Stats**: Red zone, goal line, and high-leverage opportunities
+
+        ## Use Cases
+        - **Player Research**: Deep dive into specific player performance
+        - **Trade Evaluation**: Analyze players involved in potential trades
+        - **Start/Sit Decisions**: Compare players for weekly lineup decisions
+        - **Waiver Claims**: Research potential pickup targets
+        - **Dynasty Analysis**: Long-term player value assessment
       operationId: fetchPlayerSeasonData
       tags:
         - Player Data
@@ -125,7 +275,45 @@ paths:
     post:
       summary: Fetch league details and users
       description: |
-        Get League tool fetches all leagues for a user and returns one league based on the name or ID. It also fetches all users in the league and returns user information with username, display name, and team names.
+        # Get Complete League Information
+
+        Retrieves comprehensive league data including league settings, all league members, and their team information. This endpoint first finds the target league from a user's league list, then provides complete league context.
+
+        ## League Discovery Process
+        1. **Fetch User's Leagues**: Gets all leagues for the specified user ID
+        2. **Match League**: Finds league by exact name match or league ID
+        3. **Gather Details**: Retrieves complete league information and all members
+        4. **Enhance Data**: Adds roster records, team names, and performance data
+
+        ## League Identification
+        ### By League ID
+        - **Direct Match**: Use Sleeper's unique league identifier
+        - **Fastest Method**: Direct API lookup
+        - **Most Reliable**: Guaranteed unique identification
+
+        ### By League Name
+        - **Flexible Search**: Case-insensitive name matching
+        - **User Context**: Searches within user's leagues only
+        - **Common Usage**: Natural language league identification
+
+        ## Data Returned
+        ### League Information
+        - **Settings**: Scoring system, roster requirements, playoff format
+        - **Metadata**: League name, season, sport, creation date
+        - **Rules**: Waiver settings, trade deadlines, lineup requirements
+
+        ### User/Team Data
+        - **Member Roster**: All league participants with team information
+        - **Team Names**: Custom team names or fallback to display names
+        - **Records**: Wins, losses, and total fantasy points scored
+        - **User Profiles**: Display names, usernames, and avatar information
+
+        ## Use Cases
+        - **League Overview**: Get complete picture of league composition
+        - **Member Analysis**: Understand competition and team strength
+        - **Settings Review**: Verify scoring and rule configurations
+        - **Social Features**: Display league member information
+        - **Competition Tracking**: Monitor standings and performance
       operationId: fetchLeague
       tags:
         - League Data
@@ -151,7 +339,48 @@ paths:
     post:
       summary: Fetch league matchups
       description: |
-        Fetch matchups for a league and week, returning raw matchup data supplemented with basic user info. Entries that share the same `matchup_id` are opponents in the same head-to-head matchup.
+        # Get Weekly Fantasy Matchup Data
+
+        Retrieves head-to-head matchup information for a specific week in a fantasy league. This endpoint provides complete scoring data and opponent information for analyzing weekly performance and competition.
+
+        ## Matchup Structure
+        Fantasy football leagues use head-to-head matchups where:
+        - **Teams are Paired**: Each team faces one opponent per week
+        - **Shared Matchup ID**: Opponents share the same `matchup_id` value
+        - **Scoring Comparison**: Higher points wins the matchup
+        - **Weekly Format**: Different opponents each week of the season
+
+        ## Week Selection
+        ### Automatic Week Detection
+        - **Current Week**: Defaults to the current NFL/fantasy week
+        - **Season Context**: Automatically determines regular season vs. playoffs
+        - **Real-time Updates**: Reflects the actual fantasy football calendar
+
+        ### Manual Week Selection
+        - **Week Range**: Specify weeks 1-18 for regular season and playoffs
+        - **Historical Data**: Access past weeks for analysis
+        - **Future Planning**: View scheduled matchups for upcoming weeks
+
+        ## Data Enhancement
+        Raw matchup data is enriched with:
+        - **User Information**: Team owner details and display names
+        - **Team Names**: Custom team names or fallback identifiers
+        - **Scoring Details**: Both standard and custom scoring systems
+        - **Avatar Data**: User profile images for display purposes
+
+        ## Response Format
+        Matchups are grouped by `matchup_id` with each group containing:
+        - **Two Teams**: The head-to-head opponents
+        - **Points Scored**: Fantasy points for each team
+        - **User Context**: Owner information and team identification
+        - **Custom Scoring**: League-specific scoring when applicable
+
+        ## Use Cases
+        - **Weekly Results**: View completed matchup scores
+        - **Opponent Analysis**: Research upcoming opponents
+        - **League Standings**: Calculate win-loss records
+        - **Scoring Trends**: Analyze weekly scoring patterns
+        - **Playoff Brackets**: Track postseason matchups
       operationId: fetchMatchups
       tags:
         - League Data
@@ -177,7 +406,51 @@ paths:
     post:
       summary: Fetch user roster
       description: |
-        Gets a specific roster for a user in a league. Returns roster data with player information from the database and owner details.
+        # Get Complete Team Roster Information
+
+        Retrieves comprehensive roster data for a specific team owner in a fantasy league. This endpoint combines Sleeper's roster structure with enhanced player information from the internal database to provide complete team analysis.
+
+        ## Roster Components
+        Fantasy football rosters typically include:
+        - **Starting Lineup**: Players in active scoring positions
+        - **Bench Players**: Inactive players available for lineup changes
+        - **All Players**: Complete roster including starters and bench
+        - **Position Requirements**: QB, RB, WR, TE, K, DEF slots
+
+        ## Data Enhancement Options
+        ### Player Details (Default: Enabled)
+        When enabled, each player includes:
+        - **Complete Profile**: Name, position, team, age, physical stats
+        - **Season Statistics**: Current and historical performance data
+        - **Projections**: Expected future performance and trends
+        - **Advanced Metrics**: Target share, snap counts, usage rates
+        - **Fantasy Relevance**: ADP, trending data, ownership percentages
+
+        ### Owner Details (Default: Enabled)
+        When enabled, roster includes:
+        - **User Profile**: Username, display name, avatar
+        - **Team Identity**: Custom team name or generated identifier
+        - **League Context**: User's role and league membership info
+        - **Social Data**: Profile customizations and preferences
+
+        ## Response Structure
+        The enhanced roster includes:
+        - **Original Roster**: Raw Sleeper roster data (player IDs, positions)
+        - **Detailed Arrays**: Enhanced versions with complete player data
+        - **Owner Information**: Team owner profile and customizations
+        - **Organization**: Starters and bench clearly separated
+
+        ## Performance Optimization
+        - **Batch Processing**: Single database query for all roster players
+        - **Efficient Caching**: Player data cached for faster subsequent requests
+        - **Selective Enhancement**: Disable enhancements for faster basic roster data
+
+        ## Use Cases
+        - **Roster Analysis**: Evaluate team strength and composition
+        - **Trade Research**: Analyze potential trade partners' rosters
+        - **Lineup Optimization**: Review starter vs. bench player options
+        - **Team Comparison**: Compare rosters across league members
+        - **Player Valuation**: Assess roster value and potential improvements
       operationId: fetchRoster
       tags:
         - League Data
@@ -203,7 +476,54 @@ paths:
     post:
       summary: Fetch user leagues
       description: |
-        Fetches all leagues for a user by username or user ID. Returns league IDs and names for the specified sport and season.
+        # Get All Leagues for a User
+
+        Retrieves a complete list of fantasy leagues associated with a specific user account. This endpoint supports both username and user ID lookup, making it flexible for different integration scenarios.
+
+        ## User Identification Methods
+        ### By Username
+        - **Human-Readable**: Use the player's chosen username (e.g., "fantasyfan123")
+        - **Public Identifier**: Visible in league rosters and public profiles
+        - **Case-Insensitive**: Handles variations in capitalization
+        - **Resolution Process**: Automatically converts username to internal user ID
+
+        ### By User ID
+        - **Direct Lookup**: Use Sleeper's internal numeric user identifier
+        - **Fastest Method**: No additional lookup required
+        - **API Efficiency**: Direct database access for optimal performance
+        - **Guaranteed Unique**: Each user ID corresponds to exactly one account
+
+        ## Filtering Options
+        ### Sport Selection
+        - **NFL (Default)**: National Football League fantasy leagues
+        - **NBA**: Basketball leagues (when supported)
+        - **MLB**: Baseball leagues (when supported)
+        - **Multi-Sport Users**: Users often participate in multiple sports
+
+        ### Season Context
+        - **Current Season (Default)**: Automatically detects active fantasy season
+        - **Historical Seasons**: Access past league participation
+        - **Season Format**: Typically year-based (e.g., "2024", "2025")
+        - **Cross-Season Analysis**: Track user's league history over time
+
+        ## League Information Returned
+        Each league in the response includes:
+        - **League ID**: Unique identifier for API calls
+        - **League Name**: User-friendly league title
+        - **Basic Metadata**: Season, sport, league type
+        - **Membership Context**: User's role in the league
+
+        ## Use Cases
+        - **League Discovery**: Find all leagues a user participates in
+        - **Multi-League Management**: Manage multiple fantasy teams
+        - **League Selection**: Choose which league to analyze or manage
+        - **Social Features**: Discover mutual leagues between users
+        - **Historical Analysis**: Track user's fantasy football participation over time
+
+        ## Error Handling
+        - **User Not Found**: Clear error when username/ID doesn't exist
+        - **No Leagues**: Empty result when user has no leagues for specified criteria
+        - **Season Validation**: Handles invalid season parameters gracefully
       operationId: fetchUserLeagues
       tags:
         - League Data
@@ -265,62 +585,197 @@ components:
     # Request Schemas
     FetchTrendingPlayersRequest:
       type: object
+      description: |
+        Request parameters for fetching trending players based on waiver wire activity.
+
+        The trending system tracks player movement across all Sleeper leagues in the last 24 hours, providing insights into which players are gaining or losing popularity in the fantasy football community.
       properties:
         type:
           type: string
           enum: [add, drop]
-          description: The type of trending data to fetch
+          description: |
+            The type of trending activity to retrieve:
+            - **add**: Players being added to rosters (trending up due to good performance, opportunity, or news)
+            - **drop**: Players being dropped from rosters (trending down due to poor performance, injury, or lost opportunity)
           example: "add"
       required:
         - type
+      examples:
+        trending_adds:
+          summary: Get players trending up (being added)
+          value:
+            type: "add"
+        trending_drops:
+          summary: Get players trending down (being dropped)
+          value:
+            type: "drop"
 
     FetchADPPlayersRequest:
       type: object
+      description: |
+        Request parameters for fetching players ranked by Average Draft Position (ADP).
+
+        ADP represents the consensus value of players based on where they're being selected in fantasy football drafts. This data is crucial for draft preparation and understanding player market value.
       properties:
         position:
           type: string
-          description: Optional filter to get players for a specific position (e.g., "QB", "RB", "WR", "TE")
+          description: |
+            Optional position filter to limit results to specific player positions:
+            - **QB**: Quarterbacks
+            - **RB**: Running Backs
+            - **WR**: Wide Receivers
+            - **TE**: Tight Ends
+            - **K**: Kickers
+            - **DEF**: Team Defenses/Special Teams
+
+            When omitted, returns players from all positions ranked by overall ADP.
           example: "QB"
+          enum: ["QB", "RB", "WR", "TE", "K", "DEF"]
+      examples:
+        all_positions:
+          summary: Get all players ranked by ADP
+          value: {}
+        quarterbacks_only:
+          summary: Get only quarterbacks by ADP
+          value:
+            position: "QB"
+        running_backs_only:
+          summary: Get only running backs by ADP
+          value:
+            position: "RB"
+        wide_receivers_only:
+          summary: Get only wide receivers by ADP
+          value:
+            position: "WR"
 
 
 
 
     FetchPlayersSeasonDataRequest:
       type: object
+      description: |
+        Request parameters for fetching comprehensive season data for multiple players.
+
+        This endpoint supports both traditional offset/limit pagination and cursor-based pagination for efficient handling of large datasets. The response includes historical statistics and current season projections.
       properties:
         position:
           type: string
-          description: Optional position filter (QB, RB, WR, TE, K, DEF)
-          example: QB
+          description: |
+            Optional position filter to limit results to specific player positions:
+            - **QB**: Quarterbacks - typically 1 starter per team
+            - **RB**: Running Backs - high-volume skill position players
+            - **WR**: Wide Receivers - primary pass-catching targets
+            - **TE**: Tight Ends - hybrid blocking/receiving players
+            - **K**: Kickers - scoring through field goals and extra points
+            - **DEF**: Team Defenses/Special Teams - unit-based scoring
+          example: "QB"
+          enum: ["QB", "RB", "WR", "TE", "K", "DEF"]
         limit:
           type: integer
           minimum: 1
           maximum: 1000
-          description: Optional limit of players to return (default 10)
-          example: 10
+          description: |
+            Maximum number of players to return in a single request.
+            - **Default**: 10 players
+            - **Range**: 1-1000 players
+            - **Performance**: Larger limits may increase response time
+            - **Pagination**: Use with offset for traditional pagination
+          example: 25
+          default: 10
         offset:
           type: integer
           minimum: 0
-          description: Optional offset for pagination
-          example: 0
+          description: |
+            Number of players to skip before returning results.
+            - **Default**: 0 (start from beginning)
+            - **Pagination**: Increment by limit size for next page
+            - **Alternative**: Use cursor for more efficient pagination
+          example: 50
+          default: 0
         cursor:
           type: string
-          description: Opaque cursor for pagination per MCP spec. If provided, overrides offset/limit.
+          description: |
+            Opaque pagination cursor for efficient large dataset handling.
+            - **Priority**: When provided, overrides offset/limit parameters
+            - **Efficiency**: More performant for large datasets
+            - **Stateless**: Each cursor is valid for the current dataset state
+            - **Next Page**: Use nextCursor from previous response
+        league_id:
+          type: string
+          description: |
+            Optional Sleeper league ID to provide league-specific context.
+            - **Team Context**: Shows which team owns each player
+            - **Availability**: Indicates if players are free agents
+            - **League Settings**: Applies league-specific scoring context
+          example: "987654321"
+      examples:
+        basic_request:
+          summary: Get first 10 players with default settings
+          value: {}
+        position_filtered:
+          summary: Get 25 running backs with pagination
+          value:
+            position: "RB"
+            limit: 25
+            offset: 0
+        large_dataset:
+          summary: Get 100 players using cursor pagination
+          value:
+            limit: 100
+            cursor: "eyJwbGF5ZXJfaWQiOjEyMzQ1fQ=="
+        league_context:
+          summary: Get players with league ownership context
+          value:
+            limit: 50
+            league_id: "987654321"
 
     FetchPlayerSeasonDataRequest:
       type: object
+      description: |
+        Request parameters for fetching detailed season data for a specific player.
+
+        This endpoint supports two search methods: exact player ID lookup for precision, or name-based search for flexibility. Name searches can return multiple players if the search term matches multiple players.
       properties:
         player_id:
           type: string
-          description: Sleeper player ID
-          example: "1234"
+          description: |
+            Sleeper's unique player identifier for exact player lookup.
+            - **Format**: Numeric string (e.g., "1234", "5678")
+            - **Uniqueness**: Each ID corresponds to exactly one player
+            - **Performance**: Fastest lookup method
+            - **Reliability**: Guaranteed to find the correct player
+            - **Source**: Available from other API endpoints or Sleeper platform
+          example: "4046"
         name:
           type: string
-          description: Player name to search (case-insensitive, partial match)
+          description: |
+            Player name for flexible search with partial matching.
+            - **Case Insensitive**: "mahomes", "MAHOMES", "Mahomes" all work
+            - **Partial Matching**: "Mahomes" finds "Patrick Mahomes"
+            - **Multiple Results**: May return several players with similar names
+            - **Nickname Support**: Common nicknames and variations included
+            - **Team Context**: Useful when combined with team information
           example: "Mahomes"
       anyOf:
         - required: [player_id]
         - required: [name]
+      examples:
+        by_player_id:
+          summary: Search by exact Sleeper player ID
+          value:
+            player_id: "4046"
+        by_full_name:
+          summary: Search by complete player name
+          value:
+            name: "Patrick Mahomes"
+        by_partial_name:
+          summary: Search by partial name (may return multiple results)
+          value:
+            name: "Mahomes"
+        by_nickname:
+          summary: Search by common nickname
+          value:
+            name: "CMC"
 
     FetchLeagueRequest:
       type: object
@@ -483,32 +938,84 @@ components:
 
     PlayerSeasonSummary:
       type: object
+      description: |
+        Statistical summary of a player's performance over a complete fantasy football season.
+
+        This schema provides key metrics for evaluating player consistency, ceiling, floor, and overall fantasy value across an entire season's worth of games.
       properties:
         total_points:
           type: number
+          description: |
+            Total fantasy points scored across all games in the season.
+            - **Calculation**: Sum of all weekly fantasy point totals
+            - **Usage**: Primary measure of overall fantasy value
+            - **Context**: Higher totals indicate more productive players
+            - **Comparison**: Compare across players for season-long value
           example: 250.5
         min_points:
           type: number
+          description: |
+            Lowest single-game fantasy point total in the season.
+            - **Floor Analysis**: Indicates worst-case weekly performance
+            - **Risk Assessment**: Lower floors suggest higher volatility
+            - **Injury Context**: May reflect games with limited snaps
+            - **Reliability**: Higher floors indicate more consistent players
           example: 2.1
         max_points:
           type: number
+          description: |
+            Highest single-game fantasy point total in the season.
+            - **Ceiling Analysis**: Shows player's peak performance capability
+            - **Upside Potential**: Higher ceilings indicate game-winning ability
+            - **Matchup Context**: Often correlates with favorable game scripts
+            - **Tournament Value**: Important for DFS and high-stakes leagues
           example: 42.3
         average_points_per_game:
           type: number
+          description: |
+            Mean fantasy points per game across all active games.
+            - **Consistency Metric**: Primary measure of weekly reliability
+            - **Projection Basis**: Used for future performance estimates
+            - **Value Assessment**: Higher averages indicate better weekly starts
+            - **Position Ranking**: Compare within position groups for relative value
           example: 15.6
         stddev_below:
           type: number
+          description: |
+            One standard deviation below the average (floor estimate).
+            - **Floor Projection**: Expected low-end weekly performance
+            - **Risk Management**: Lower values indicate safer weekly plays
+            - **Consistency**: Smaller gap from average suggests reliability
+            - **Usage**: Helps set realistic expectations for down weeks
           example: 12.2
         stddev_above:
           type: number
+          description: |
+            One standard deviation above the average (ceiling estimate).
+            - **Ceiling Projection**: Expected high-end weekly performance
+            - **Upside Potential**: Higher values indicate boom-week capability
+            - **Volatility**: Larger gap from average suggests higher variance
+            - **Tournament Play**: Important for GPP and playoff scenarios
           example: 19.0
         games:
           type: integer
           nullable: true
+          description: |
+            Total number of games the player appeared in during the season.
+            - **Availability**: Indicates overall health and roster status
+            - **Context**: NFL regular season typically 17 games
+            - **Injury Impact**: Lower numbers may indicate injury issues
+            - **Usage**: Affects per-game averages and total value calculations
           example: 17
         games_active:
           type: integer
           nullable: true
+          description: |
+            Number of games where the player had meaningful fantasy production.
+            - **Active Definition**: Games with significant snaps or touches
+            - **Usage Rate**: Indicates role consistency within the offense
+            - **Injury Context**: May be lower than total games due to limited snaps
+            - **Reliability**: Higher percentage suggests more dependable weekly value
           example: 16
     PlayerWithSeasonSummaries:
       allOf:
@@ -899,46 +1406,100 @@ components:
               format: date-time
     Player:
       type: object
+      description: |
+        Complete player profile with fantasy football relevant information.
+
+        This schema represents a player with all essential data for fantasy football analysis, including basic profile information, draft positioning, and trending activity.
       properties:
         id:
           type: integer
-          description: Player database ID
+          description: |
+            Internal database primary key for the player record.
+            - **Usage**: Internal system references and database operations
+            - **Uniqueness**: Unique within the application database
+            - **Stability**: May change if data is reimported or migrated
           example: 12345
         player_id:
           type: string
-          description: Sleeper player ID
-          example: "1234"
+          description: |
+            Sleeper platform's unique identifier for this player.
+            - **Format**: Numeric string representation
+            - **Stability**: Permanent identifier that doesn't change
+            - **Cross-Platform**: Used across all Sleeper API endpoints
+            - **Recommended**: Use this for external integrations
+          example: "4046"
         name:
           type: string
-          description: Player full name
+          description: |
+            Player's full name as registered in the NFL.
+            - **Format**: "First Last" or "First Middle Last"
+            - **Consistency**: Standardized across all data sources
+            - **Searchable**: Used for name-based player searches
           example: "Patrick Mahomes"
         position:
           type: string
-          description: Player position
+          description: |
+            Primary playing position in fantasy football context.
+            - **QB**: Quarterback - passing specialists, typically highest scoring
+            - **RB**: Running Back - rushing specialists, high volume touches
+            - **WR**: Wide Receiver - pass-catching specialists, target-dependent
+            - **TE**: Tight End - hybrid players, lower volume but consistent
+            - **K**: Kicker - scoring specialists, weather and game-script dependent
+            - **DEF**: Defense/Special Teams - team-based unit scoring
           example: "QB"
+          enum: ["QB", "RB", "WR", "TE", "K", "DEF"]
         team:
           type: string
-          description: Player team
+          description: |
+            NFL team abbreviation where the player is currently rostered.
+            - **Format**: Standard 2-3 character NFL team codes
+            - **Examples**: "KC" (Kansas City), "BUF" (Buffalo), "SF" (San Francisco)
+            - **Updates**: Changes with trades, signings, and releases
+            - **Impact**: Team context affects fantasy value significantly
           example: "KC"
         age:
           type: integer
-          description: Player age
-          example: 28
+          description: |
+            Player's current age in years.
+            - **Calculation**: Based on birthdate and current date
+            - **Fantasy Relevance**: Age curves vary by position
+            - **Trends**: Younger players often have higher upside
+            - **Range**: Typically 21-40 for active NFL players
+          example: 29
         adp:
           type: number
-          description: Average Draft Position
+          description: |
+            Average Draft Position across recent fantasy football drafts.
+            - **Scale**: Lower numbers indicate higher value (1.0 = first overall)
+            - **Format**: Decimal representation of draft position
+            - **Calculation**: Weighted average across multiple draft platforms
+            - **Updates**: Refreshed daily during draft season
           example: 5.2
         adp_formatted:
           type: string
-          description: ADP in round.pick format
+          description: |
+            Human-readable ADP in round.pick format for easy interpretation.
+            - **Format**: "Round.Pick" (e.g., "1.05" = 1st round, 5th pick)
+            - **Context**: Based on standard 12-team league format
+            - **Usage**: More intuitive for draft planning than raw ADP
           example: "1.05"
         adds_24h:
           type: integer
-          description: Players added in last 24 hours
+          description: |
+            Number of times this player was added to rosters in the last 24 hours.
+            - **Trending Indicator**: Higher values suggest increasing interest
+            - **Breakout Signal**: Sudden spikes often indicate news or performance
+            - **Waiver Priority**: Helps identify players to target before others
+            - **Updates**: Refreshed hourly with latest waiver wire activity
           example: 1250
         drops_24h:
           type: integer
-          description: Players dropped in last 24 hours
+          description: |
+            Number of times this player was dropped from rosters in the last 24 hours.
+            - **Declining Interest**: Higher values suggest decreasing value
+            - **Injury Indicator**: Spikes often correlate with negative news
+            - **Opportunity**: High drops may create waiver wire opportunities
+            - **Context**: Compare with adds_24h for net trending direction
           example: 450
 
 
