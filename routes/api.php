@@ -17,6 +17,14 @@ Route::middleware('api.analytics')->group(function () {
         ->name('api.mcp.fetch-players-season-data');
     Route::post('/mcp/tools/fetch-player-season-data', [McpActionController::class, 'invokeTool'])
         ->name('api.mcp.fetch-player-season-data');
+    Route::post('/mcp/tools/fetch-league', [McpActionController::class, 'invokeTool'])
+        ->name('api.mcp.fetch-league');
+    Route::post('/mcp/tools/fetch-matchups', [McpActionController::class, 'invokeTool'])
+        ->name('api.mcp.fetch-matchups');
+    Route::post('/mcp/tools/fetch-roster', [McpActionController::class, 'invokeTool'])
+        ->name('api.mcp.fetch-roster');
+    Route::post('/mcp/tools/fetch-user-leagues', [McpActionController::class, 'invokeTool'])
+        ->name('api.mcp.fetch-user-leagues');
 
     // OpenAPI endpoint
     Route::get('/openapi.yaml', function () {
@@ -42,6 +50,10 @@ Route::middleware('api.analytics')->group(function () {
             'fetch-adp-players',
             'fetch-players-season-data',
             'fetch-player-season-data',
+            'fetch-league',
+            'fetch-matchups',
+            'fetch-roster',
+            'fetch-user-leagues',
         ];
 
         return response()->json([
@@ -53,6 +65,10 @@ Route::middleware('api.analytics')->group(function () {
                         'fetch-adp-players' => 'Fetches top players by Average Draft Position (ADP) from the database',
                         'fetch-players-season-data' => 'Returns last season stats + summary and current season projections + summary for players',
                         'fetch-player-season-data' => 'Returns last season stats + summary and current season projections + summary for a player by id or name (all matches if multiple)',
+                        'fetch-league' => 'Get League tool fetches all leagues for a user and returns one league based on the name or ID',
+                        'fetch-matchups' => 'Fetch matchups for a league and week, returning raw matchup data supplemented with basic user info',
+                        'fetch-roster' => 'Gets a specific roster for a user in a league. Returns roster data with player information from the database and owner details',
+                        'fetch-user-leagues' => 'Fetches all leagues for a user by username or user ID. Returns league IDs and names for the specified sport and season',
                     },
                     'endpoint' => "/api/mcp/tools/{$tool}",
                     'method' => 'POST',
