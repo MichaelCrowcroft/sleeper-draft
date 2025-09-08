@@ -722,12 +722,13 @@ components:
               properties:
                 position:
                   type: string
-                  nullable: true
+                  nullable: false
             pagination:
               type: object
               properties:
                 limit:
                   type: integer
+                  max: 10
                 offset:
                   type: integer
                 mode:
