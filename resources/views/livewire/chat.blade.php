@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Livewire\Volt\Component;
 use Prism\Prism\Enums\Provider;
 use Prism\Prism\Prism;
@@ -10,12 +11,15 @@ use Prism\Relay\Facades\Relay;
 new class extends Component {
     public string $prompt = '';
     public string $output = '';
+    public string $answerStreaming = '';
+    public string $finalAnswer = '';
     public bool $isRunning = false;
     public bool $isCompleted = false;
     public string $error = '';
     public array $steps = [];
     public int $currentStep = 0;
     public string $status = '';
+    public bool $showActivity = false;
 
     public function mount(): void
     {
@@ -28,13 +32,13 @@ new class extends Component {
             return;
         }
 
-        $this->reset(['output', 'error', 'steps', 'currentStep', 'isCompleted']);
+        $this->reset(['output', 'answerStreaming', 'finalAnswer', 'error', 'steps', 'currentStep', 'isCompleted']);
         $this->isRunning = true;
         $this->status = 'Starting Prism generation...';
 
-        // Start with initial output
-        $this->output = "🚀 Starting Fantasy Football Weekly Summary Generation...\n\n";
-        $this->dispatch('$refresh');
+        // Initial streamed messages
+        $this->stream(to: 'output', content: "🚀 Starting Fantasy Football Weekly Summary Generation...\n\n");
+        $this->stream(to: 'status', content: 'Initializing Prism...');
 
         try {
             $this->executePrism();
@@ -45,29 +49,28 @@ new class extends Component {
             ]);
 
             $this->error = $e->getMessage();
-            $this->status = 'Error occurred';
+            $this->stream(to: 'error', content: $e->getMessage());
+            $this->stream(to: 'status', content: 'Error occurred');
             $this->isRunning = false;
-            $this->dispatch('$refresh');
         }
     }
 
     private function executePrism(): void
     {
-        $this->output .= "🔧 Configuring Prism with Groq provider...\n";
-        $this->status = 'Configuring Prism...';
-        $this->dispatch('$refresh');
+        $this->stream(to: 'output', content: "🔧 Configuring Prism with Groq provider...\n");
+        $this->stream(to: 'status', content: 'Configuring Prism...');
 
         // Log the start of execution
-        $this->output .= "📡 Provider: Groq (openai/gpt-oss-120b)\n";
-        $this->output .= "🔍 Tools: Browser Search + Sleeper Draft MCP\n";
-        $this->output .= "📝 Prompt: Fantasy League Commissioner Summary\n\n";
-        $this->output .= "=" . str_repeat("=", 50) . "\n";
-        $this->output .= "PRISM EXECUTION STARTED\n";
-        $this->output .= "=" . str_repeat("=", 50) . "\n\n";
-        $this->status = 'Executing Prism request...';
-        $this->dispatch('$refresh');
+        $this->stream(to: 'output', content: "📡 Provider: Groq (openai/gpt-oss-120b)\n");
+        $this->stream(to: 'output', content: "🔍 Tools: Browser Search + Sleeper Draft MCP\n");
+        $this->stream(to: 'output', content: "📝 Prompt: Fantasy League Commissioner Summary\n\n");
+        $this->stream(to: 'output', content: "=" . str_repeat("=", 50) . "\n");
+        $this->stream(to: 'output', content: "PRISM EXECUTION STARTED\n");
+        $this->stream(to: 'output', content: "=" . str_repeat("=", 50) . "\n\n");
 
-        $response = Prism::text()
+        $this->stream(to: 'status', content: 'Executing Prism request...');
+
+        $generator = Prism::text()
             ->using(Provider::Groq, 'openai/gpt-oss-120b')
             ->withProviderTools([
                 new ProviderTool(type: 'browser_search')
@@ -75,26 +78,58 @@ new class extends Component {
             ->withTools(Relay::tools('sleeperdraft'))
             ->withPrompt($this->prompt)
             ->withMaxSteps(50)
-            ->asText();
+            ->asStream();
 
-        $this->status = 'Processing response...';
-        $this->dispatch('$refresh');
+        foreach ($generator as $chunk) {
+            // Stream plain text tokens
+            if (! empty($chunk->text)) {
+                $this->stream(to: 'output', content: $chunk->text);
+                $this->answerStreaming .= $chunk->text;
+                $this->stream(to: 'answer', content: $chunk->text);
+            }
 
-        // Add the final response
-        $this->output .= "\n🎯 FINAL RESULT:\n";
-        $this->output .= str_repeat("-", 50) . "\n\n";
-        $this->output .= $response->text;
-        $this->output .= "\n\n" . str_repeat("-", 50) . "\n";
-        $this->output .= "✅ Generation completed successfully!\n";
+            // Stream tool calls
+            if (! empty($chunk->toolCalls)) {
+                foreach ($chunk->toolCalls as $call) {
+                    $args = '';
+                    try {
+                        $args = json_encode($call->arguments(), JSON_PRETTY_PRINT);
+                    } catch (\Throwable $e) {
+                        $args = '[unparsed arguments]';
+                    }
+                    $this->stream(
+                        to: 'output',
+                        content: "\n\n[Tool Call] {$call->name}\nArguments: {$args}\n"
+                    );
+                }
+            }
 
+            // Stream tool results
+            if (! empty($chunk->toolResults)) {
+                foreach ($chunk->toolResults as $result) {
+                    $payload = '';
+                    try {
+                        $payload = json_encode($result->content, JSON_PRETTY_PRINT);
+                    } catch (\Throwable $e) {
+                        $payload = '[unparsed result]';
+                    }
+                    $this->stream(
+                        to: 'output',
+                        content: "\n[Tool Result] {$result->name}\n{$payload}\n"
+                    );
+                }
+            }
+        }
+
+        $this->stream(to: 'status', content: 'Processing response...');
+
+        // Finalize
+        $this->finalAnswer = $this->answerStreaming;
+        $this->stream(to: 'output', content: "\n🎯 FINAL RESULT\n");
+        $this->stream(to: 'output', content: str_repeat('-', 50) . "\n");
         $this->isRunning = false;
         $this->isCompleted = true;
-        $this->status = 'Completed';
-        $this->dispatch('$refresh');
-
-        Log::info('Prism streaming completed', [
-            'response_length' => strlen($response->text),
-        ]);
+        $this->stream(to: 'status', content: 'Completed');
     }
 
     public function clearOutput(): void
@@ -153,7 +188,7 @@ new class extends Component {
     }
 }; ?>
 
-<div class="max-w-6xl mx-auto p-6 space-y-6">
+<div class="max-w-5xl mx-auto p-6 md:p-8 space-y-6">
     <!-- Header -->
     <div class="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-lg p-6">
         <flux:heading size="xl" class="text-emerald-800 dark:text-emerald-200 mb-2">
@@ -165,129 +200,141 @@ new class extends Component {
     </div>
 
     <!-- Prompt Configuration -->
-    <div class="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-700 p-6">
-        <flux:heading size="lg" class="mb-4">Configure Your Request</flux:heading>
-
-        <flux:field>
-            <flux:label>Prompt</flux:label>
-            <flux:textarea
-                wire:model.live="prompt"
-                rows="4"
-                placeholder="Enter your custom prompt or use the default fantasy football commissioner prompt..."
-            />
-        </flux:field>
-
-        <div class="mt-4 flex gap-3">
-            <flux:button
-                wire:click="generateSummary"
-                variant="primary"
-                :disabled="$isRunning"
-                wire:loading.attr="disabled"
-                wire:target="generateSummary"
-            >
-                <div wire:loading.remove wire:target="generateSummary" class="flex items-center gap-2">
-                    <flux:icon name="play" class="w-4 h-4" />
-                    Generate Summary
+    <div class="rounded-2xl border border-zinc-200/70 dark:border-zinc-700/70 bg-white dark:bg-zinc-900 shadow-sm">
+        <div class="p-5 md:p-6 border-b border-zinc-200/60 dark:border-zinc-700/60">
+            <div class="flex items-start gap-3">
+                <div class="flex-1">
+                    <flux:textarea
+                        wire:model.live="prompt"
+                        rows="3"
+                        placeholder="Ask the AI commissioner…"/>
                 </div>
-                <div wire:loading wire:target="generateSummary" class="flex items-center gap-2">
-                    <flux:icon name="arrow-path" class="w-4 h-4 animate-spin" />
-                    Generating...
+                <div class="flex flex-col gap-2 w-40 shrink-0">
+                    <flux:button
+                        wire:click="generateSummary"
+                        variant="primary"
+                        :disabled="$isRunning"
+                        wire:loading.attr="disabled"
+                        wire:target="generateSummary"
+                    >
+                        <div wire:loading.remove wire:target="generateSummary" class="flex items-center gap-2">
+                            <flux:icon name="paper-airplane" class="w-4 h-4" />
+                            Send
+                        </div>
+                        <div wire:loading wire:target="generateSummary" class="flex items-center gap-2">
+                            <flux:icon name="arrow-path" class="w-4 h-4 animate-spin" />
+                            Sending…
+                        </div>
+                    </flux:button>
+
+                    <flux:button
+                        wire:click="clearOutput"
+                        variant="outline"
+                        :disabled="$isRunning"
+                    >
+                        <flux:icon name="trash" class="w-4 h-4" />
+                        Clear
+                    </flux:button>
                 </div>
-            </flux:button>
+            </div>
+        </div>
 
-            <flux:button
-                wire:click="testStreaming"
-                variant="outline"
-                :disabled="$isRunning"
-                class="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
-            >
-                <flux:icon name="beaker" class="w-4 h-4" />
-                Test Streaming
-            </flux:button>
+        <div class="p-0">
+            <!-- Chat timeline -->
+            <div class="divide-y divide-zinc-200 dark:divide-zinc-800">
+                <!-- User message bubble -->
+                @if($prompt)
+                    <div class="p-5 md:p-6">
+                        <div class="flex items-start gap-3">
+                            <div class="h-9 w-9 shrink-0 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 flex items-center justify-center font-semibold">U</div>
+                            <div class="max-w-none flex-1">
+                                <div class="inline-block rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-100 px-4 py-3 shadow-sm">
+                                    <div class="whitespace-pre-wrap break-words">{{ $prompt }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
 
-            <flux:button
-                wire:click="clearOutput"
-                variant="outline"
-                :disabled="$isRunning"
-            >
-                <flux:icon name="trash" class="w-4 h-4" />
-                Clear Output
-            </flux:button>
+                <!-- Assistant streaming bubble -->
+                @if($isRunning || $answerStreaming)
+                    <div class="p-5 md:p-6">
+                        <div class="flex items-start gap-3">
+                            <div class="h-9 w-9 shrink-0 rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 flex items-center justify-center font-semibold">AI</div>
+                            <div class="max-w-none flex-1">
+                                <div class="inline-block rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-4 py-3 shadow-sm min-w-[200px]">
+                                    <div class="prose prose-zinc dark:prose-invert max-w-none">
+                                        <div wire:stream="answer">{!! nl2br(e($answerStreaming)) !!}</div>
+                                        @if($isRunning)
+                                            <div class="mt-2 inline-flex items-center gap-2 text-xs text-zinc-500">
+                                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                Generating…
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Assistant final bubble -->
+                @if($isCompleted && $finalAnswer)
+                    <div class="p-5 md:p-6">
+                        <div class="flex items-start gap-3">
+                            <div class="h-9 w-9 shrink-0 rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 flex items-center justify-center font-semibold">AI</div>
+                            <div class="max-w-none flex-1">
+                                <div class="inline-block rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-4 py-3 shadow-sm">
+                                    <div class="prose prose-zinc dark:prose-invert max-w-none">
+                                        {!! \Illuminate\Support\Str::of($finalAnswer)->markdown() !!}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
         </div>
     </div>
 
-    <!-- Status Bar -->
-    @if($status || $isRunning)
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-            <div class="flex items-center gap-3">
-                @if($isRunning)
-                    <flux:icon name="arrow-path" class="w-5 h-5 text-blue-600 animate-spin" />
-                @elseif($isCompleted)
-                    <flux:icon name="check-circle" class="w-5 h-5 text-emerald-600" />
-                @elseif($error)
-                    <flux:icon name="exclamation-circle" class="w-5 h-5 text-red-600" />
-                @endif
-
-                <div class="flex-1">
-                    <div class="font-medium text-blue-900 dark:text-blue-100">
-                        Status: {{ $status }}
-                    </div>
-                    @if($isRunning)
-                        <div class="text-sm text-blue-600 dark:text-blue-300 mt-1">
-                            Processing your request with AI tools and data sources...
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    @endif
-
-    <!-- Error Display -->
-    @if($error)
-        <flux:callout variant="danger">
-            <div class="flex items-start gap-3">
-                <flux:icon name="exclamation-triangle" class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div>
-                    <div class="font-medium">Error occurred during generation</div>
-                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">
-                        {{ $error }}
-                    </div>
-                </div>
-            </div>
-        </flux:callout>
-    @endif
-
-    <!-- Streaming Output -->
-    <div class="bg-zinc-900 text-zinc-100 rounded-lg overflow-hidden">
-        <div class="flex items-center justify-between p-4 bg-zinc-800 border-b border-zinc-700">
-            <div class="flex items-center gap-2">
-                <flux:icon name="computer-desktop" class="w-4 h-4" />
-                <span class="font-medium">Live Output Stream</span>
-            </div>
-            <div class="flex items-center gap-2">
-                @if($isRunning)
-                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span class="text-sm text-zinc-400">Streaming...</span>
-                @elseif($isCompleted)
-                    <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                    <span class="text-sm text-zinc-400">Complete</span>
-                @else
-                    <div class="w-2 h-2 bg-zinc-500 rounded-full"></div>
-                    <span class="text-sm text-zinc-400">Ready</span>
-                @endif
-            </div>
-        </div>
-
-        <div class="p-6 font-mono text-sm leading-relaxed min-h-[400px] max-h-[600px] overflow-y-auto">
-            @if($output)
-                <pre class="whitespace-pre-wrap break-words">{{ $output }}</pre>
-            @else
-                <div class="text-zinc-400 italic">
-                    Output will appear here when generation starts...
-                </div>
+    <!-- Activity footer -->
+    <div class="flex items-center justify-between text-xs text-zinc-500">
+        <div class="inline-flex items-center gap-2">
+            @if($isRunning)
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Generating response…</span>
+            @elseif($isCompleted)
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                <span>Completed</span>
+            @elseif($error)
+                <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                <span>Error</span>
             @endif
         </div>
+        <div>
+            <span wire:stream="status">{{ $status }}</span>
+        </div>
     </div>
+
+    <!-- Error Banner -->
+    @if($error)
+        <div class="rounded-lg bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800 px-4 py-3">
+            <div class="font-medium">An error occurred</div>
+            <div class="text-sm mt-1" wire:stream="error">{{ $error }}</div>
+        </div>
+    @endif
+
+    <!-- Developer output (collapsible) -->
+    <details class="rounded-lg border border-zinc-200/70 dark:border-zinc-800/70 bg-zinc-50 dark:bg-zinc-900/40">
+        <summary class="cursor-pointer px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300">Debug stream</summary>
+        <div class="p-4 font-mono text-xs leading-relaxed overflow-x-auto">
+            @if($output)
+                <pre wire:stream="output" class="whitespace-pre-wrap break-words">{{ $output }}</pre>
+            @else
+                <div class="text-zinc-500">No debug output yet.</div>
+            @endif
+        </div>
+    </details>
 
     <!-- Usage Instructions -->
     <flux:callout>
