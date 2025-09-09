@@ -71,10 +71,11 @@ new class extends Component {
         $this->stream(to: 'status', content: 'Executing Prism request...');
 
         $generator = Prism::text()
-            ->using(Provider::Groq, 'openai/gpt-oss-120b')
-            ->withProviderTools([
-                new ProviderTool(type: 'browser_search')
-            ])
+            ->using(Provider::Gemini, 'gemini-2.5-flash')
+            // ->using(Provider::Groq, 'openai/gpt-oss-120b')
+            // ->withProviderTools([
+            //     new ProviderTool(type: 'browser_search')
+            // ])
             ->withTools(Relay::tools('sleeperdraft'))
             ->withPrompt($this->prompt)
             ->withMaxSteps(50)
