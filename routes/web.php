@@ -52,6 +52,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Trade Evaluator
     Volt::route('trade-evaluator', 'trade-evaluator.index')->name('trade-evaluator.index');
+
+    // Chat - AI Fantasy Football Commissioner
+    Volt::route('chat', 'chat')->name('chat');
 });
 
 require __DIR__.'/auth.php';

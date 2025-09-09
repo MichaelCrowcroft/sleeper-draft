@@ -220,7 +220,7 @@ new class extends Component
         <!-- Quick Actions -->
         <div>
             <flux:heading size="lg" class="mb-4">Quick Actions</flux:heading>
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <flux:callout>
                     <div class="text-center space-y-3">
                         <flux:icon name="user-group" class="h-8 w-8 mx-auto text-emerald-600" />
@@ -253,6 +253,24 @@ new class extends Component
                             wire:navigate
                         >
                             View Analytics
+                        </flux:button>
+                    </div>
+                </flux:callout>
+
+                <flux:callout>
+                    <div class="text-center space-y-3">
+                        <flux:icon name="chat-bubble-left-ellipsis" class="h-8 w-8 mx-auto text-emerald-600" />
+                        <div>
+                            <div class="font-semibold">AI Commissioner</div>
+                            <div class="text-sm text-muted-foreground">Generate league summaries with AI</div>
+                        </div>
+                        <flux:button
+                            variant="primary"
+                            size="sm"
+                            href="{{ route('chat') }}"
+                            wire:navigate
+                        >
+                            Generate Summary
                         </flux:button>
                     </div>
                 </flux:callout>
