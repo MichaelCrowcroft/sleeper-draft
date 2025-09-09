@@ -84,10 +84,11 @@ new class extends Component {
             $this->stream(to: 'status', content: 'Executing Prism request...');
 
             $generator = Prism::text()
-                ->using(Provider::Groq, 'openai/gpt-oss-120b')
-                ->withProviderTools([
-                    new ProviderTool(type: 'browser_search')
-                ])
+                ->using(Provider::Gemini, 'gemini-2.5-flash')
+                // ->using(Provider::Groq, 'openai/gpt-oss-120b')
+                // ->withProviderTools([
+                //     new ProviderTool(type: 'browser_search')
+                // ])
                 ->withProviderOptions([
                     'reasoning' => ['effort' => 'high']
                 ])
@@ -280,12 +281,10 @@ new class extends Component {
         $prompt .= "INSTRUCTIONS:\n";
         $prompt .= "Generate a comprehensive weekly summary that includes:\n";
         $prompt .= "1. Overall league performance overview\n";
-        $prompt .= "2. Standout performers and their key contributions\n";
+        $prompt .= "2. Standout players and their key contributions\n";
         $prompt .= "3. Notable upsets, close games, and blowouts\n";
         $prompt .= "4. League trends and patterns emerging\n";
-        $prompt .= "5. Predictions for upcoming weeks based on current form\n";
-        $prompt .= "6. Any unusual or interesting matchup outcomes\n";
-        $prompt .= "7. Team rankings based on this week's performance\n\n";
+        $prompt .= "5. Any unusual or interesting matchup outcomes\n";
 
         $prompt .= "Use the available tools to gather additional context about players, teams, and current NFL news that might be relevant to this week's fantasy performance.\n\n";
 
