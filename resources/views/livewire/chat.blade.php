@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Livewire\Volt\Component;
 use Prism\Prism\Enums\Provider;
 use Prism\Prism\Prism;
@@ -21,11 +20,6 @@ new class extends Component {
     public string $status = '';
     public bool $showActivity = false;
 
-    public function mount(): void
-    {
-        $this->prompt = 'You are the commissioner of a Sleeper Fantasy Football league. You are producing a summary of the week that has just been to share who the winners and losers are. You want to make sure this update highlights the big boom and bust players, and any upsets. Make it hype for the league. Validate your response with search. Look up CoachCanCrusher to find the league, Week: 1, Season: 2025 Use the MCP multiple times to get information';
-    }
-
     public function generateSummary(): void
     {
         if ($this->isRunning) {
@@ -40,19 +34,7 @@ new class extends Component {
         $this->stream(to: 'output', content: "🚀 Starting Fantasy Football Weekly Summary Generation...\n\n");
         $this->stream(to: 'status', content: 'Initializing Prism...');
 
-        try {
-            $this->executePrism();
-        } catch (\Throwable $e) {
-            Log::error('Prism execution error', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            $this->error = $e->getMessage();
-            $this->stream(to: 'error', content: $e->getMessage());
-            $this->stream(to: 'status', content: 'Error occurred');
-            $this->isRunning = false;
-        }
+        $this->executePrism();
     }
 
     private function executePrism(): void
@@ -190,11 +172,6 @@ new class extends Component {
         $this->isRunning = false;
         $this->isCompleted = true;
         $this->dispatch('$refresh');
-    }
-
-    public function updatePrompt(): void
-    {
-        // Just update the prompt, no action needed
     }
 
     public function updatedOutput(): void
