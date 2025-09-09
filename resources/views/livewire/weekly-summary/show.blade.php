@@ -89,9 +89,9 @@ new class extends Component {
                 // ->withProviderTools([
                 //     new ProviderTool(type: 'browser_search')
                 // ])
-                ->withProviderOptions([
-                    'reasoning' => ['effort' => 'high']
-                ])
+                // ->withProviderOptions([
+                //     'reasoning' => ['effort' => 'high']
+                // ])
                 ->withTools(Relay::tools('sleeperdraft'))
                 ->withPrompt($prompt)
                 ->withMaxSteps(50)
