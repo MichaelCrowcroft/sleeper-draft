@@ -53,8 +53,8 @@ new class extends Component {
         $this->stream(to: 'status', content: 'Executing Prism request...');
 
         $generator = Prism::text()
-            // ->using(Provider::Gemini, 'gemini-2.5-flash')
-            ->using(Provider::Groq, 'moonshotai/kimi-k2-instruct-0905')
+            ->using(Provider::Gemini, 'gemini-2.5-pro')
+            // ->using(Provider::Groq, 'moonshotai/kimi-k2-instruct-0905')
             // ->withProviderTools([
             //     new ProviderTool(type: 'browser_search')
             // ])
