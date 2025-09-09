@@ -1,8 +1,15 @@
 <?php
 
 use App\Actions\Matchups\AssembleMatchupViewModel;
+use App\Actions\Matchups\AggregateTeamTotals;
+use App\Actions\Matchups\BuildLineupsFromRosters;
+use App\Actions\Matchups\ComputePlayerWeekPoints;
 use App\Actions\Sleeper\FetchLeague;
+use App\Actions\Sleeper\FetchLeagueUsers;
+use App\Actions\Sleeper\FetchMatchups;
+use App\Actions\Sleeper\FetchRosters;
 use App\Models\WeeklySummary;
+use App\Models\Player;
 use Livewire\Volt\Component;
 use Prism\Prism\Enums\Provider;
 use Prism\Prism\Prism;
@@ -65,38 +72,26 @@ new class extends Component {
 
             // Log the start of execution
             $this->stream(to: 'output', content: "📡 Provider: Groq (openai/gpt-oss-120b)\n");
-            $this->stream(to: 'output', content: "🎯 Tools: Browser Search + Sleeper Draft MCP\n");
+            $this->stream(to: 'output', content: "🎯 Tools: None (all league, roster, and player data included)\n");
             $this->stream(to: 'output', content: "📝 Task: Weekly League Summary Generation\n\n");
             $this->stream(to: 'output', content: "=" . str_repeat("=", 50) . "\n");
             $this->stream(to: 'output', content: "PRISM EXECUTION STARTED\n");
             $this->stream(to: 'output', content: "=" . str_repeat("=", 50) . "\n\n");
 
-            $this->stream(to: 'status', content: 'Fetching matchup data...');
+            $this->stream(to: 'status', content: 'Assembling league data...');
 
-            // Fetch matchup data for the week
-            $matchupData = $this->getWeeklyMatchupData();
-            $this->stream(to: 'output', content: "✅ Fetched matchup data for Week {$this->week}\n");
+            // Assemble full league context for the week
+            $weeklyData = $this->getWeeklyLeagueData();
+            $this->stream(to: 'output', content: "✅ Assembled league context for Week {$this->week}\n");
 
-            // Generate the prompt with matchup data
-            $prompt = $this->buildWeeklySummaryPrompt($matchupData);
+            // Generate the prompt with league data
+            $prompt = $this->buildWeeklySummaryPrompt($weeklyData);
             $this->stream(to: 'output', content: "📝 Generated weekly summary prompt\n\n");
 
             $this->stream(to: 'status', content: 'Executing Prism request...');
 
             $generator = Prism::text()
-                // ->using(Provider::OpenAI, 'gpt-5')
-                // ->using(Provider::Gemini, 'gemini-2.5-flash')
                 ->using(Provider::Groq, 'openai/gpt-oss-120b')
-                // ->withProviderTools([
-                //     new ProviderTool(type: 'browser_search')
-                // ])
-                // ->withProviderOptions([
-                //     'reasoning' => ['effort' => 'high']
-                // ])
-                ->withTools(Relay::tools('sleeperdraft'))
-                ->withProviderTools([
-                    new ProviderTool(type: 'code_interpreter', options: ['container' => ['type' => 'auto']])
-                ])
                 ->withPrompt($prompt)
                 ->withMaxSteps(50)
                 ->asStream();
@@ -178,61 +173,172 @@ new class extends Component {
         }
     }
 
-    private function getWeeklyMatchupData(): array
+    private function getWeeklyLeagueData(): array
     {
-        // Get all matchups for the week
-        $matchups = [];
+        $league = $this->league;
 
         try {
-            // Fetch all matchups for this league and week
-            $fetchMatchups = app(\App\Actions\Sleeper\FetchMatchups::class);
-            $matchupData = $fetchMatchups->execute($this->leagueId, $this->week);
+            $rosters = app(FetchRosters::class)->execute($this->leagueId);
+            $users = app(FetchLeagueUsers::class)->execute($this->leagueId);
+            $matchupsRaw = app(FetchMatchups::class)->execute($this->leagueId, $this->week);
 
-            // Group by matchup_id to get pairs
-            $byMatchupId = [];
-            foreach ($matchupData as $matchup) {
-                $matchupId = $matchup['matchup_id'] ?? null;
-                if ($matchupId) {
-                    $byMatchupId[$matchupId][] = $matchup;
-                }
+            // Index helpers
+            $rosterById = [];
+            foreach ($rosters as $r) {
+                $rosterById[(int) ($r['roster_id'] ?? 0)] = $r;
+            }
+            $userById = [];
+            foreach ($users as $u) {
+                $userById[(string) ($u['user_id'] ?? '')] = $u;
             }
 
-            // Process each matchup pair
-            foreach ($byMatchupId as $matchupId => $pair) {
-                if (count($pair) >= 2) {
-                    $matchups[] = [
-                        'matchup_id' => $matchupId,
-                        'home' => $pair[0],
-                        'away' => $pair[1],
+            // Build lineups once
+            $lineups = app(BuildLineupsFromRosters::class)->execute($rosters);
+
+            // Group raw matchups into pairs by matchup_id
+            $pairs = [];
+            $byMatchup = [];
+            foreach ($matchupsRaw as $m) {
+                if (!isset($m['matchup_id'])) {
+                    continue;
+                }
+                $byMatchup[$m['matchup_id']][] = $m;
+            }
+            foreach ($byMatchup as $mid => $entries) {
+                if (count($entries) >= 2) {
+                    $pairs[] = [
+                        'matchup_id' => (int) $mid,
+                        'home' => $entries[0],
+                        'away' => $entries[1],
                     ];
                 }
             }
 
-            // If no complete pairs found, try to get individual matchups
-            if (empty($matchups) && !empty($matchupData)) {
-                // Group by roster_id for individual processing
-                $rosterMatchups = [];
-                foreach ($matchupData as $matchup) {
-                    $rosterId = $matchup['roster_id'] ?? null;
-                    if ($rosterId) {
-                        $rosterMatchups[$rosterId] = $matchup;
+            // Collect all player IDs for a global lookup map
+            $collectIds = [];
+            foreach ($pairs as $p) {
+                foreach (['home', 'away'] as $side) {
+                    $rid = (int) ($p[$side]['roster_id'] ?? 0);
+                    $lu = $lineups[$rid] ?? ['starters' => [], 'bench' => []];
+                    $collectIds = array_merge($collectIds, $lu['starters'], $lu['bench']);
+                }
+            }
+            $collectIds = array_values(array_unique($collectIds));
+
+            $players = [];
+            if (!empty($collectIds)) {
+                $playersQuery = Player::whereIn('player_id', $collectIds)
+                    ->select(['player_id', 'full_name', 'first_name', 'last_name', 'team', 'position'])
+                    ->get()
+                    ->keyBy('player_id');
+
+                foreach ($collectIds as $pid) {
+                    $pl = $playersQuery->get($pid);
+                    if ($pl) {
+                        $display = $pl->full_name ?: trim(($pl->first_name.' '.$pl->last_name));
+                        $players[$pid] = [
+                            'name' => $display ?: $pid,
+                            'team' => $pl->team,
+                            'position' => $pl->position,
+                        ];
+                    } else {
+                        $players[$pid] = [
+                            'name' => $pid,
+                            'team' => null,
+                            'position' => null,
+                        ];
                     }
                 }
-                $matchups = array_values($rosterMatchups);
             }
 
-        } catch (\Exception $e) {
-            $this->stream(to: 'output', content: "⚠️ Warning: Could not fetch matchup data: {$e->getMessage()}\n");
-        }
+            // Helper to get owner display name
+            $ownerName = function (int $rosterId) use ($rosterById, $userById): ?string {
+                $ownerId = $rosterById[$rosterId]['owner_id'] ?? null;
+                if ($ownerId && isset($userById[(string) $ownerId])) {
+                    $u = $userById[(string) $ownerId];
 
-        return $matchups;
+                    return $u['display_name'] ?? ($u['username'] ?? null);
+                }
+
+                return null;
+            };
+
+            // Build enriched matchup models
+            $enriched = [];
+            foreach ($pairs as $p) {
+                $homeRid = (int) ($p['home']['roster_id'] ?? 0);
+                $awayRid = (int) ($p['away']['roster_id'] ?? 0);
+
+                $homeLu = $lineups[$homeRid] ?? ['starters' => [], 'bench' => []];
+                $awayLu = $lineups[$awayRid] ?? ['starters' => [], 'bench' => []];
+
+                $compute = app(ComputePlayerWeekPoints::class);
+                $agg = app(AggregateTeamTotals::class);
+
+                $homeStarterPts = $compute->execute($homeLu['starters'], $this->year, $this->week);
+                $awayStarterPts = $compute->execute($awayLu['starters'], $this->year, $this->week);
+                $homeBenchPts = $compute->execute($homeLu['bench'], $this->year, $this->week);
+                $awayBenchPts = $compute->execute($awayLu['bench'], $this->year, $this->week);
+
+                $homeTotals = $agg->execute($homeStarterPts);
+                $awayTotals = $agg->execute($awayStarterPts);
+
+                $enriched[] = [
+                    'matchup_id' => (int) $p['matchup_id'],
+                    'home' => [
+                        'roster_id' => $homeRid,
+                        'owner_id' => $rosterById[$homeRid]['owner_id'] ?? null,
+                        'owner_name' => $ownerName($homeRid),
+                        'starters' => $homeLu['starters'],
+                        'bench' => $homeLu['bench'],
+                        'starter_points' => $homeStarterPts,
+                        'bench_points' => $homeBenchPts,
+                        'totals' => $homeTotals,
+                        'sleeper_points' => $p['home']['points'] ?? 0,
+                    ],
+                    'away' => [
+                        'roster_id' => $awayRid,
+                        'owner_id' => $rosterById[$awayRid]['owner_id'] ?? null,
+                        'owner_name' => $ownerName($awayRid),
+                        'starters' => $awayLu['starters'],
+                        'bench' => $awayLu['bench'],
+                        'starter_points' => $awayStarterPts,
+                        'bench_points' => $awayBenchPts,
+                        'totals' => $awayTotals,
+                        'sleeper_points' => $p['away']['points'] ?? 0,
+                    ],
+                ];
+            }
+
+            return [
+                'league' => [
+                    'id' => $this->leagueId,
+                    'name' => $league['name'] ?? 'League',
+                ],
+                'year' => $this->year,
+                'week' => $this->week,
+                'matchups' => $enriched,
+                'players' => $players,
+            ];
+        } catch (\Throwable $e) {
+            $this->stream(to: 'output', content: "⚠️ Warning: Could not assemble league data: {$e->getMessage()}\n");
+
+            return [
+                'league' => [
+                    'id' => $this->leagueId,
+                    'name' => $league['name'] ?? 'League',
+                ],
+                'year' => $this->year,
+                'week' => $this->week,
+                'matchups' => [],
+                'players' => [],
+            ];
+        }
     }
 
-    private function buildWeeklySummaryPrompt(array $matchups): string
+    private function buildWeeklySummaryPrompt(array $weeklyData): string
     {
-        $league = $this->league;
-
-        $leagueName = $league['name'] ?? 'Unknown';
+        $leagueName = $weeklyData['league']['name'] ?? 'Unknown';
         $prompt = "You are a Fantasy Football League Commissioner and analyst. Generate a comprehensive weekly summary for League '{$leagueName}' for Week {$this->week} of {$this->year}.\n\n";
 
         $prompt .= "LEAGUE INFORMATION:\n";
@@ -241,40 +347,39 @@ new class extends Component {
         $prompt .= "- Week: {$this->week}\n";
         $prompt .= "- Year: {$this->year}\n\n";
 
-        if (!empty($matchups)) {
-            $prompt .= "MATCHUP DATA:\n";
-            foreach ($matchups as $i => $matchup) {
-                $prompt .= "Matchup " . ($i + 1) . ":\n";
+        $players = $weeklyData['players'] ?? [];
 
-                if (isset($matchup['home']) && isset($matchup['away'])) {
-                    // Complete matchup pair
-                    $homePoints = $matchup['home']['points'] ?? 0;
-                    $awayPoints = $matchup['away']['points'] ?? 0;
-                    $homeRosterId = $matchup['home']['roster_id'] ?? 'Unknown';
-                    $awayRosterId = $matchup['away']['roster_id'] ?? 'Unknown';
+        if (!empty($weeklyData['matchups'])) {
+            $prompt .= "MATCHUPS:\n";
+            foreach ($weeklyData['matchups'] as $i => $m) {
+                $homeName = $m['home']['owner_name'] ?? ('Roster '.$m['home']['roster_id']);
+                $awayName = $m['away']['owner_name'] ?? ('Roster '.$m['away']['roster_id']);
+                $homePts = (float) ($m['home']['sleeper_points'] ?? 0);
+                $awayPts = (float) ($m['away']['sleeper_points'] ?? 0);
 
-                    $prompt .= "  Home Team (Roster {$homeRosterId}): {$homePoints} points\n";
-                    $prompt .= "  Away Team (Roster {$awayRosterId}): {$awayPoints} points\n";
+                $prompt .= "Matchup ".($i+1).": {$homeName} vs {$awayName}\n";
+                $prompt .= "  Score: ".number_format($homePts,1)." - ".number_format($awayPts,1)."\n";
 
-                    if ($homePoints > $awayPoints) {
-                        $prompt .= "  Result: Home team wins by " . number_format($homePoints - $awayPoints, 1) . " points\n";
-                    } elseif ($awayPoints > $homePoints) {
-                        $prompt .= "  Result: Away team wins by " . number_format($awayPoints - $homePoints, 1) . " points\n";
-                    } else {
-                        $prompt .= "  Result: Tie game\n";
+                // Top performers per team (by used points)
+                $topThree = function(array $ids, array $pts) use ($players): array {
+                    $rows = [];
+                    foreach ($ids as $pid) {
+                        $p = $pts[$pid] ?? null;
+                        if (!$p) { continue; }
+                        $name = $players[$pid]['name'] ?? $pid;
+                        $rows[] = ['name' => $name, 'used' => (float) ($p['used'] ?? 0.0)];
                     }
-                } else {
-                    // Individual matchup data
-                    $points = $matchup['points'] ?? 0;
-                    $rosterId = $matchup['roster_id'] ?? 'Unknown';
-                    $prompt .= "  Roster {$rosterId}: {$points} points\n";
-                }
+                    usort($rows, fn($a,$b) => $b['used'] <=> $a['used']);
+                    return array_slice($rows, 0, 3);
+                };
 
-                // Add starters if available
-                if (isset($matchup['starters'])) {
-                    $starters = is_array($matchup['starters']) ? $matchup['starters'] : [];
-                    $prompt .= "  Starters: " . implode(', ', $starters) . "\n";
-                }
+                $homeTop = $topThree($m['home']['starters'], $m['home']['starter_points']);
+                $awayTop = $topThree($m['away']['starters'], $m['away']['starter_points']);
+
+                $prompt .= "  Top Performers ({$homeName}): ";
+                $prompt .= empty($homeTop) ? "none\n" : (implode(', ', array_map(fn($r) => $r['name'].' - '.number_format($r['used'],1).' pts', $homeTop))."\n");
+                $prompt .= "  Top Performers ({$awayName}): ";
+                $prompt .= empty($awayTop) ? "none\n" : (implode(', ', array_map(fn($r) => $r['name'].' - '.number_format($r['used'],1).' pts', $awayTop))."\n");
 
                 $prompt .= "\n";
             }
@@ -283,16 +388,16 @@ new class extends Component {
         }
 
         $prompt .= "INSTRUCTIONS:\n";
+        $prompt .= "- Do not use external tools; all data you need is provided above.\n";
+        $prompt .= "- Never show IDs to represent players, teams, or anything else. Refer to rosters by the owner name.\n";
         $prompt .= "Generate a comprehensive weekly summary that includes:\n";
         $prompt .= "1. Overall league performance overview\n";
         $prompt .= "2. Standout players and their key contributions\n";
         $prompt .= "3. Notable upsets, close games, and blowouts\n";
         $prompt .= "4. League trends and patterns emerging\n";
-        $prompt .= "5. Any unusual or interesting matchup outcomes\n";
+        $prompt .= "5. Any unusual or interesting matchup outcomes\n\n";
 
-        $prompt .= "Use the available tools to gather additional context about players, teams, and current NFL news that might be relevant to this week's fantasy performance.\n\n";
-
-        $prompt .= "Never show IDs to represent players, teams, or anything else. For rosters refer to the owner name. Format your response as a well-structured, engaging narrative that league members will enjoy reading. Use markdown formatting for better readability.\n";
+        $prompt .= "Format your response as a well-structured, engaging narrative that league members will enjoy reading. Use markdown formatting for readability.\n";
 
         return $prompt;
     }
