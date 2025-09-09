@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Log;
 use Livewire\Volt\Component;
 use Prism\Prism\Enums\Provider;
 use Prism\Prism\Prism;

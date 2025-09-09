@@ -43,6 +43,9 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('leagues/{leagueId}/week/{week}/matchup', 'matchups.show')->name('matchups.show');
     Volt::route('leagues/{leagueId}/matchup', 'matchups.show')->name('matchups.show.current');
 
+    // Weekly Summary routes
+    Volt::route('leagues/{leagueId}/year/{year}/week/{week}/summary', 'weekly-summary.show')->name('weekly-summary.show');
+
     // // Lineup Optimizer routes
     // Volt::route('leagues/{leagueId}/week/{week}/lineup-optimizer', 'lineup-optimizer')->name('lineup-optimizer.show');
     // Volt::route('leagues/{leagueId}/lineup-optimizer', 'lineup-optimizer')->name('lineup-optimizer.current');
