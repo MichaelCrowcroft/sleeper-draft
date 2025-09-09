@@ -72,9 +72,9 @@ new class extends Component {
 
         $generator = Prism::text()
             ->using(Provider::Groq, 'openai/gpt-oss-120b')
-            // ->withProviderTools([
-            //     new ProviderTool(type: 'browser_search')
-            // ])
+            ->withProviderTools([
+                new ProviderTool(type: 'browser_search')
+            ])
             ->withTools(Relay::tools('sleeperdraft'))
             ->withPrompt($this->prompt)
             ->withMaxSteps(50)
@@ -107,15 +107,31 @@ new class extends Component {
             // Stream tool results
             if (! empty($chunk->toolResults)) {
                 foreach ($chunk->toolResults as $result) {
-                    $payload = '';
+                    // Safely encode args
+                    $encodedArgs = '';
                     try {
-                        $payload = json_encode($result->content, JSON_PRETTY_PRINT);
+                        $encodedArgs = json_encode($result->args, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                     } catch (\Throwable $e) {
-                        $payload = '[unparsed result]';
+                        $encodedArgs = '[unparsed args]';
                     }
+
+                    // Safely encode result
+                    $encodedResult = '';
+                    try {
+                        if (is_array($result->result)) {
+                            $encodedResult = json_encode($result->result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+                        } elseif (is_scalar($result->result) || is_null($result->result)) {
+                            $encodedResult = (string) ($result->result ?? 'null');
+                        } else {
+                            $encodedResult = json_encode($result->result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+                        }
+                    } catch (\Throwable $e) {
+                        $encodedResult = '[unparsed result]';
+                    }
+
                     $this->stream(
                         to: 'output',
-                        content: "\n[Tool Result] {$result->name}\n{$payload}\n"
+                        content: "\n[Tool Result] {$result->toolName}\nArgs: {$encodedArgs}\nResult: {$encodedResult}\n"
                     );
                 }
             }
