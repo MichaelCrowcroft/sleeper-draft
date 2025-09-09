@@ -85,8 +85,8 @@ new class extends Component {
 
             $generator = Prism::text()
                 // ->using(Provider::OpenAI, 'gpt-5')
-                ->using(Provider::Gemini, 'gemini-2.5-flash')
-                // ->using(Provider::Groq, 'openai/gpt-oss-120b')
+                // ->using(Provider::Gemini, 'gemini-2.5-flash')
+                ->using(Provider::Groq, 'openai/gpt-oss-20b')
                 // ->withProviderTools([
                 //     new ProviderTool(type: 'browser_search')
                 // ])
