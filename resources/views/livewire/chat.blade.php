@@ -72,9 +72,9 @@ new class extends Component {
 
         $generator = Prism::text()
             ->using(Provider::Groq, 'openai/gpt-oss-120b')
-            ->withProviderTools([
-                new ProviderTool(type: 'browser_search')
-            ])
+            // ->withProviderTools([
+            //     new ProviderTool(type: 'browser_search')
+            // ])
             ->withTools(Relay::tools('sleeperdraft'))
             ->withPrompt($this->prompt)
             ->withMaxSteps(50)
