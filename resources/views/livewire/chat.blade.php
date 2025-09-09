@@ -273,27 +273,27 @@ new class extends Component {
                     </div>
                 @endif
 
-                <!-- Assistant streaming bubble -->
-                @if($isRunning || $answerStreaming)
-                    <div class="p-5 md:p-6">
-                        <div class="flex items-start gap-3">
-                            <div class="h-9 w-9 shrink-0 rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 flex items-center justify-center font-semibold">AI</div>
-                            <div class="max-w-none flex-1">
-                                <div class="inline-block rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-4 py-3 shadow-sm min-w-[200px]">
-                                    <div class="prose prose-zinc dark:prose-invert max-w-none">
-                                        <div wire:stream="answer">{!! nl2br(e($answerStreaming)) !!}</div>
-                                        @if($isRunning)
-                                            <div class="mt-2 inline-flex items-center gap-2 text-xs text-zinc-500">
-                                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                                Generating…
-                                            </div>
-                                        @endif
-                                    </div>
+                <!-- Assistant streaming bubble (always present so wire:stream can attach) -->
+                <div class="p-5 md:p-6">
+                    <div class="flex items-start gap-3">
+                        <div class="h-9 w-9 shrink-0 rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 flex items-center justify-center font-semibold">AI</div>
+                        <div class="max-w-none flex-1">
+                            <div class="inline-block rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-4 py-3 shadow-sm min-w-[200px]">
+                                <div class="prose prose-zinc dark:prose-invert max-w-none">
+                                    <div wire:stream="answer">{!! nl2br(e($answerStreaming)) !!}</div>
+                                    @if($isRunning)
+                                        <div class="mt-2 inline-flex items-center gap-2 text-xs text-zinc-500">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            Generating…
+                                        </div>
+                                    @elseif(!$answerStreaming)
+                                        <div class="text-xs text-zinc-500">Awaiting response…</div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
                     </div>
-                @endif
+                </div>
 
                 <!-- Assistant final bubble -->
                 @if($isCompleted && $finalAnswer)
@@ -345,11 +345,7 @@ new class extends Component {
     <details class="rounded-lg border border-zinc-200/70 dark:border-zinc-800/70 bg-zinc-50 dark:bg-zinc-900/40">
         <summary class="cursor-pointer px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300">Debug stream</summary>
         <div class="p-4 font-mono text-xs leading-relaxed overflow-x-auto">
-            @if($output)
-                <pre wire:stream="output" class="whitespace-pre-wrap break-words">{{ $output }}</pre>
-            @else
-                <div class="text-zinc-500">No debug output yet.</div>
-            @endif
+            <pre wire:stream="output" class="whitespace-pre-wrap break-words">{{ $output }}</pre>
         </div>
     </details>
 
