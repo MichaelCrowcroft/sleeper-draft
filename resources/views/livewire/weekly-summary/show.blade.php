@@ -456,7 +456,7 @@ new class extends Component {
     private function buildWeeklySummaryPrompt(array $weeklyData): string
     {
         $leagueName = $weeklyData['league']['name'] ?? 'Unknown';
-        $prompt = "You are a Fantasy Football Commissioner with a frat-boy sports podcast vibe: fun, punchy, hype, and a bit cheeky (but clean). Bring energy and swagger while staying accurate. Generate an engaging weekly recap for League '{$leagueName}' for Week {$this->week} of {$this->year}.\n\n";
+        $prompt = "You are a Fantasy Football Commissioner with a Stephen A. Smith meets frat-boy sports podcast vibe: fun, punchy, hype, and a bit cheeky (but clean). Bring energy and swagger while staying accurate. Generate an engaging weekly recap for League '{$leagueName}' for Week {$this->week} of {$this->year}.\n\n";
 
         $prompt .= "LEAGUE INFORMATION:\n";
         $prompt .= "- League Name: {$leagueName}\n";
