@@ -32,8 +32,9 @@ new class extends Component {
         $this->isRunning = true;
         $this->status = 'Starting Prism generation...';
 
-        $this->stream(to: 'output', content: "🚀 Starting Fantasy Football Weekly Summary Generation...\n\n");
-        $this->stream(to: 'status', content: 'Initializing Prism...');
+        // Start with initial output
+        $this->output = "🚀 Starting Fantasy Football Weekly Summary Generation...\n\n";
+        $this->dispatch('$refresh');
 
         try {
             $this->executePrism();
@@ -44,26 +45,27 @@ new class extends Component {
             ]);
 
             $this->error = $e->getMessage();
-            $this->stream(to: 'error', content: $e->getMessage());
-            $this->stream(to: 'status', content: 'Error occurred');
+            $this->status = 'Error occurred';
             $this->isRunning = false;
+            $this->dispatch('$refresh');
         }
     }
 
     private function executePrism(): void
     {
-        $this->stream(to: 'output', content: "🔧 Configuring Prism with Groq provider...\n");
-        $this->stream(to: 'status', content: 'Configuring Prism...');
+        $this->output .= "🔧 Configuring Prism with Groq provider...\n";
+        $this->status = 'Configuring Prism...';
+        $this->dispatch('$refresh');
 
         // Log the start of execution
-        $this->stream(to: 'output', content: "📡 Provider: Groq (openai/gpt-oss-120b)\n");
-        $this->stream(to: 'output', content: "🔍 Tools: Browser Search + Sleeper Draft MCP\n");
-        $this->stream(to: 'output', content: "📝 Prompt: Fantasy League Commissioner Summary\n\n");
-        $this->stream(to: 'output', content: "=" . str_repeat("=", 50) . "\n");
-        $this->stream(to: 'output', content: "PRISM EXECUTION STARTED\n");
-        $this->stream(to: 'output', content: "=" . str_repeat("=", 50) . "\n\n");
-
-        $this->stream(to: 'status', content: 'Executing Prism request...');
+        $this->output .= "📡 Provider: Groq (openai/gpt-oss-120b)\n";
+        $this->output .= "🔍 Tools: Browser Search + Sleeper Draft MCP\n";
+        $this->output .= "📝 Prompt: Fantasy League Commissioner Summary\n\n";
+        $this->output .= "=" . str_repeat("=", 50) . "\n";
+        $this->output .= "PRISM EXECUTION STARTED\n";
+        $this->output .= "=" . str_repeat("=", 50) . "\n\n";
+        $this->status = 'Executing Prism request...';
+        $this->dispatch('$refresh');
 
         $response = Prism::text()
             ->using(Provider::Groq, 'openai/gpt-oss-120b')
@@ -75,18 +77,20 @@ new class extends Component {
             ->withMaxSteps(50)
             ->asText();
 
-        $this->stream(to: 'status', content: 'Processing response...');
+        $this->status = 'Processing response...';
+        $this->dispatch('$refresh');
 
-        // Stream the final response
-        $this->stream(to: 'output', content: "\n🎯 FINAL RESULT:\n");
-        $this->stream(to: 'output', content: str_repeat("-", 50) . "\n\n");
-        $this->stream(to: 'output', content: $response->text);
-        $this->stream(to: 'output', content: "\n\n" . str_repeat("-", 50) . "\n");
-        $this->stream(to: 'output', content: "✅ Generation completed successfully!\n");
+        // Add the final response
+        $this->output .= "\n🎯 FINAL RESULT:\n";
+        $this->output .= str_repeat("-", 50) . "\n\n";
+        $this->output .= $response->text;
+        $this->output .= "\n\n" . str_repeat("-", 50) . "\n";
+        $this->output .= "✅ Generation completed successfully!\n";
 
         $this->isRunning = false;
         $this->isCompleted = true;
-        $this->stream(to: 'status', content: 'Completed');
+        $this->status = 'Completed';
+        $this->dispatch('$refresh');
 
         Log::info('Prism streaming completed', [
             'response_length' => strlen($response->text),
@@ -98,9 +102,54 @@ new class extends Component {
         $this->reset(['output', 'error', 'steps', 'currentStep', 'isCompleted', 'status']);
     }
 
+    public function testStreaming(): void
+    {
+        if ($this->isRunning) {
+            return;
+        }
+
+        $this->reset(['output', 'error', 'steps', 'currentStep', 'isCompleted']);
+        $this->isRunning = true;
+        $this->status = 'Testing streaming...';
+        $this->output = "🚀 Testing Streaming Output...\n\n";
+
+        // Simulate streaming output with delays
+        $this->output .= "Step 1: Initializing...\n";
+        $this->dispatch('$refresh');
+        sleep(1);
+
+        $this->output .= "Step 2: Configuring tools...\n";
+        $this->status = 'Step 2: Configuring...';
+        $this->dispatch('$refresh');
+        sleep(1);
+
+        $this->output .= "Step 3: Processing data...\n";
+        $this->status = 'Step 3: Processing...';
+        $this->dispatch('$refresh');
+        sleep(1);
+
+        $this->output .= "Step 4: Generating response...\n";
+        $this->status = 'Step 4: Generating...';
+        $this->dispatch('$refresh');
+        sleep(1);
+
+        $this->output .= "\n✅ Streaming test completed!\n";
+        $this->status = 'Test completed';
+        $this->isRunning = false;
+        $this->isCompleted = true;
+        $this->dispatch('$refresh');
+    }
+
     public function updatePrompt(): void
     {
         // Just update the prompt, no action needed
+    }
+
+    public function updatedOutput(): void
+    {
+        // This method is called whenever the output property is updated
+        // It will trigger a UI refresh automatically
+        $this->dispatch('scroll-to-bottom');
     }
 }; ?>
 
@@ -147,6 +196,16 @@ new class extends Component {
             </flux:button>
 
             <flux:button
+                wire:click="testStreaming"
+                variant="outline"
+                :disabled="$isRunning"
+                class="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+            >
+                <flux:icon name="beaker" class="w-4 h-4" />
+                Test Streaming
+            </flux:button>
+
+            <flux:button
                 wire:click="clearOutput"
                 variant="outline"
                 :disabled="$isRunning"
@@ -171,7 +230,7 @@ new class extends Component {
 
                 <div class="flex-1">
                     <div class="font-medium text-blue-900 dark:text-blue-100">
-                        Status: <span wire:stream="status">{{ $status }}</span>
+                        Status: {{ $status }}
                     </div>
                     @if($isRunning)
                         <div class="text-sm text-blue-600 dark:text-blue-300 mt-1">
@@ -190,7 +249,7 @@ new class extends Component {
                 <flux:icon name="exclamation-triangle" class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
                     <div class="font-medium">Error occurred during generation</div>
-                    <div class="mt-1 text-sm text-red-600 dark:text-red-400" wire:stream="error">
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">
                         {{ $error }}
                     </div>
                 </div>
@@ -221,7 +280,7 @@ new class extends Component {
 
         <div class="p-6 font-mono text-sm leading-relaxed min-h-[400px] max-h-[600px] overflow-y-auto">
             @if($output)
-                <pre wire:stream="output" class="whitespace-pre-wrap break-words">{{ $output }}</pre>
+                <pre class="whitespace-pre-wrap break-words">{{ $output }}</pre>
             @else
                 <div class="text-zinc-400 italic">
                     Output will appear here when generation starts...
@@ -244,3 +303,16 @@ new class extends Component {
         </div>
     </flux:callout>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('livewire:init', () => {
+    Livewire.on('scroll-to-bottom', () => {
+        const outputContainer = document.querySelector('.overflow-y-auto');
+        if (outputContainer) {
+            outputContainer.scrollTop = outputContainer.scrollHeight;
+        }
+    });
+});
+</script>
+@endpush
