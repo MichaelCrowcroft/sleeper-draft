@@ -228,7 +228,7 @@ new class extends Component {
             $players = [];
             if (!empty($collectIds)) {
                 $playersQuery = Player::whereIn('player_id', $collectIds)
-                    ->select(['player_id', 'full_name', 'first_name', 'last_name', 'team', 'position'])
+                    ->select(['player_id', 'full_name', 'first_name', 'last_name', 'team', 'position', 'years_exp'])
                     ->get()
                     ->keyBy('player_id');
 
@@ -240,12 +240,14 @@ new class extends Component {
                             'name' => $display ?: $pid,
                             'team' => $pl->team,
                             'position' => $pl->position,
+                            'years_exp' => $pl->years_exp,
                         ];
                     } else {
                         $players[$pid] = [
                             'name' => $pid,
                             'team' => null,
                             'position' => null,
+                            'years_exp' => null,
                         ];
                     }
                 }
@@ -310,6 +312,111 @@ new class extends Component {
                 ];
             }
 
+            // Derive winners/losers, blowouts, nail-biters, boom/bust, rookies
+            $results = [];
+            foreach ($enriched as $m) {
+                $homePts = (float) ($m['home']['sleeper_points'] ?? 0);
+                $awayPts = (float) ($m['away']['sleeper_points'] ?? 0);
+                $margin = $homePts - $awayPts;
+                $results[] = [
+                    'home_name' => $m['home']['owner_name'] ?? ('Roster '.$m['home']['roster_id']),
+                    'away_name' => $m['away']['owner_name'] ?? ('Roster '.$m['away']['roster_id']),
+                    'home_points' => $homePts,
+                    'away_points' => $awayPts,
+                    'winner' => $margin >= 0 ? 'home' : 'away',
+                    'winner_name' => $margin >= 0 ? ($m['home']['owner_name'] ?? ('Roster '.$m['home']['roster_id'])) : ($m['away']['owner_name'] ?? ('Roster '.$m['away']['roster_id'])),
+                    'loser_name' => $margin < 0 ? ($m['home']['owner_name'] ?? ('Roster '.$m['home']['roster_id'])) : ($m['away']['owner_name'] ?? ('Roster '.$m['away']['roster_id'])),
+                    'margin' => abs($margin),
+                    'home' => $m['home'],
+                    'away' => $m['away'],
+                ];
+            }
+
+            // Biggest blowouts (top 2 by margin)
+            $blowouts = $results;
+            usort($blowouts, fn($a,$b) => $b['margin'] <=> $a['margin']);
+            $blowouts = array_slice($blowouts, 0, 2);
+
+            // Closest games (top 2 by smallest margin)
+            $closeGames = $results;
+            usort($closeGames, fn($a,$b) => $a['margin'] <=> $b['margin']);
+            $closeGames = array_slice($closeGames, 0, 2);
+
+            // Boom/Bust players across all matchups (based on used points)
+            $boomCandidates = [];
+            $bustCandidates = [];
+            foreach ($enriched as $m) {
+                foreach (['home','away'] as $side) {
+                    foreach ($m[$side]['starters'] as $pid) {
+                        $pts = (float) (($m[$side]['starter_points'][$pid]['used'] ?? 0.0));
+                        $name = $players[$pid]['name'] ?? $pid;
+                        $boomCandidates[] = ['name' => $name, 'pts' => $pts, 'team' => $players[$pid]['team'] ?? null, 'position' => $players[$pid]['position'] ?? null];
+                        $bustCandidates[] = ['name' => $name, 'pts' => $pts, 'team' => $players[$pid]['team'] ?? null, 'position' => $players[$pid]['position'] ?? null];
+                    }
+                }
+            }
+            usort($boomCandidates, fn($a,$b) => $b['pts'] <=> $a['pts']);
+            usort($bustCandidates, fn($a,$b) => $a['pts'] <=> $b['pts']);
+            $boom = array_slice($boomCandidates, 0, 5);
+            $bust = array_slice($bustCandidates, 0, 5);
+
+            // Breakout rookies (years_exp === 0) with highest points
+            $rookies = [];
+            foreach ($enriched as $m) {
+                foreach (['home','away'] as $side) {
+                    foreach ($m[$side]['starters'] as $pid) {
+                        $exp = $players[$pid]['years_exp'] ?? null;
+                        if ($exp === 0) {
+                            $rookies[] = [
+                                'name' => $players[$pid]['name'] ?? $pid,
+                                'pts' => (float) (($m[$side]['starter_points'][$pid]['used'] ?? 0.0)),
+                                'team' => $players[$pid]['team'] ?? null,
+                                'position' => $players[$pid]['position'] ?? null,
+                            ];
+                        }
+                    }
+                }
+            }
+            usort($rookies, fn($a,$b) => $b['pts'] <=> $a['pts']);
+            $rookies = array_slice($rookies, 0, 5);
+
+            // League Power Rankings (by actual weekly team points; fallback to totals if missing)
+            $teams = [];
+            foreach ($enriched as $m) {
+                $teams[] = [
+                    'name' => $m['home']['owner_name'] ?? ('Roster '.$m['home']['roster_id']),
+                    'points' => (float) ($m['home']['sleeper_points'] ?? ($m['home']['totals']['total_estimated'] ?? 0)),
+                ];
+                $teams[] = [
+                    'name' => $m['away']['owner_name'] ?? ('Roster '.$m['away']['roster_id']),
+                    'points' => (float) ($m['away']['sleeper_points'] ?? ($m['away']['totals']['total_estimated'] ?? 0)),
+                ];
+            }
+            usort($teams, fn($a,$b) => $b['points'] <=> $a['points']);
+            $powerRankings = $teams; // include all teams this week
+
+            // Positional leaders (top 5 per position by used starter points)
+            $posLeaders = [];
+            foreach ($enriched as $m) {
+                foreach (['home','away'] as $side) {
+                    foreach ($m[$side]['starters'] as $pid) {
+                        $pos = $players[$pid]['position'] ?? null;
+                        if (! $pos) { continue; }
+                        $pts = (float) (($m[$side]['starter_points'][$pid]['used'] ?? 0.0));
+                        $posLeaders[$pos][] = [
+                            'name' => $players[$pid]['name'] ?? $pid,
+                            'team' => $players[$pid]['team'] ?? null,
+                            'position' => $pos,
+                            'pts' => $pts,
+                        ];
+                    }
+                }
+            }
+            foreach ($posLeaders as $pos => $rows) {
+                usort($rows, fn($a,$b) => $b['pts'] <=> $a['pts']);
+                $posLeaders[$pos] = array_slice($rows, 0, 5);
+            }
+
             return [
                 'league' => [
                     'id' => $this->leagueId,
@@ -319,6 +426,16 @@ new class extends Component {
                 'week' => $this->week,
                 'matchups' => $enriched,
                 'players' => $players,
+                'derived' => [
+                    'results' => $results,
+                    'blowouts' => $blowouts,
+                    'close_games' => $closeGames,
+                    'boom' => $boom,
+                    'bust' => $bust,
+                    'rookies' => $rookies,
+                    'power_rankings' => $powerRankings,
+                    'positional_leaders' => $posLeaders,
+                ],
             ];
         } catch (\Throwable $e) {
             $this->stream(to: 'output', content: "⚠️ Warning: Could not assemble league data: {$e->getMessage()}\n");
@@ -339,7 +456,7 @@ new class extends Component {
     private function buildWeeklySummaryPrompt(array $weeklyData): string
     {
         $leagueName = $weeklyData['league']['name'] ?? 'Unknown';
-        $prompt = "You are a Fantasy Football League Commissioner and analyst. Generate a comprehensive weekly summary for League '{$leagueName}' for Week {$this->week} of {$this->year}.\n\n";
+        $prompt = "You are a Fantasy Football Commissioner with a frat-boy sports podcast vibe: fun, punchy, hype, and a bit cheeky (but clean). Bring energy and swagger while staying accurate. Generate an engaging weekly recap for League '{$leagueName}' for Week {$this->week} of {$this->year}.\n\n";
 
         $prompt .= "LEAGUE INFORMATION:\n";
         $prompt .= "- League Name: {$leagueName}\n";
@@ -348,56 +465,101 @@ new class extends Component {
         $prompt .= "- Year: {$this->year}\n\n";
 
         $players = $weeklyData['players'] ?? [];
+        $derived = $weeklyData['derived'] ?? [
+            'results' => [],
+            'blowouts' => [],
+            'close_games' => [],
+            'boom' => [],
+            'bust' => [],
+            'rookies' => [],
+            'power_rankings' => [],
+            'positional_leaders' => [],
+        ];
 
-        if (!empty($weeklyData['matchups'])) {
-            $prompt .= "MATCHUPS:\n";
-            foreach ($weeklyData['matchups'] as $i => $m) {
-                $homeName = $m['home']['owner_name'] ?? ('Roster '.$m['home']['roster_id']);
-                $awayName = $m['away']['owner_name'] ?? ('Roster '.$m['away']['roster_id']);
-                $homePts = (float) ($m['home']['sleeper_points'] ?? 0);
-                $awayPts = (float) ($m['away']['sleeper_points'] ?? 0);
-
-                $prompt .= "Matchup ".($i+1).": {$homeName} vs {$awayName}\n";
-                $prompt .= "  Score: ".number_format($homePts,1)." - ".number_format($awayPts,1)."\n";
-
-                // Top performers per team (by used points)
-                $topThree = function(array $ids, array $pts) use ($players): array {
-                    $rows = [];
-                    foreach ($ids as $pid) {
-                        $p = $pts[$pid] ?? null;
-                        if (!$p) { continue; }
-                        $name = $players[$pid]['name'] ?? $pid;
-                        $rows[] = ['name' => $name, 'used' => (float) ($p['used'] ?? 0.0)];
-                    }
-                    usort($rows, fn($a,$b) => $b['used'] <=> $a['used']);
-                    return array_slice($rows, 0, 3);
-                };
-
-                $homeTop = $topThree($m['home']['starters'], $m['home']['starter_points']);
-                $awayTop = $topThree($m['away']['starters'], $m['away']['starter_points']);
-
-                $prompt .= "  Top Performers ({$homeName}): ";
-                $prompt .= empty($homeTop) ? "none\n" : (implode(', ', array_map(fn($r) => $r['name'].' - '.number_format($r['used'],1).' pts', $homeTop))."\n");
-                $prompt .= "  Top Performers ({$awayName}): ";
-                $prompt .= empty($awayTop) ? "none\n" : (implode(', ', array_map(fn($r) => $r['name'].' - '.number_format($r['used'],1).' pts', $awayTop))."\n");
-
-                $prompt .= "\n";
+        // Results summary (winners/losers) with blowouts and close games
+        if (!empty($derived['results'])) {
+            $prompt .= "RESULTS (Winners & Losers):\n";
+            foreach ($derived['results'] as $r) {
+                $prompt .= "- ".$r['winner_name']." d. ".$r['loser_name']." by ".number_format($r['margin'],1)." (".number_format($r['home_points'],1)."-".number_format($r['away_points'],1).")\n";
             }
-        } else {
-            $prompt .= "No matchup data available for this week.\n\n";
+            $prompt .= "\n";
         }
 
-        $prompt .= "INSTRUCTIONS:\n";
-        $prompt .= "- Do not use external tools; all data you need is provided above.\n";
-        $prompt .= "- Never show IDs to represent players, teams, or anything else. Refer to rosters by the owner name.\n";
-        $prompt .= "Generate a comprehensive weekly summary that includes:\n";
-        $prompt .= "1. Overall league performance overview\n";
-        $prompt .= "2. Standout players and their key contributions\n";
-        $prompt .= "3. Notable upsets, close games, and blowouts\n";
-        $prompt .= "4. League trends and patterns emerging\n";
-        $prompt .= "5. Any unusual or interesting matchup outcomes\n\n";
+        if (!empty($derived['blowouts'])) {
+            $prompt .= "BIGGEST BLOWOUTS:\n";
+            foreach ($derived['blowouts'] as $r) {
+                $prompt .= "- ".$r['winner_name']." steamrolled ".$r['loser_name']." by ".number_format($r['margin'],1)."\n";
+            }
+            $prompt .= "\n";
+        }
 
-        $prompt .= "Format your response as a well-structured, engaging narrative that league members will enjoy reading. Use markdown formatting for readability.\n";
+        if (!empty($derived['close_games'])) {
+            $prompt .= "NAIL-BITERS:\n";
+            foreach ($derived['close_games'] as $r) {
+                $prompt .= "- ".$r['winner_name']." edged ".$r['loser_name']." by ".number_format($r['margin'],1)."\n";
+            }
+            $prompt .= "\n";
+        }
+
+        // Spotlight: Boom and Bust players
+        if (!empty($derived['boom'])) {
+            $prompt .= "BOOM OF THE WEEK (Players who went nuclear):\n";
+            foreach ($derived['boom'] as $p) {
+                $prompt .= "- ".$p['name']." (".($p['position'] ?? 'POS')." ".($p['team'] ?? '').") — ".number_format($p['pts'],1)." pts\n";
+            }
+            $prompt .= "\n";
+        }
+
+        if (!empty($derived['bust'])) {
+            $prompt .= "BUSTS OF THE WEEK (Ice-cold outings):\n";
+            foreach ($derived['bust'] as $p) {
+                $prompt .= "- ".$p['name']." (".($p['position'] ?? 'POS')." ".($p['team'] ?? '').") — ".number_format($p['pts'],1)." pts\n";
+            }
+            $prompt .= "\n";
+        }
+
+        // Breakout rookies
+        if (!empty($derived['rookies'])) {
+            $prompt .= "BREAKOUT ROOKIES:\n";
+            foreach ($derived['rookies'] as $p) {
+                $prompt .= "- ".$p['name']." (Rookie ".($p['position'] ?? 'POS')." ".($p['team'] ?? '').") — ".number_format($p['pts'],1)." pts\n";
+            }
+            $prompt .= "\n";
+        }
+
+        // Power Rankings
+        if (!empty($derived['power_rankings'])) {
+            $prompt .= "POWER RANKINGS (This Week's Heat Check):\n";
+            $rank = 1;
+            foreach ($derived['power_rankings'] as $t) {
+                $prompt .= $rank++.". ".$t['name']." — ".number_format((float) $t['points'],1)." pts\n";
+            }
+            $prompt .= "\n";
+        }
+
+        // Positional leaders
+        if (!empty($derived['positional_leaders'])) {
+            $prompt .= "TOP 5 BY POSITION:\n";
+            foreach ($derived['positional_leaders'] as $pos => $rows) {
+                if (empty($rows)) { continue; }
+                $prompt .= "- ".$pos.": ";
+                $prompt .= implode(', ', array_map(function($r) {
+                    return $r['name']." (".($r['team'] ?? '').") ".number_format((float) $r['pts'],1)."";
+                }, $rows));
+                $prompt .= "\n";
+            }
+            $prompt .= "\n";
+        }
+
+        // What to watch next week (ask model to speculate with provided context only)
+        $prompt .= "WHAT TO WATCH NEXT WEEK:\n";
+        $prompt .= "- Call out spicy upcoming storylines based on the above results (hot streaks, redemption arcs, rivalry fuel). Keep it fun, confident, and a little bro-y.\n\n";
+
+        $prompt .= "INSTRUCTIONS:\n";
+        $prompt .= "- Do not use external tools; all analysis must come from the provided data.\n";
+        $prompt .= "- Never show raw IDs. Refer to teams by owner names and players by their names.\n";
+        $prompt .= "- Keep tone: confident, playful, frat-boy podcast style — hype but not rude.\n";
+        $prompt .= "- Use concise sections with markdown headings and lists, and keep it tight.\n";
 
         return $prompt;
     }
