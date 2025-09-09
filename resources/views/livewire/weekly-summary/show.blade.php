@@ -289,7 +289,7 @@ new class extends Component {
 
         $prompt .= "Use the available tools to gather additional context about players, teams, and current NFL news that might be relevant to this week's fantasy performance.\n\n";
 
-        $prompt .= "Format your response as a well-structured, engaging narrative that league members will enjoy reading. Use markdown formatting for better readability.\n";
+        $prompt .= "Never show IDs to represent players, teams, or anything else. For rosters refer to the owner name. Format your response as a well-structured, engaging narrative that league members will enjoy reading. Use markdown formatting for better readability.\n";
 
         return $prompt;
     }
