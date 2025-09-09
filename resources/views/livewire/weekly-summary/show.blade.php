@@ -417,6 +417,68 @@ new class extends Component {
                 $posLeaders[$pos] = array_slice($rows, 0, 5);
             }
 
+            // Next week preview (matchups and projected totals)
+            $nextWeekData = null;
+            $nextWeekNumber = $this->week + 1;
+            if ($nextWeekNumber <= 18) {
+                try {
+                    $matchupsRawNext = app(FetchMatchups::class)->execute($this->leagueId, $nextWeekNumber);
+                    $byMatchupNext = [];
+                    foreach ($matchupsRawNext as $m) {
+                        if (!isset($m['matchup_id'])) { continue; }
+                        $byMatchupNext[$m['matchup_id']][] = $m;
+                    }
+                    $nextPairs = [];
+                    foreach ($byMatchupNext as $mid => $entries) {
+                        if (count($entries) >= 2) {
+                            $nextPairs[] = [
+                                'matchup_id' => (int) $mid,
+                                'home' => $entries[0],
+                                'away' => $entries[1],
+                            ];
+                        }
+                    }
+
+                    $nextEnriched = [];
+                    foreach ($nextPairs as $p) {
+                        $homeRid = (int) ($p['home']['roster_id'] ?? 0);
+                        $awayRid = (int) ($p['away']['roster_id'] ?? 0);
+
+                        $homeLu = $lineups[$homeRid] ?? ['starters' => [], 'bench' => []];
+                        $awayLu = $lineups[$awayRid] ?? ['starters' => [], 'bench' => []];
+
+                        $compute = app(ComputePlayerWeekPoints::class);
+                        $agg = app(AggregateTeamTotals::class);
+
+                        $homeStarterProj = $compute->execute($homeLu['starters'], $this->year, $nextWeekNumber);
+                        $awayStarterProj = $compute->execute($awayLu['starters'], $this->year, $nextWeekNumber);
+                        $homeTotalsProj = $agg->execute($homeStarterProj);
+                        $awayTotalsProj = $agg->execute($awayStarterProj);
+
+                        $nextEnriched[] = [
+                            'matchup_id' => (int) $p['matchup_id'],
+                            'home' => [
+                                'roster_id' => $homeRid,
+                                'owner_name' => $ownerName($homeRid),
+                                'projected_total' => $homeTotalsProj['total_estimated'] ?? 0.0,
+                            ],
+                            'away' => [
+                                'roster_id' => $awayRid,
+                                'owner_name' => $ownerName($awayRid),
+                                'projected_total' => $awayTotalsProj['total_estimated'] ?? 0.0,
+                            ],
+                        ];
+                    }
+
+                    $nextWeekData = [
+                        'week' => $nextWeekNumber,
+                        'matchups' => $nextEnriched,
+                    ];
+                } catch (\Throwable $e) {
+                    // ignore next week errors
+                }
+            }
+
             return [
                 'league' => [
                     'id' => $this->leagueId,
@@ -436,6 +498,7 @@ new class extends Component {
                     'power_rankings' => $powerRankings,
                     'positional_leaders' => $posLeaders,
                 ],
+                'next_week' => $nextWeekData,
             ];
         } catch (\Throwable $e) {
             $this->stream(to: 'output', content: "⚠️ Warning: Could not assemble league data: {$e->getMessage()}\n");
@@ -551,8 +614,20 @@ new class extends Component {
             $prompt .= "\n";
         }
 
-        // What to watch next week (ask model to speculate with provided context only)
-        $prompt .= "WHAT TO WATCH NEXT WEEK:\n";
+        // What to watch next week (deterministic list + storylines)
+        $next = $weeklyData['next_week'] ?? null;
+        if ($next && !empty($next['matchups'])) {
+            $prompt .= "WHAT TO WATCH NEXT WEEK (Week ".$next['week']."):\n";
+            foreach ($next['matchups'] as $nm) {
+                $homeName = $nm['home']['owner_name'] ?? ('Roster '.$nm['home']['roster_id']);
+                $awayName = $nm['away']['owner_name'] ?? ('Roster '.$nm['away']['roster_id']);
+                $hp = (float) ($nm['home']['projected_total'] ?? 0);
+                $ap = (float) ($nm['away']['projected_total'] ?? 0);
+                $prompt .= "- ".$homeName." vs ".$awayName." — projections: ".number_format($hp,1)." to ".number_format($ap,1)."\n";
+            }
+            $prompt .= "\n";
+        }
+        $prompt .= "BONUS STORYLINES:\n";
         $prompt .= "- Call out spicy upcoming storylines based on the above results (hot streaks, redemption arcs, rivalry fuel). Keep it fun, confident, and a little bro-y.\n\n";
 
         $prompt .= "INSTRUCTIONS:\n";
