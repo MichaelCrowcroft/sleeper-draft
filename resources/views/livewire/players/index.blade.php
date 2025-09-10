@@ -103,7 +103,7 @@ new class extends Component
             'position' => $this->position,
             'team' => $this->team,
             'sortBy' => $this->sortBy ?: 'adp',
-            'sortDirection' => $this->sortDirection ?: 'asc',
+            'sortDirection' => $this->sortDirection ?: 'desc',
             'league_id' => $this->selectedLeagueId ?: null,
             'fa_only' => (bool) $this->faOnly,
             'per_page' => 25,
