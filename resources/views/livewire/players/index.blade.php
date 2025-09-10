@@ -2,29 +2,35 @@
 
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
+use Livewire\Attributes\Url;
 use App\Actions\Matchups\DetermineCurrentWeek;
 use App\Actions\Sleeper\FetchUserLeagues;
-use App\Actions\Players\FetchTrending;
-use App\Actions\Players\FetchGlobalStats;
 use App\Actions\Players\FetchAvailablePositions;
 use App\Actions\Players\FetchAvailableTeams;
 use App\Actions\Players\BuildPlayersTable;
 
 new class extends Component
 {
-    public $search = '';
+    #[Url]
+    public ?string $search = '';
 
-    public $position = '';
+    #[Url]
+    public ?string $position = '';
 
-    public $team = '';
+    #[Url]
+    public ?string $team = '';
 
-    public $selectedLeagueId = '';
+    #[Url]
+    public ?string $selectedLeagueId = '';
 
-    public $faOnly = false;
+    #[Url]
+    public ?bool $faOnly = false;
 
-    public $sortBy = 'adp';
+    #[Url]
+    public ?string $sortBy = 'adp';
 
-    public $sortDirection = 'asc';
+    #[Url]
+    public ?string $sortDirection = 'asc';
 
     public $selectedMetrics = [
         // Core columns shown on this page
@@ -81,27 +87,6 @@ new class extends Component
 
     public function mount()
     {
-        $this->search = request('search', '');
-        $this->position = request('position', '');
-        $this->team = request('team', '');
-        $this->selectedLeagueId = request('league_id', '');
-        $this->faOnly = request()->boolean('fa_only');
-
-        if($this->position === '') {
-            $routeName = optional(request()->route())->getName();
-            $map = [
-                'players.qb' => 'QB',
-                'players.rb' => 'RB',
-                'players.wr' => 'WR',
-                'players.te' => 'TE',
-                'players.k' => 'K',
-                'players.def' => 'DEF',
-            ];
-            if ($routeName && isset($map[$routeName])) {
-                $this->position = $map[$routeName];
-            }
-        }
-
         // Auto-select first league if none selected and user is authenticated
         if (Auth::check() && !$this->selectedLeagueId) {
             $leagues = $this->getLeaguesProperty();
