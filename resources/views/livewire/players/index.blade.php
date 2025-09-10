@@ -160,9 +160,9 @@ new class extends Component
             <div class="hidden md:flex items-center gap-2"></div>
         </div>
 
-        @if ($this->week)
+        @if ($this->resolvedWeek)
             <flux:callout>
-                NFL Week {{ $this->week }}
+                NFL Week {{ $this->resolvedWeek }}
             </flux:callout>
         @endif
 
@@ -184,7 +184,7 @@ new class extends Component
                     <div>
                         <flux:select wire:model.live="position">
                             <flux:select.option value="">All Positions</flux:select.option>
-                            @foreach ($this->positions as $position)
+                            @foreach ($this->availablePositions as $position)
                                 <flux:select.option value="{{ $position }}">{{ $position }}</flux:select.option>
                             @endforeach
                         </flux:select>
@@ -194,7 +194,7 @@ new class extends Component
                     <div>
                         <flux:select wire:model.live="team">
                             <flux:select.option value="">All Teams</flux:select.option>
-                            @foreach ($this->teams as $team)
+                            @foreach ($this->availableTeams as $team)
                                 <flux:select.option value="{{ $team }}">{{ $team }}</flux:select.option>
                             @endforeach
                         </flux:select>
@@ -540,7 +540,7 @@ new class extends Component
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell :colspan="$this->getColspan()" align="center">
+                            <flux:table.cell :colspan="$this->colspan" align="center">
                                 <div class="py-8 text-muted-foreground">
                                     No players found matching your filters.
                                 </div>
