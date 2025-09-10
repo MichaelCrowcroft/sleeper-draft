@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
+use Livewire\Attributes\Url;
+use Livewire\Attributes\Computed;
 use App\Actions\Sleeper\DetermineCurrentWeek;
 use App\Actions\Sleeper\GetUserLeagues;
 use App\Actions\Players\FetchTrending;
@@ -13,19 +15,26 @@ use App\Actions\Players\BuildPlayersTable;
 
 new class extends Component
 {
-    public $search = '';
+    #[Url]
+    public ?string $search = '';
 
-    public $position = '';
+    #[Url]
+    public ?string $position = '';
 
-    public $team = '';
+    #[Url]
+    public ?string $team = '';
 
-    public $selectedLeagueId = '';
+    #[Url]
+    public ?string $selectedLeagueId = '';
 
-    public $faOnly = false;
+    #[Url]
+    public ?bool $faOnly = false;
 
-    public $sortBy = 'adp';
+    #[Url]
+    public ?string $sortBy = 'adp';
 
-    public $sortDirection = 'asc';
+    #[Url]
+    public ?string $sortDirection = 'asc';
 
     public $selectedMetrics = [
         'age' => true,
@@ -36,11 +45,9 @@ new class extends Component
         'target_share_2024' => true,
         'stddev_above' => true,
         'stddev_below' => true,
-        'proj_ppg_2025' => true,
         'owner' => true,
         'status' => true,
-        // Additional metrics (default off)
-        'proj_pts_week' => false,
+        'proj_pts_week' => true,
         'weekly_position_rank' => false,
         // 2025 projection averages (per-game)
         'rec' => false,
@@ -79,33 +86,13 @@ new class extends Component
 
     public function mount(ApplyPositionPreset $positionPreset)
     {
-        $this->search = request('search', '');
-        // Allow position from query or route param or route name
-        $this->position = request('position', request()->route('position', ''));
-        $this->team = request('team', '');
-        $this->selectedLeagueId = request('league_id', '');
-        $this->faOnly = request()->boolean('fa_only');
 
-        if($this->position === '') {
-            $routeName = optional(request()->route())->getName();
-            $map = [
-                'players.qb' => 'QB',
-                'players.rb' => 'RB',
-                'players.wr' => 'WR',
-                'players.te' => 'TE',
-                'players.k' => 'K',
-                'players.def' => 'DEF',
-            ];
-            if ($routeName && isset($map[$routeName])) {
-                $this->position = $map[$routeName];
-            }
-        }
 
         $this->selectedMetrics = $positionPreset->execute($this->position, $this->selectedMetrics);
 
         // Auto-select first league if none selected and user is authenticated
         if (Auth::check() && !$this->selectedLeagueId) {
-            $leagues = $this->getLeaguesProperty();
+            $leagues = $this->leagues;
             if (!empty($leagues)) {
                 $this->selectedLeagueId = $leagues[0]['league_id'] ?? '';
             }
@@ -122,31 +109,36 @@ new class extends Component
         }
     }
 
-    public function getIsReceivingPositionProperty(): bool
+    #[Computed]
+    public function isReceivingPosition(): bool
     {
         $pos = strtoupper((string) $this->position);
 
         return in_array($pos, ['WR', 'TE', 'RB'], true);
     }
 
-    public function getIsRushingPositionProperty(): bool
+    #[Computed]
+    public function isRushingPosition(): bool
     {
         $pos = strtoupper((string) $this->position);
 
         return in_array($pos, ['RB', 'QB'], true);
     }
 
-    public function getIsPassingPositionProperty(): bool
+    #[Computed]
+    public function isPassingPosition(): bool
     {
         return strtoupper((string) $this->position) === 'QB';
     }
 
-    public function getIsDefensePositionProperty(): bool
+    #[Computed]
+    public function isDefensePosition(): bool
     {
         return strtoupper((string) $this->position) === 'DEF';
     }
 
-    public function getPlayersProperty()
+    #[Computed]
+    public function players()
     {
         return app(BuildPlayersTable::class)->execute([
             'search' => $this->search,
@@ -160,32 +152,38 @@ new class extends Component
         ]);
     }
 
-    public function getTrendingPicksProperty()
+    #[Computed]
+    public function trendingPicks()
     {
         return app(FetchTrending::class)->execute('add', $this->position, 5);
     }
 
-    public function getTrendingDropsProperty()
+    #[Computed]
+    public function trendingDrops()
     {
         return app(FetchTrending::class)->execute('drop', $this->position, 5);
     }
 
-    public function getStatsProperty()
+    #[Computed]
+    public function stats()
     {
         return app(FetchGlobalStats::class)->execute();
     }
 
-    public function getAvailablePositionsProperty()
+    #[Computed]
+    public function availablePositions()
     {
         return app(AvailablePositions::class)->execute();
     }
 
-    public function getAvailableTeamsProperty()
+    #[Computed]
+    public function availableTeams()
     {
         return app(AvailableTeams::class)->execute();
     }
 
-    public function getLeaguesProperty()
+    #[Computed]
+    public function leagues(): array
     {
         if (!Auth::check()) {
             return [];
@@ -201,7 +199,8 @@ new class extends Component
 
     // roster ownership mapping handled by BuildPlayersTable action
 
-    public function getColspan()
+    #[Computed]
+    public function colspan(): int
     {
         // Base columns that are always shown: Player, Pos, Team, Actions
         $colspan = 4;
@@ -216,12 +215,12 @@ new class extends Component
         return $colspan;
     }
 
-    public function getResolvedWeekProperty()
+    #[Computed]
+    public function resolvedWeek(): ?int
     {
-            $state = app(DetermineCurrentWeek::class)->execute('nfl');
-            $w = isset($state['week']) ? (int) $state['week'] : null;
+        $state = (new DetermineCurrentWeek())->execute('nfl');
 
-            return ($w && $w >= 1 && $w <= 18) ? $w : null;
+        return $state['week'] ?? null;
     }
 }; ?>
 
@@ -442,10 +441,6 @@ new class extends Component
                             <span>-1σ PPG (2024)</span>
                         </label>
                         <label class="flex items-center gap-2 text-sm">
-                            <flux:switch wire:model.live="selectedMetrics.proj_ppg_2025" />
-                            <span>Proj PPG (2025)</span>
-                        </label>
-                        <label class="flex items-center gap-2 text-sm">
                             <flux:switch wire:model.live="selectedMetrics.owner" />
                             <span>Owner</span>
                         </label>
@@ -586,9 +581,6 @@ new class extends Component
                     @endif
                     @if($selectedMetrics['stddev_below'])
                     <flux:table.column>-1σ PPG (2024)</flux:table.column>
-                    @endif
-                    @if($selectedMetrics['proj_ppg_2025'])
-                    <flux:table.column>Proj PPG (2025)</flux:table.column>
                     @endif
                     @if($selectedMetrics['proj_pts_week'])
                     <flux:table.column>Proj Pts (This Week)</flux:table.column>
@@ -756,16 +748,6 @@ new class extends Component
                             </flux:table.cell>
                             @endif
 
-                            @if($selectedMetrics['proj_ppg_2025'])
-                            <flux:table.cell>
-                                @if (isset($player->season_2025_projections) && isset($player->season_2025_projections['average_points_per_game']) && $player->season_2025_projections['average_points_per_game'] > 0)
-                                    <span class="font-medium text-blue-600">{{ number_format($player->season_2025_projections['average_points_per_game'], 1) }}</span>
-                                @else
-                                    <span class="text-muted-foreground">-</span>
-                                @endif
-                            </flux:table.cell>
-                            @endif
-
                             @if($selectedMetrics['proj_pts_week'])
                             <flux:table.cell>
                                 @if (!is_null($player->proj_pts_week))
@@ -864,7 +846,7 @@ new class extends Component
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell :colspan="$this->getColspan()" align="center">
+                            <flux:table.cell :colspan="$this->colspan" align="center">
                                 <div class="py-8 text-muted-foreground">
                                     No players found matching your filters.
                                 </div>

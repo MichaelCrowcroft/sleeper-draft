@@ -113,19 +113,19 @@ new class extends Component
     #[Computed]
     public function availablePositions(): array
     {
-        return app(AvailablePositions::class)->execute();
+        return (new AvailablePositions())->execute();
     }
 
     #[Computed]
     public function availableTeams(): array
     {
-        return app(AvailableTeams::class)->execute();
+        return (new AvailableTeams())->execute();
     }
 
     #[Computed]
     public function leagues(): array
     {
-        return app(GetUserLeagues::class)->execute(
+        return (new GetUserLeagues())->execute(
             Auth::user()->sleeper_user_id, 'nfl', date('Y')
         );
     }
@@ -149,7 +149,7 @@ new class extends Component
     #[Computed]
     public function resolvedWeek(): ?int
     {
-        $state = app(DetermineCurrentWeek::class)->execute('nfl');
+        $state = (new DetermineCurrentWeek())->execute('nfl');
 
         return $state['week'] ?? null;
     }
