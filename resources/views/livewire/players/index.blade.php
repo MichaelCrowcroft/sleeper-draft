@@ -341,7 +341,6 @@ new class extends Component
                     @if($selectedMetrics['status'])
                     <flux:table.column>Status</flux:table.column>
                     @endif
-
                     @if($selectedMetrics['rec'])<flux:table.column>Rec</flux:table.column>@endif
                     @if($selectedMetrics['rec_tgt'])<flux:table.column>Tgt</flux:table.column>@endif
                     @if($selectedMetrics['rec_yd'])<flux:table.column>Rec Yds</flux:table.column>@endif

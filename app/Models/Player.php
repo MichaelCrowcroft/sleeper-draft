@@ -114,14 +114,14 @@ class Player extends Model
         return $query->orderBy('first_name', $dir)->orderBy('last_name', $dir);
     }
 
-        /**
+    /**
      * Scope: order by first and last name in one call.
      */
     public function scopeOrderByAdp(Builder $query, string $direction = 'asc'): Builder
     {
-        $dir = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+        $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
 
-        return $query->orderBy('adp', $dir);
+        return $query->orderByRaw("CASE WHEN 'adp' IS NULL THEN 1 ELSE 0 END, 'adp' {$direction}");
     }
 
     /**
