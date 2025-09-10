@@ -27,10 +27,56 @@ new class extends Component
     public $sortDirection = 'asc';
 
     public $selectedMetrics = [
+        // Core columns shown on this page
         'age' => true,
         'adp' => true,
         'owner' => true,
         'status' => true,
+
+        // Additional metrics referenced in the row cells (disabled by default on this page)
+        'avg_ppg_2024' => false,
+        'position_rank_2024' => false,
+        'snap_pct_2024' => false,
+        'target_share_2024' => false,
+        'stddev_above' => false,
+        'stddev_below' => false,
+        'proj_ppg_2025' => false,
+        'proj_pts_week' => false,
+        'weekly_position_rank' => false,
+
+        // 2025 projection averages (per-game) keys
+        'rec' => false,
+        'rec_0_4' => false,
+        'rec_5_9' => false,
+        'rec_10_19' => false,
+        'rec_20_29' => false,
+        'rec_30_39' => false,
+        'rec_40p' => false,
+        'rec_2pt' => false,
+        'rec_fd' => false,
+        'rec_td' => false,
+        'rec_tgt' => false,
+        'rec_yd' => false,
+        'rush_40p' => false,
+        'rush_att' => false,
+        'rush_fd' => false,
+        'rush_td' => false,
+        'rush_yd' => false,
+        'pass_2pt' => false,
+        'pass_att' => false,
+        'pass_cmp' => false,
+        'pass_cmp_40p' => false,
+        'pass_fd' => false,
+        'pass_inc' => false,
+        'pass_int' => false,
+        'pass_int_td' => false,
+        'pass_sack' => false,
+        'pass_td' => false,
+        'pass_yd' => false,
+        'cmp_pct' => false,
+        'def_fum_td' => false,
+        'fum' => false,
+        'fum_lost' => false,
     ];
 
     public function mount()
@@ -75,8 +121,6 @@ new class extends Component
         }
     }
 
-    // Position helpers are not needed on generic index
-
     public function getPlayersProperty()
     {
         return app(BuildPlayersTable::class)->execute([
@@ -89,21 +133,6 @@ new class extends Component
             'fa_only' => (bool) $this->faOnly,
             'per_page' => 25,
         ]);
-    }
-
-    public function getTrendingPicksProperty()
-    {
-        return app(FetchTrending::class)->execute('add', $this->position, 5);
-    }
-
-    public function getTrendingDropsProperty()
-    {
-        return app(FetchTrending::class)->execute('drop', $this->position, 5);
-    }
-
-    public function getStatsProperty()
-    {
-        return app(FetchGlobalStats::class)->execute();
     }
 
     public function getAvailablePositionsProperty()
@@ -171,72 +200,6 @@ new class extends Component
                 NFL Week {{ $this->resolvedWeek }}
             </flux:callout>
         @endif
-
-        <!-- Trending Section -->
-        <div class="grid gap-4 md:grid-cols-2">
-            <flux:callout>
-                <div class="space-y-4">
-                    <flux:heading size="md" class="text-green-600">🔥 Trending Up</flux:heading>
-                    <div class="space-y-2">
-                        @forelse ($this->trendingPicks as $player)
-                            <div class="flex justify-between items-center p-2 bg-green-50 rounded">
-                                <span class="font-medium">{{ $player['first_name'] }} {{ $player['last_name'] }}</span>
-                                <flux:badge variant="secondary" color="green">+{{ $player['trend_count'] ?? 0 }}</flux:badge>
-                            </div>
-                        @empty
-                            <p class="text-muted-foreground">No trending picks available</p>
-                        @endforelse
-                    </div>
-                </div>
-            </flux:callout>
-
-            <flux:callout>
-                <div class="space-y-4">
-                    <flux:heading size="md" class="text-red-600">📉 Trending Down</flux:heading>
-                    <div class="space-y-2">
-                        @forelse ($this->trendingDrops as $player)
-                            <div class="flex justify-between items-center p-2 bg-red-50 rounded">
-                                <span class="font-medium">{{ $player['first_name'] }} {{ $player['last_name'] }}</span>
-                                <flux:badge variant="secondary" color="red">-{{ $player['trend_count'] ?? 0 }}</flux:badge>
-                            </div>
-                        @empty
-                            <p class="text-muted-foreground">No trending drops available</p>
-                        @endforelse
-                    </div>
-                </div>
-            </flux:callout>
-        </div>
-
-        <!-- Summary Statistics -->
-        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <flux:callout>
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-green-600">{{ number_format($this->stats['total_players']) }}</div>
-                    <div class="text-sm text-muted-foreground">Total Players</div>
-                </div>
-            </flux:callout>
-
-            <flux:callout>
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-orange-600">{{ $this->stats['injured_players'] }}</div>
-                    <div class="text-sm text-muted-foreground">Injured Players</div>
-                </div>
-            </flux:callout>
-
-            <flux:callout>
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-blue-600">{{ count($this->stats['players_by_position']) }}</div>
-                    <div class="text-sm text-muted-foreground">Positions</div>
-                </div>
-            </flux:callout>
-
-            <flux:callout>
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-green-600">{{ count($this->stats['players_by_team']) }}</div>
-                    <div class="text-sm text-muted-foreground">Teams</div>
-                </div>
-            </flux:callout>
-        </div>
 
         <!-- Player Filters -->
         <flux:callout>
