@@ -1,7 +1,7 @@
 <?php
 
 use App\Actions\Matchups\AssembleMatchupViewModel;
-use App\Actions\Matchups\DetermineCurrentWeek;
+use App\Actions\Sleeper\DetermineCurrentWeek;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;

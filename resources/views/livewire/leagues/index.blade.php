@@ -1,7 +1,7 @@
 <?php
 
-use App\Actions\Matchups\DetermineCurrentWeek;
-use App\Actions\Sleeper\FetchUserLeagues;
+// use App\Actions\Sleeper\DetermineCurrentWeek; // not used here
+use App\Actions\Sleeper\GetUserLeagues;
 use App\Models\User;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Auth;
@@ -15,7 +15,7 @@ new class extends Component
         $user = Auth::user();
 
         if($user->sleeper_user_id) {
-            $this->leagues = app(FetchUserLeagues::class)
+            $this->leagues = app(GetUserLeagues::class)
                 ->execute($user->sleeper_user_id, 'nfl', '2025');
         } else {
             $this->leagues = [];

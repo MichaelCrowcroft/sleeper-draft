@@ -2,7 +2,7 @@
 
 namespace App\MCP\Support;
 
-use App\Actions\Matchups\DetermineCurrentWeek;
+use App\Actions\Sleeper\DetermineCurrentWeek;
 use Illuminate\Support\Facades\Validator;
 use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;

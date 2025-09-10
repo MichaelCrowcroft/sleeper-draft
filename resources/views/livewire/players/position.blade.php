@@ -2,12 +2,12 @@
 
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
-use App\Actions\Matchups\DetermineCurrentWeek;
-use App\Actions\Sleeper\FetchUserLeagues;
+use App\Actions\Sleeper\DetermineCurrentWeek;
+use App\Actions\Sleeper\GetUserLeagues;
 use App\Actions\Players\FetchTrending;
 use App\Actions\Players\FetchGlobalStats;
-use App\Actions\Players\FetchAvailablePositions;
-use App\Actions\Players\FetchAvailableTeams;
+use App\Actions\Players\AvailablePositions;
+use App\Actions\Players\AvailableTeams;
 use App\Actions\Players\ApplyPositionPreset;
 use App\Actions\Players\BuildPlayersTable;
 
@@ -177,12 +177,12 @@ new class extends Component
 
     public function getAvailablePositionsProperty()
     {
-        return app(FetchAvailablePositions::class)->execute();
+        return app(AvailablePositions::class)->execute();
     }
 
     public function getAvailableTeamsProperty()
     {
-        return app(FetchAvailableTeams::class)->execute();
+        return app(AvailableTeams::class)->execute();
     }
 
     public function getLeaguesProperty()
@@ -191,16 +191,12 @@ new class extends Component
             return [];
         }
 
-        try {
-            $userIdentifier = Auth::user()->sleeper_user_id;
-            if (!$userIdentifier) {
-                return [];
-            }
-
-            return app(FetchUserLeagues::class)->execute($userIdentifier, 'nfl', (int) date('Y')) ?? [];
-        } catch (\Throwable $e) {
+        $userIdentifier = Auth::user()->sleeper_user_id;
+        if (!$userIdentifier) {
             return [];
         }
+
+        return app(GetUserLeagues::class)->execute($userIdentifier, 'nfl', (int) date('Y')) ?? [];
     }
 
     // roster ownership mapping handled by BuildPlayersTable action

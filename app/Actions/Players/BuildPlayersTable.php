@@ -2,7 +2,7 @@
 
 namespace App\Actions\Players;
 
-use App\Actions\Matchups\DetermineCurrentWeek;
+use App\Actions\Sleeper\DetermineCurrentWeek;
 use App\Actions\Sleeper\BuildLeagueRosterOwnerMap;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 

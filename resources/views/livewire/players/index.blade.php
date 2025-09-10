@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Url;
+use Livewire\Attributes\Computed;
 use App\Actions\Sleeper\DetermineCurrentWeek;
 use App\Actions\Players\AvailablePositions;
 use App\Actions\Players\AvailableTeams;
@@ -40,14 +41,13 @@ new class extends Component
         'status' => true,
 
         // Additional metrics referenced in the row cells (disabled by default on this page)
-        'avg_ppg_2024' => false,
-        'position_rank_2024' => false,
-        'snap_pct_2024' => false,
-        'target_share_2024' => false,
-        'stddev_above' => false,
-        'stddev_below' => false,
-        'proj_ppg_2025' => false,
-        'proj_pts_week' => false,
+        'avg_ppg_2024' => true,
+        'position_rank_2024' => true,
+        'snap_pct_2024' => true,
+        'target_share_2024' => true,
+        'stddev_above' => true,
+        'stddev_below' => true,
+        'proj_pts_week' => true,
         'weekly_position_rank' => false,
 
         // 2025 projection averages (per-game) keys
@@ -95,7 +95,8 @@ new class extends Component
         }
     }
 
-    public function getPlayersProperty(BuildPlayersTable $buildPlayersTable)
+    #[Computed]
+    public function players(BuildPlayersTable $buildPlayersTable)
     {
         return $buildPlayersTable->execute([
             'search' => $this->search,
@@ -109,24 +110,28 @@ new class extends Component
         ]);
     }
 
-    public function getAvailablePositionsProperty(AvailablePositions $availablePositions)
+    #[Computed]
+    public function availablePositions(AvailablePositions $availablePositions)
     {
         return $availablePositions->execute();
     }
 
-    public function getAvailableTeamsProperty(AvailableTeams $availableTeams)
+    #[Computed]
+    public function availableTeams(AvailableTeams $availableTeams)
     {
         return $availableTeams->execute();
     }
 
-    public function getLeaguesProperty(GetUserLeagues $getUserLeagues)
+    #[Computed]
+    public function leagues(GetUserLeagues $getUserLeagues)
     {
         return $getUserLeagues->execute(
             Auth::user()->sleeper_user_id, 'nfl', date('Y')
         );
     }
 
-    public function getColspan()
+    #[Computed]
+    public function colspan()
     {
         $count = 4; // Player, Pos, Team, Actions
         $count += $this->selectedMetrics['age'] ? 1 : 0;
@@ -136,12 +141,12 @@ new class extends Component
         return $count;
     }
 
-    public function getResolvedWeekProperty(DetermineCurrentWeek $determineCurrentWeek)
+    #[Computed]
+    public function resolvedWeek(DetermineCurrentWeek $determineCurrentWeek)
     {
         $state = $determineCurrentWeek->execute('nfl');
-        $week = isset($state['week']) ? (int) $state['week'] : null;
 
-        return ($week && $week >= 1 && $week <= 18) ? $week : null;
+        return $state['week'] ?? null;
     }
 }; ?>
 
@@ -155,9 +160,9 @@ new class extends Component
             <div class="hidden md:flex items-center gap-2"></div>
         </div>
 
-        @if ($this->resolvedWeek)
+        @if ($this->week)
             <flux:callout>
-                NFL Week {{ $this->resolvedWeek }}
+                NFL Week {{ $this->week }}
             </flux:callout>
         @endif
 
@@ -179,8 +184,8 @@ new class extends Component
                     <div>
                         <flux:select wire:model.live="position">
                             <flux:select.option value="">All Positions</flux:select.option>
-                            @foreach ($this->availablePositions as $pos)
-                                <flux:select.option value="{{ $pos }}">{{ $pos }}</flux:select.option>
+                            @foreach ($this->positions as $position)
+                                <flux:select.option value="{{ $position }}">{{ $position }}</flux:select.option>
                             @endforeach
                         </flux:select>
                     </div>
@@ -189,8 +194,8 @@ new class extends Component
                     <div>
                         <flux:select wire:model.live="team">
                             <flux:select.option value="">All Teams</flux:select.option>
-                            @foreach ($this->availableTeams as $teamCode)
-                                <flux:select.option value="{{ $teamCode }}">{{ $teamCode }}</flux:select.option>
+                            @foreach ($this->teams as $team)
+                                <flux:select.option value="{{ $team }}">{{ $team }}</flux:select.option>
                             @endforeach
                         </flux:select>
                     </div>

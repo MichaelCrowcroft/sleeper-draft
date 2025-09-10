@@ -2,7 +2,7 @@
 
 namespace App\Actions\Players;
 
-use App\Actions\Matchups\DetermineCurrentWeek;
+use App\Actions\Sleeper\DetermineCurrentWeek;
 use App\Actions\Sleeper\BuildPlayerLeagueTeamMap;
 use App\Http\Resources\PlayerResource;
 use App\Models\Player;

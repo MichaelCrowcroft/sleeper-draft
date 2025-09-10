@@ -6,7 +6,7 @@ use App\Actions\Matchups\AggregateTeamTotals;
 use App\Actions\Matchups\AssembleMatchupViewModel;
 use App\Actions\Matchups\BuildLineupsFromRosters;
 use App\Actions\Matchups\ComputePlayerWeekPoints;
-use App\Actions\Matchups\DetermineCurrentWeek;
+use App\Actions\Sleeper\DetermineCurrentWeek;
 use App\Actions\Sleeper\FetchLeague;
 use App\Actions\Sleeper\FetchLeagueUsers;
 use App\Actions\Sleeper\FetchMatchups;
