@@ -432,16 +432,6 @@ new class extends Component
                             </flux:table.cell>
                             @endif
 
-                            @if($selectedMetrics['proj_ppg_2025'])
-                            <flux:table.cell>
-                                @if (isset($player->season_2025_projections) && isset($player->season_2025_projections['average_points_per_game']) && $player->season_2025_projections['average_points_per_game'] > 0)
-                                    <span class="font-medium text-blue-600">{{ number_format($player->season_2025_projections['average_points_per_game'], 1) }}</span>
-                                @else
-                                    <span class="text-muted-foreground">-</span>
-                                @endif
-                            </flux:table.cell>
-                            @endif
-
                             @if($selectedMetrics['proj_pts_week'])
                             <flux:table.cell>
                                 @if (!is_null($player->proj_pts_week))
