@@ -3,10 +3,10 @@
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Url;
-use App\Actions\Matchups\DetermineCurrentWeek;
-use App\Actions\Sleeper\FetchUserLeagues;
-use App\Actions\Players\FetchAvailablePositions;
-use App\Actions\Players\FetchAvailableTeams;
+use App\Actions\Sleeper\DetermineCurrentWeek;
+use App\Actions\Players\AvailablePositions;
+use App\Actions\Players\AvailableTeams;
+use App\Actions\Sleeper\GetUserLeagues;
 use App\Actions\Players\BuildPlayersTable;
 
 new class extends Component
@@ -85,17 +85,6 @@ new class extends Component
         'fum_lost' => false,
     ];
 
-    public function mount()
-    {
-        // Auto-select first league if none selected and user is authenticated
-        if (Auth::check() && !$this->selectedLeagueId) {
-            $leagues = $this->getLeaguesProperty();
-            if (!empty($leagues)) {
-                $this->selectedLeagueId = $leagues[0]['league_id'] ?? '';
-            }
-        }
-    }
-
     public function sort($column)
     {
         if ($this->sortBy === $column) {
@@ -106,9 +95,9 @@ new class extends Component
         }
     }
 
-    public function getPlayersProperty()
+    public function getPlayersProperty(BuildPlayersTable $buildPlayersTable)
     {
-        return app(BuildPlayersTable::class)->execute([
+        return $buildPlayersTable->execute([
             'search' => $this->search,
             'position' => $this->position,
             'team' => $this->team,
@@ -120,39 +109,25 @@ new class extends Component
         ]);
     }
 
-    public function getAvailablePositionsProperty()
+    public function getAvailablePositionsProperty(AvailablePositions $availablePositions)
     {
-        return app(FetchAvailablePositions::class)->execute();
+        return $availablePositions->execute();
     }
 
-    public function getAvailableTeamsProperty()
+    public function getAvailableTeamsProperty(AvailableTeams $availableTeams)
     {
-        return app(FetchAvailableTeams::class)->execute();
+        return $availableTeams->execute();
     }
 
-    public function getLeaguesProperty()
+    public function getLeaguesProperty(GetUserLeagues $getUserLeagues)
     {
-        if (!Auth::check()) {
-            return [];
-        }
-
-        try {
-            $userIdentifier = Auth::user()->sleeper_user_id;
-            if (!$userIdentifier) {
-                return [];
-            }
-
-            return app(FetchUserLeagues::class)->execute($userIdentifier, 'nfl', (int) date('Y')) ?? [];
-        } catch (\Throwable $e) {
-            return [];
-        }
+        return $getUserLeagues->execute(
+            Auth::user()->sleeper_user_id, 'nfl', date('Y')
+        );
     }
-
-    // roster ownership mapping handled by BuildPlayersTable action
 
     public function getColspan()
     {
-        // Base columns always shown: Player, Pos, Team, Age?, ADP?, Owner?, Status?, Actions
         $count = 4; // Player, Pos, Team, Actions
         $count += $this->selectedMetrics['age'] ? 1 : 0;
         $count += $this->selectedMetrics['adp'] ? 1 : 0;
@@ -161,12 +136,12 @@ new class extends Component
         return $count;
     }
 
-    public function getResolvedWeekProperty()
+    public function getResolvedWeekProperty(DetermineCurrentWeek $determineCurrentWeek)
     {
-            $state = app(DetermineCurrentWeek::class)->execute('nfl');
-            $w = isset($state['week']) ? (int) $state['week'] : null;
+        $state = $determineCurrentWeek->execute('nfl');
+        $week = isset($state['week']) ? (int) $state['week'] : null;
 
-            return ($w && $w >= 1 && $w <= 18) ? $w : null;
+        return ($week && $week >= 1 && $week <= 18) ? $week : null;
     }
 }; ?>
 

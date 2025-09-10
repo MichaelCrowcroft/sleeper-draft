@@ -3,10 +3,9 @@
 namespace App\Actions\Sleeper;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 
-class FetchUserLeagues
+class GetUserLeagues
 {
     public function execute(string $userId, string $sport = 'nfl', ?int $season = 2025): array
     {
