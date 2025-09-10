@@ -133,12 +133,17 @@ new class extends Component
     #[Computed]
     public function colspan(): int
     {
-        $count = 4; // Player, Pos, Team, Actions
-        $count += $this->selectedMetrics['age'] ? 1 : 0;
-        $count += $this->selectedMetrics['adp'] ? 1 : 0;
-        $count += $this->selectedMetrics['owner'] ? 1 : 0;
-        $count += $this->selectedMetrics['status'] ? 1 : 0;
-        return $count;
+        // Base columns that are always shown: Player, Pos, Team, Actions
+        $colspan = 4;
+
+        // Count all enabled metric columns
+        foreach ($this->selectedMetrics as $enabled) {
+            if ($enabled === true) {
+                $colspan++;
+            }
+        }
+
+        return $colspan;
     }
 
     #[Computed]
@@ -306,12 +311,72 @@ new class extends Component
                         ADP
                     </flux:table.column>
                     @endif
+                    @if($selectedMetrics['avg_ppg_2024'])
+                    <flux:table.column>Avg PPG (2024)</flux:table.column>
+                    @endif
+                    @if($selectedMetrics['position_rank_2024'])
+                    <flux:table.column>Pos Rank (2024)</flux:table.column>
+                    @endif
+                    @if($selectedMetrics['snap_pct_2024'])
+                    <flux:table.column>Avg Snap % (2024)</flux:table.column>
+                    @endif
+                    @if($selectedMetrics['target_share_2024'])
+                    <flux:table.column>Avg Target % (2024)</flux:table.column>
+                    @endif
+                    @if($selectedMetrics['stddev_above'])
+                    <flux:table.column>+1σ PPG (2024)</flux:table.column>
+                    @endif
+                    @if($selectedMetrics['stddev_below'])
+                    <flux:table.column>-1σ PPG (2024)</flux:table.column>
+                    @endif
+                    @if($selectedMetrics['proj_pts_week'])
+                    <flux:table.column>Proj Pts (This Week)</flux:table.column>
+                    @endif
+                    @if($selectedMetrics['weekly_position_rank'])
+                    <flux:table.column>Weekly Pos Rank</flux:table.column>
+                    @endif
                     @if($selectedMetrics['owner'])
                     <flux:table.column>Owner</flux:table.column>
                     @endif
                     @if($selectedMetrics['status'])
                     <flux:table.column>Status</flux:table.column>
                     @endif
+
+                    @if($selectedMetrics['rec'])<flux:table.column>Rec</flux:table.column>@endif
+                    @if($selectedMetrics['rec_tgt'])<flux:table.column>Tgt</flux:table.column>@endif
+                    @if($selectedMetrics['rec_yd'])<flux:table.column>Rec Yds</flux:table.column>@endif
+                    @if($selectedMetrics['rec_td'])<flux:table.column>Rec TD</flux:table.column>@endif
+                    @if($selectedMetrics['rec_fd'])<flux:table.column>Rec 1D</flux:table.column>@endif
+                    @if($selectedMetrics['rec_2pt'])<flux:table.column>Rec 2pt</flux:table.column>@endif
+                    @if($selectedMetrics['rec_0_4'])<flux:table.column>Rec 0–4</flux:table.column>@endif
+                    @if($selectedMetrics['rec_5_9'])<flux:table.column>Rec 5–9</flux:table.column>@endif
+                    @if($selectedMetrics['rec_10_19'])<flux:table.column>Rec 10–19</flux:table.column>@endif
+                    @if($selectedMetrics['rec_20_29'])<flux:table.column>Rec 20–29</flux:table.column>@endif
+                    @if($selectedMetrics['rec_30_39'])<flux:table.column>Rec 30–39</flux:table.column>@endif
+                    @if($selectedMetrics['rec_40p'])<flux:table.column>Rec 40+</flux:table.column>@endif
+
+                    @if($selectedMetrics['rush_att'])<flux:table.column>Rush Att</flux:table.column>@endif
+                    @if($selectedMetrics['rush_yd'])<flux:table.column>Rush Yds</flux:table.column>@endif
+                    @if($selectedMetrics['rush_td'])<flux:table.column>Rush TD</flux:table.column>@endif
+                    @if($selectedMetrics['rush_fd'])<flux:table.column>Rush 1D</flux:table.column>@endif
+                    @if($selectedMetrics['rush_40p'])<flux:table.column>Rush 40+</flux:table.column>@endif
+
+                    @if($selectedMetrics['pass_att'])<flux:table.column>Pass Att</flux:table.column>@endif
+                    @if($selectedMetrics['pass_cmp'])<flux:table.column>Pass Cmp</flux:table.column>@endif
+                    @if($selectedMetrics['pass_yd'])<flux:table.column>Pass Yds</flux:table.column>@endif
+                    @if($selectedMetrics['pass_td'])<flux:table.column>Pass TD</flux:table.column>@endif
+                    @if($selectedMetrics['pass_int'])<flux:table.column>INT</flux:table.column>@endif
+                    @if($selectedMetrics['pass_inc'])<flux:table.column>INC</flux:table.column>@endif
+                    @if($selectedMetrics['pass_sack'])<flux:table.column>Sack</flux:table.column>@endif
+                    @if($selectedMetrics['pass_fd'])<flux:table.column>Pass 1D</flux:table.column>@endif
+                    @if($selectedMetrics['pass_cmp_40p'])<flux:table.column>Cmp 40+</flux:table.column>@endif
+                    @if($selectedMetrics['pass_2pt'])<flux:table.column>Pass 2pt</flux:table.column>@endif
+                    @if($selectedMetrics['pass_int_td'])<flux:table.column>Pick Six</flux:table.column>@endif
+
+                    @if($selectedMetrics['cmp_pct'])<flux:table.column>Cmp %</flux:table.column>@endif
+                    @if($selectedMetrics['def_fum_td'])<flux:table.column>DEF Fum TD</flux:table.column>@endif
+                    @if($selectedMetrics['fum'])<flux:table.column>Fum</flux:table.column>@endif
+                    @if($selectedMetrics['fum_lost'])<flux:table.column>Fum Lost</flux:table.column>@endif
 
                     <flux:table.column>Actions</flux:table.column>
                 </flux:table.columns>
