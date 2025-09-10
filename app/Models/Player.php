@@ -115,13 +115,15 @@ class Player extends Model
     }
 
     /**
-     * Scope: order by first and last name in one call.
+     * Scope: order by ADP with NULLs always last.
      */
     public function scopeOrderByAdp(Builder $query, string $direction = 'asc'): Builder
     {
         $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
 
-        return $query->orderByRaw("CASE WHEN 'adp' IS NULL THEN 1 ELSE 0 END, 'adp' {$direction}");
+        return $query
+            ->orderByRaw('CASE WHEN adp IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('adp', $direction);
     }
 
     /**
