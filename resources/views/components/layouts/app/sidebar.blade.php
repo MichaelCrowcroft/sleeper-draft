@@ -17,16 +17,7 @@
                     <flux:navlist.item icon="squares-2x2" :href="route('leagues.index')" :current="request()->routeIs('leagues.index')" wire:navigate>{{ __('Leagues') }}</flux:navlist.item>
                     <flux:navlist.item icon="arrows-right-left" :href="route('trade-evaluator.index')" :current="request()->routeIs('trade-evaluator.index')" wire:navigate>{{ __('Trade Evaluator') }}</flux:navlist.item>
                     <flux:navlist.item icon="chat-bubble-left-ellipsis" :href="route('chat')" :current="request()->routeIs('chat')" wire:navigate>{{ __('AI Commissioner') }}</flux:navlist.item>
-
-                    <flux:navlist.group :heading="__('Player Database')" expandable>
-                        <flux:navlist.item icon="user-group" :href="route('players.index')" :current="request()->routeIs('players.index')" wire:navigate>{{ __('All Players') }}</flux:navlist.item>
-                        <flux:navlist.item :href="route('players.qb')" :current="request()->routeIs('players.qb')" wire:navigate icon="user">{{ __('Quarterbacks') }}</flux:navlist.item>
-                        <flux:navlist.item :href="route('players.rb')" :current="request()->routeIs('players.rb')" wire:navigate icon="user">{{ __('Running Backs') }}</flux:navlist.item>
-                        <flux:navlist.item :href="route('players.wr')" :current="request()->routeIs('players.wr')" wire:navigate icon="user">{{ __('Wide Receivers') }}</flux:navlist.item>
-                        <flux:navlist.item :href="route('players.te')" :current="request()->routeIs('players.te')" wire:navigate icon="user">{{ __('Tight Ends') }}</flux:navlist.item>
-                        <flux:navlist.item :href="route('players.def')" :current="request()->routeIs('players.def')" wire:navigate icon="user">{{ __('Defenses') }}</flux:navlist.item>
-                        <flux:navlist.item :href="route('players.k')" :current="request()->routeIs('players.k')" wire:navigate icon="user">{{ __('Kickers') }}</flux:navlist.item>
-                    </flux:navlist.group>
+                    <flux:navlist.item icon="user-group" :href="route('players.index')" :current="request()->routeIs('players.index')" wire:navigate>{{ __('All Players') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 
