@@ -96,9 +96,9 @@ new class extends Component
     }
 
     #[Computed]
-    public function players(BuildPlayersTable $buildPlayersTable)
+    public function players()
     {
-        return $buildPlayersTable->execute([
+        return app(BuildPlayersTable::class)->execute([
             'search' => $this->search,
             'position' => $this->position,
             'team' => $this->team,
@@ -111,27 +111,27 @@ new class extends Component
     }
 
     #[Computed]
-    public function availablePositions(AvailablePositions $availablePositions)
+    public function availablePositions(): array
     {
-        return $availablePositions->execute();
+        return app(AvailablePositions::class)->execute();
     }
 
     #[Computed]
-    public function availableTeams(AvailableTeams $availableTeams)
+    public function availableTeams(): array
     {
-        return $availableTeams->execute();
+        return app(AvailableTeams::class)->execute();
     }
 
     #[Computed]
-    public function leagues(GetUserLeagues $getUserLeagues)
+    public function leagues(): array
     {
-        return $getUserLeagues->execute(
+        return app(GetUserLeagues::class)->execute(
             Auth::user()->sleeper_user_id, 'nfl', date('Y')
         );
     }
 
     #[Computed]
-    public function colspan()
+    public function colspan(): int
     {
         $count = 4; // Player, Pos, Team, Actions
         $count += $this->selectedMetrics['age'] ? 1 : 0;
@@ -142,9 +142,9 @@ new class extends Component
     }
 
     #[Computed]
-    public function resolvedWeek(DetermineCurrentWeek $determineCurrentWeek)
+    public function resolvedWeek(): ?int
     {
-        $state = $determineCurrentWeek->execute('nfl');
+        $state = app(DetermineCurrentWeek::class)->execute('nfl');
 
         return $state['week'] ?? null;
     }
