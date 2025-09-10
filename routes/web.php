@@ -26,12 +26,13 @@ Route::middleware(['auth'])->group(function () {
 
     // Players section
     Volt::route('players', 'players.index')->name('players.index');
-    Volt::route('players/qb', 'players.qb')->name('players.qb');
-    Volt::route('players/rb', 'players.rb')->name('players.rb');
-    Volt::route('players/wr', 'players.wr')->name('players.wr');
-    Volt::route('players/te', 'players.te')->name('players.te');
-    Volt::route('players/def', 'players.def')->name('players.def');
-    Volt::route('players/k', 'players.k')->name('players.k');
+    Volt::route('players/pos/{position}', 'players.position')->name('players.byPosition');
+    Volt::route('players/qb', 'players.position')->name('players.qb');
+    Volt::route('players/rb', 'players.position')->name('players.rb');
+    Volt::route('players/wr', 'players.position')->name('players.wr');
+    Volt::route('players/te', 'players.position')->name('players.te');
+    Volt::route('players/def', 'players.position')->name('players.def');
+    Volt::route('players/k', 'players.position')->name('players.k');
     Volt::route('players/{playerId}', 'players.show')->name('players.show');
     Volt::route('players/{playerId}/2024', 'players.2024')->name('players.show.2024');
 

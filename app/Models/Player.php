@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -32,6 +33,96 @@ class Player extends Model
         'adp_stdev' => 'float',
         'bye_week' => 'integer',
     ];
+
+    /**
+     * Scope: only active players.
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('active', true);
+    }
+
+    /**
+     * Scope: filter by single position (case-insensitive) when provided.
+     */
+    public function scopePosition(Builder $query, ?string $position): Builder
+    {
+        $pos = strtoupper((string) ($position ?? ''));
+
+        return $pos !== ''
+            ? $query->where('position', $pos)
+            : $query;
+    }
+
+    /**
+     * Scope: filter by team (case-insensitive) when provided.
+     */
+    public function scopeTeam(Builder $query, ?string $team): Builder
+    {
+        $tm = strtoupper((string) ($team ?? ''));
+
+        return $tm !== ''
+            ? $query->where('team', $tm)
+            : $query;
+    }
+
+    /**
+     * Scope: search by name fields when term provided.
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        $search = (string) ($term ?? '');
+        if ($search === '') {
+            return $query;
+        }
+
+        return $query->where(function ($sub) use ($search) {
+            $sub->where('first_name', 'like', '%'.$search.'%')
+                ->orWhere('last_name', 'like', '%'.$search.'%')
+                ->orWhere('full_name', 'like', '%'.$search.'%')
+                ->orWhere('search_full_name', 'like', '%'.strtolower($search).'%');
+        });
+    }
+
+    /**
+     * Scope: exclude players by their external player_id values.
+     *
+     * @param  array<int, string|int>  $ids
+     */
+    public function scopeExcludePlayerIds(Builder $query, array $ids): Builder
+    {
+        return ! empty($ids)
+            ? $query->whereNotIn('player_id', $ids)
+            : $query;
+    }
+
+    /**
+     * Scope: restrict to standard fantasy playable positions.
+     */
+    public function scopePlayablePositions(Builder $query): Builder
+    {
+        return $query->whereIn('position', ['QB', 'RB', 'WR', 'TE', 'K', 'DEF']);
+    }
+
+    /**
+     * Scope: order by first and last name in one call.
+     */
+    public function scopeOrderByName(Builder $query, string $direction = 'asc'): Builder
+    {
+        $dir = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+
+        return $query->orderBy('first_name', $dir)->orderBy('last_name', $dir);
+    }
+
+        /**
+     * Scope: order by first and last name in one call.
+     */
+    public function scopeOrderByAdp(Builder $query, string $direction = 'asc'): Builder
+    {
+        $dir = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+
+        return $query->orderBy('adp', $dir);
+    }
 
     /**
      * Get the player's stats for each week.
@@ -693,9 +784,15 @@ class Player extends Model
             $bustCount = 0;
 
             foreach ($points as $point) {
-                if ($point >= $thresholds['startable']) $startableCount++;
-                if ($point >= $thresholds['boom']) $boomCount++;
-                if ($point < $thresholds['bust']) $bustCount++;
+                if ($point >= $thresholds['startable']) {
+                    $startableCount++;
+                }
+                if ($point >= $thresholds['boom']) {
+                    $boomCount++;
+                }
+                if ($point < $thresholds['bust']) {
+                    $bustCount++;
+                }
             }
 
             $consistencyRate = ($startableCount / count($points)) * 100;
@@ -704,12 +801,12 @@ class Player extends Model
         }
 
         // Downside volatility (MAD for weeks below mean)
-        $downsidePoints = array_filter($points, fn($p) => $p < $mean);
-        $downsideVolatility = !empty($downsidePoints) ? $this->calculateMAD($downsidePoints, $this->calculateMedian($downsidePoints)) : null;
+        $downsidePoints = array_filter($points, fn ($p) => $p < $mean);
+        $downsideVolatility = ! empty($downsidePoints) ? $this->calculateMAD($downsidePoints, $this->calculateMedian($downsidePoints)) : null;
 
         // Usage volatility (coefficient of variation of snap percentages)
         $usageVolatility = null;
-        if (!empty($snapPercentages)) {
+        if (! empty($snapPercentages)) {
             $snapMean = array_sum($snapPercentages) / count($snapPercentages);
             $usageVolatility = $snapMean > 0 ? ($this->calculateStandardDeviation($snapPercentages, $snapMean) / $snapMean) : null;
         }
@@ -782,7 +879,9 @@ class Player extends Model
      */
     private function calculateStandardDeviation(array $values, float $mean): float
     {
-        if (empty($values)) return 0.0;
+        if (empty($values)) {
+            return 0.0;
+        }
 
         $variance = 0.0;
         foreach ($values as $value) {
@@ -797,7 +896,8 @@ class Player extends Model
      */
     private function calculateMAD(array $values, float $median): float
     {
-        $deviations = array_map(fn($v) => abs($v - $median), $values);
+        $deviations = array_map(fn ($v) => abs($v - $median), $values);
+
         return $this->calculateMedian($deviations);
     }
 
@@ -854,6 +954,7 @@ class Player extends Model
         }
 
         $median = $this->calculateMedian($recentPoints);
+
         return $this->calculateMAD($recentPoints, $median);
     }
 

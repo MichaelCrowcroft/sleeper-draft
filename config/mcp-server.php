@@ -256,6 +256,7 @@ return [
         \App\MCP\Tools\FetchMatchupsTool::class,
         \App\MCP\Tools\FetchPlayersSeasonDataTool::class,
         \App\MCP\Tools\FetchPlayerSeasonDataTool::class,
+        \App\MCP\Tools\FetchPlayersTableTool::class,
 
         // ===== REGISTER YOUR CUSTOM TOOLS BELOW =====
         // App\MCP\Tools\Database\Your::class,

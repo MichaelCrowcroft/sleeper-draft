@@ -2,17 +2,16 @@
 
 namespace App\MCP\Tools;
 
-use App\Http\Resources\PlayerResource;
-use App\Models\Player;
-use Illuminate\Support\Facades\Http;
+use App\MCP\Support\ToolHelpers;
 use Illuminate\Support\Facades\Validator;
-use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
 class FetchPlayersSeasonDataTool implements ToolInterface
 {
+    use ToolHelpers;
+
     public function isStreaming(): bool
     {
         return false;
@@ -76,7 +75,17 @@ class FetchPlayersSeasonDataTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
-        $arguments = $this->normalizeArguments($arguments);
+        $arguments = $this->normalizeArgumentsGeneric(
+            $arguments,
+            aliases: [
+                'pos' => 'position',
+                'c' => 'cursor',
+                'leagueId' => 'league_id',
+            ],
+            intKeys: ['limit', 'offset'],
+            boolKeys: [],
+            stringKeys: ['cursor', 'league_id', 'position']
+        );
 
         $validator = Validator::make($arguments, [
             'position' => ['nullable', 'string'],
@@ -122,250 +131,44 @@ class FetchPlayersSeasonDataTool implements ToolInterface
         $limit = max(1, min(1000, $limit));
         $offset = max(0, $offset);
 
-        // Get the upcoming matchweek for projections
-        $upcomingWeek = $this->getUpcomingWeek();
+        // Delegate heavy lifting to Action
+        $page = app(\App\Actions\Players\FetchPlayersSeasonDataPage::class)
+            ->execute($position, $limit, $offset, $leagueId);
 
-        $query = Player::query();
-
-        if ($position) {
-            $query->where('position', strtoupper($position));
-        }
-
-        // Eager-load last season stats and current season projections
-        $query->with([
-            'stats2024',
-            'projections2025',
-            'projections' => function ($query) use ($upcomingWeek) {
-                $query->where('season', 2025)
-                    ->where('week', $upcomingWeek);
-            },
-        ]);
-
-        // Fetch one extra to detect if there is a next page
-        $pagePlusOne = $limit + 1;
-        $results = $query->orderBy('search_rank')
-            ->offset($offset)
-            ->limit($pagePlusOne)
-            ->get();
-
-        $hasMore = $results->count() > $limit;
-        $players = $hasMore ? $results->slice(0, $limit)->values() : $results;
-
-        // Transform using PlayerResource which includes season summaries
-        $data = $players->map(fn ($player) => (new PlayerResource($player))->resolve())->all();
-
-        // If a league_id was provided, annotate each player with league team name or Free Agent
-        if (is_string($leagueId) && $leagueId !== '') {
-            $playerIdToTeam = $this->buildPlayerLeagueTeamMap($leagueId);
-            foreach ($data as &$playerArr) {
-                $pid = $playerArr['player_id'] ?? null;
-                $playerArr['league_team_name'] = ($pid !== null && isset($playerIdToTeam[(string) $pid]))
-                    ? $playerIdToTeam[(string) $pid]
-                    : 'Free Agent';
-            }
-            unset($playerArr);
-        }
-
-        $nextCursor = null;
-        if ($hasMore) {
-            $nextCursor = $this->encodeCursor([
-                'offset' => $offset + $limit,
-                'limit' => $limit,
-                'position' => $position,
-            ]);
-        }
-
-        return [
-            'success' => true,
-            'operation' => 'fetch-players-season-data',
-            'metadata' => [
+        $response = $this->buildListResponse(
+            items: $page['players'],
+            message: 'Fetched '.$page['count'].' players with season data',
+            metadata: [
                 'filters' => [
                     'position' => $position,
                 ],
                 'pagination' => [
-                    'limit' => $limit,
-                    'offset' => $offset,
+                    'limit' => $page['limit'],
+                    'offset' => $page['offset'],
                     'mode' => 'cursor',
                 ],
                 'seasons' => [
                     'stats' => 2024,
                     'projections' => 2025,
                 ],
-                'upcoming_week' => $upcomingWeek,
-                'executed_at' => now()->toISOString(),
+                'upcoming_week' => $page['upcomingWeek'],
                 'league_id' => $leagueId,
-            ],
-            'count' => count($data),
-            'players' => $data,
-            'nextCursor' => $nextCursor,
-        ];
-    }
+            ]
+        );
 
-    private function normalizeArguments(array $arguments): array
-    {
-        if (count($arguments) === 1 && array_key_exists(0, $arguments) && is_string($arguments[0])) {
-            $raw = trim((string) $arguments[0]);
-            $raw = preg_replace('/^\s*Arguments\s*/i', '', $raw ?? '');
-            $decoded = json_decode($raw, true);
-            if (is_array($decoded)) {
-                $arguments = $decoded;
-            } else {
-                $pairs = [];
-                $pattern = '/([A-Za-z0-9_]+)\s*(?::|=)?\s*(?:\"([^\"]*)\"|\'([^\']*)\'|([0-9]+)|(true|false|null))/i';
-                if (preg_match_all($pattern, $raw, $matches, PREG_SET_ORDER)) {
-                    foreach ($matches as $m) {
-                        $key = $m[1];
-                        $val = null;
-                        if (($m[2] ?? '') !== '') {
-                            $val = $m[2];
-                        } elseif (($m[3] ?? '') !== '') {
-                            $val = $m[3];
-                        } elseif (($m[4] ?? '') !== '') {
-                            $val = (int) $m[4];
-                        } elseif (($m[5] ?? '') !== '') {
-                            $lower = strtolower($m[5]);
-                            $val = $lower === 'true' ? true : ($lower === 'false' ? false : null);
-                        }
-                        $pairs[$key] = $val;
-                    }
-                }
-                if ($pairs !== []) {
-                    $arguments = $pairs;
-                }
-            }
-        }
+        // Keep top-level nextCursor for backward compatibility and tests
+        $response['nextCursor'] = $page['nextCursor'];
 
-        $aliases = [
-            'pos' => 'position',
-            'c' => 'cursor',
-            'leagueId' => 'league_id',
-        ];
-        $normalized = [];
-        foreach ($arguments as $key => $value) {
-            $normalized[$aliases[$key] ?? $key] = $value;
-        }
-
-        if (isset($normalized['limit']) && is_string($normalized['limit'])) {
-            $normalized['limit'] = (int) $normalized['limit'];
-        }
-        if (isset($normalized['offset']) && is_string($normalized['offset'])) {
-            $normalized['offset'] = (int) $normalized['offset'];
-        }
-        if (isset($normalized['cursor'])) {
-            $normalized['cursor'] = (string) $normalized['cursor'];
-        }
-        if (isset($normalized['league_id'])) {
-            $normalized['league_id'] = (string) $normalized['league_id'];
-        }
-
-        return $normalized;
-    }
-
-    private function encodeCursor(array $payload): string
-    {
-        return base64_encode(json_encode($payload));
-    }
-
-    private function decodeCursor(string $cursor): ?array
-    {
-        try {
-            $decoded = base64_decode($cursor, true);
-            if ($decoded === false || $decoded === '') {
-                return null;
-            }
-            $arr = json_decode($decoded, true);
-
-            return is_array($arr) ? $arr : null;
-        } catch (\Throwable $e) {
-            return null;
-        }
+        return $response;
     }
 
     /**
-     * Get the upcoming matchweek (current week + 1) using Sleeper API.
-     */
-    private function getUpcomingWeek(): int
-    {
-        try {
-            $response = Sleeper::state()->current('nfl');
-
-            if (! $response->successful()) {
-                throw new \RuntimeException('Failed to fetch current state from Sleeper API');
-            }
-
-            $state = $response->json();
-            $currentWeek = (int) ($state['week'] ?? 1);
-
-            // Return the upcoming week (current week + 1)
-            return $currentWeek + 1;
-        } catch (\Exception $e) {
-            // Fallback to week 2 if we can't get the current week
-            logger('FetchPlayersSeasonDataTool: Failed to fetch current week, defaulting to week 2', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return 2;
-        }
-    }
-
-    /**
-     * Build a mapping of player_id => league team name for a given Sleeper league.
+     * Build a mapping of player_id => league team name for a given Sleeper league
+     * using shared Actions (rosters and users).
      */
     private function buildPlayerLeagueTeamMap(string $leagueId): array
     {
-        try {
-            $rostersResponse = Http::get("https://api.sleeper.app/v1/league/{$leagueId}/rosters");
-            $usersResponse = Http::get("https://api.sleeper.app/v1/league/{$leagueId}/users");
-
-            if (! $rostersResponse->successful() || ! $usersResponse->successful()) {
-                return [];
-            }
-
-            $rosters = $rostersResponse->json();
-            $users = $usersResponse->json();
-            if (! is_array($rosters) || ! is_array($users)) {
-                return [];
-            }
-
-            $ownerIdByRosterId = [];
-            foreach ($rosters as $roster) {
-                $rid = $roster['roster_id'] ?? null;
-                if ($rid !== null) {
-                    $ownerIdByRosterId[$rid] = $roster['owner_id'] ?? null;
-                }
-            }
-
-            $userById = [];
-            foreach ($users as $user) {
-                $uid = $user['user_id'] ?? null;
-                if ($uid !== null) {
-                    $userById[$uid] = $user;
-                }
-            }
-
-            $playerIdToTeam = [];
-            foreach ($rosters as $roster) {
-                $rid = $roster['roster_id'] ?? null;
-                $ownerId = $rid !== null ? ($ownerIdByRosterId[$rid] ?? null) : null;
-                $user = $ownerId !== null ? ($userById[$ownerId] ?? null) : null;
-                $teamName = $user['metadata']['team_name']
-                    ?? ($user['display_name'] ?? ($user['username'] ?? ($ownerId ? 'Team '.$ownerId : null)));
-
-                $playerIds = array_unique(array_values(array_merge(
-                    (array) ($roster['players'] ?? []),
-                    (array) ($roster['starters'] ?? [])
-                )));
-
-                foreach ($playerIds as $pid) {
-                    if (is_string($pid) || is_int($pid)) {
-                        $playerIdToTeam[(string) $pid] = $teamName ?? 'Team';
-                    }
-                }
-            }
-
-            return $playerIdToTeam;
-        } catch (\Throwable $e) {
-            return [];
-        }
+        // Kept for backward compatibility if used elsewhere, but now unused in execute().
+        return app(\App\Actions\Sleeper\BuildPlayerLeagueTeamMap::class)->execute($leagueId);
     }
 }

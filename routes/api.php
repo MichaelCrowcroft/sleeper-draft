@@ -25,6 +25,8 @@ Route::middleware('api.analytics')->group(function () {
         ->name('api.mcp.fetch-roster');
     Route::post('/mcp/tools/fetch-user-leagues', [McpActionController::class, 'invokeTool'])
         ->name('api.mcp.fetch-user-leagues');
+    Route::post('/mcp/tools/fetch-players-table', [McpActionController::class, 'invokeTool'])
+        ->name('api.mcp.fetch-players-table');
 
     // OpenAPI endpoint
     Route::get('/openapi.yaml', function () {
@@ -54,6 +56,7 @@ Route::middleware('api.analytics')->group(function () {
             'fetch-matchups',
             'fetch-roster',
             'fetch-user-leagues',
+            'fetch-players-table',
         ];
 
         return response()->json([
@@ -69,6 +72,7 @@ Route::middleware('api.analytics')->group(function () {
                         'fetch-matchups' => 'Fetch matchups for a league and week, returning raw matchup data supplemented with basic user info',
                         'fetch-roster' => 'Gets a specific roster for a user in a league. Returns roster data with player information from the database and owner details',
                         'fetch-user-leagues' => 'Fetches all leagues for a user by username or user ID. Returns league IDs and names for the specified sport and season',
+                        'fetch-players-table' => 'Fetches a paginated, enriched list of players suitable for table display with filters and sorting',
                     },
                     'endpoint' => "/api/mcp/tools/{$tool}",
                     'method' => 'POST',

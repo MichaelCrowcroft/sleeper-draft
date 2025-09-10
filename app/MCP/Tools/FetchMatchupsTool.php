@@ -2,14 +2,18 @@
 
 namespace App\MCP\Tools;
 
-use Illuminate\Support\Facades\Http;
-use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
+use App\Actions\Sleeper\FetchLeagueUsers;
+use App\Actions\Sleeper\FetchMatchups as FetchMatchupsAction;
+use App\Actions\Sleeper\FetchRosters;
+use App\MCP\Support\ToolHelpers;
 use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
 class FetchMatchupsTool implements ToolInterface
 {
+    use ToolHelpers;
+
     public function isStreaming(): bool
     {
         return false;
@@ -70,7 +74,18 @@ class FetchMatchupsTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
-        $arguments = $this->normalizeArguments($arguments);
+        $arguments = $this->normalizeArgumentsGeneric(
+            $arguments,
+            aliases: [
+                'leagueId' => 'league_id',
+                'weekNumber' => 'week',
+                'sportType' => 'sport',
+            ],
+            intKeys: ['week'],
+            boolKeys: [],
+            stringKeys: ['league_id', 'sport']
+        );
+
         $leagueId = $arguments['league_id'] ?? null;
         $week = $arguments['week'] ?? null;
         $sport = $arguments['sport'] ?? 'nfl';
@@ -86,124 +101,27 @@ class FetchMatchupsTool implements ToolInterface
             $week = $this->getCurrentWeek($sport);
         }
 
-        // Fetch matchups from Sleeper API
-        $matchups = $this->fetchMatchups($leagueId, (int) $week);
+        // Fetch matchups via shared Action (cached)
+        $matchups = app(FetchMatchupsAction::class)->execute($leagueId, (int) $week);
 
-        // Supplement with user info (via league users and rosters)
+        // Supplement with user info via shared Actions
         $supplemented = $this->supplementWithUsers($leagueId, $matchups);
 
         // Group into head-to-head matchups with two teams per matchup_id
         $paired = $this->pairByMatchupId($supplemented);
 
-        return [
-            'league_id' => $leagueId,
-            'week' => (int) $week,
-            'matchups' => $paired,
-        ];
-    }
-
-    private function normalizeArguments(array $arguments): array
-    {
-        if (count($arguments) === 1 && array_key_exists(0, $arguments) && is_string($arguments[0])) {
-            $raw = trim((string) $arguments[0]);
-            $raw = preg_replace('/^\s*Arguments\s*/i', '', $raw ?? '');
-            $decoded = json_decode($raw, true);
-            if (is_array($decoded)) {
-                $arguments = $decoded;
-            } else {
-                $pairs = [];
-                $pattern = '/([A-Za-z0-9_]+)\s*(?::|=)?\s*(?:\"([^\"]*)\"|\'([^\']*)\'|([0-9]+)|(true|false|null))/i';
-                if (preg_match_all($pattern, $raw, $matches, PREG_SET_ORDER)) {
-                    foreach ($matches as $m) {
-                        $key = $m[1];
-                        $val = null;
-                        if (($m[2] ?? '') !== '') {
-                            $val = $m[2];
-                        } elseif (($m[3] ?? '') !== '') {
-                            $val = $m[3];
-                        } elseif (($m[4] ?? '') !== '') {
-                            $val = (int) $m[4];
-                        } elseif (($m[5] ?? '') !== '') {
-                            $lower = strtolower($m[5]);
-                            $val = $lower === 'true' ? true : ($lower === 'false' ? false : null);
-                        }
-                        $pairs[$key] = $val;
-                    }
-                }
-                if ($pairs !== []) {
-                    $arguments = $pairs;
-                }
-            }
-        }
-
-        $aliases = [
-            'leagueId' => 'league_id',
-            'weekNumber' => 'week',
-            'sportType' => 'sport',
-        ];
-        $normalized = [];
-        foreach ($arguments as $key => $value) {
-            $normalized[$aliases[$key] ?? $key] = $value;
-        }
-
-        if (isset($normalized['week']) && is_string($normalized['week'])) {
-            $normalized['week'] = (int) $normalized['week'];
-        }
-        if (isset($normalized['league_id'])) {
-            $normalized['league_id'] = (string) $normalized['league_id'];
-        }
-        if (isset($normalized['sport'])) {
-            $normalized['sport'] = (string) $normalized['sport'];
-        }
-
-        return $normalized;
-    }
-
-    private function getCurrentWeek(string $sport): int
-    {
-        try {
-            $response = Sleeper::state()->current($sport);
-
-            if (! $response->successful()) {
-                throw new \RuntimeException('Failed to fetch current state from Sleeper API');
-            }
-
-            $state = $response->json();
-
-            // Get the current week from the state
-            return (int) ($state['week'] ?? 1);
-        } catch (\Exception $e) {
-            // Fallback to week 1 if we can't get the current week
-            logger('FetchMatchupsTool: Failed to fetch current week, defaulting to 1', [
+        return $this->buildResponse(
+            data: [
+                'league_id' => $leagueId,
+                'week' => (int) $week,
+                'matchups' => $paired,
+            ],
+            count: count($paired),
+            message: 'Fetched '.count($paired).' matchups for week '.(int) $week,
+            metadata: [
                 'sport' => $sport,
-                'error' => $e->getMessage(),
-            ]);
-
-            return 1;
-        }
-    }
-
-    private function fetchMatchups(string $leagueId, int $week): array
-    {
-        $response = Http::get("https://api.sleeper.app/v1/league/{$leagueId}/matchups/{$week}");
-
-        if (! $response->successful()) {
-            throw new JsonRpcErrorException(
-                message: 'Failed to fetch matchups from Sleeper API',
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
-        }
-
-        $matchups = $response->json();
-
-        if (! is_array($matchups)) {
-            throw new JsonRpcErrorException(
-                message: 'Invalid matchups data received from API',
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
-        }
-
-        return $matchups;
+            ]
+        );
     }
 
     private function supplementWithUsers(string $leagueId, array $matchups): array
@@ -212,12 +130,9 @@ class FetchMatchupsTool implements ToolInterface
             return [];
         }
 
-        // Fetch league users and rosters once
-        $usersResponse = Sleeper::leagues()->users($leagueId);
-        $users = $usersResponse->successful() ? (array) $usersResponse->json() : [];
-
-        $rostersResponse = Sleeper::leagues()->rosters($leagueId);
-        $rosters = $rostersResponse->successful() ? (array) $rostersResponse->json() : [];
+        // Fetch league users and rosters once via Actions
+        $users = app(FetchLeagueUsers::class)->execute($leagueId);
+        $rosters = app(FetchRosters::class)->execute($leagueId);
 
         // Build maps
         $ownerIdByRosterId = [];

@@ -18,6 +18,11 @@ class PlayerProjections extends Model
 
     public $incrementing = false;
 
+    /**
+     * Append computed attributes when serializing.
+     */
+    protected $appends = ['weekly_rank', 'player_position'];
+
     protected $casts = [
         'season' => 'integer',
         'week' => 'integer',
@@ -59,6 +64,53 @@ class PlayerProjections extends Model
     public function scopeSeasonType($query, string $seasonType)
     {
         return $query->where('season_type', $seasonType);
+    }
+
+    /**
+     * Scope to include weekly position rank and player position using SQL window function.
+     * Ranks by projected PPR points (nested stats.pts_ppr or flattened pts_ppr if present).
+     */
+    public function scopeWithWeeklyRank($query, int $season, int $week, ?string $seasonType = null)
+    {
+        $query->where('season', $season)
+            ->where('week', $week);
+
+        if ($seasonType !== null) {
+            $query->where('season_type', $seasonType);
+        }
+
+        // Prefer nested JSON stats.pts_ppr, fall back to column pts_ppr present in SQLite schema
+        return $query
+            ->join('players', 'players.player_id', '=', 'player_projections.player_id')
+            ->select('player_projections.*')
+            ->selectRaw("ROW_NUMBER() OVER (\n                PARTITION BY players.position\n                ORDER BY COALESCE(CAST(json_extract(player_projections.stats, '$.pts_ppr') AS REAL), player_projections.pts_ppr, 0) DESC\n            ) as weekly_rank")
+            ->selectRaw('players.position as player_position');
+    }
+
+    /**
+     * Accessor for the computed weekly_rank column when selected via scope.
+     */
+    public function getWeeklyRankAttribute(): ?int
+    {
+        return isset($this->attributes['weekly_rank'])
+            ? (int) $this->attributes['weekly_rank']
+            : null;
+    }
+
+    /**
+     * Accessor for the joined player position. Falls back to relation when available.
+     */
+    public function getPlayerPositionAttribute(): ?string
+    {
+        if (array_key_exists('player_position', $this->attributes)) {
+            return $this->attributes['player_position'];
+        }
+
+        if ($this->relationLoaded('player') && $this->player) {
+            return $this->player->position;
+        }
+
+        return null;
     }
 
     /**

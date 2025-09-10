@@ -2,15 +2,15 @@
 
 namespace App\MCP\Tools;
 
+use App\Actions\Players\ListPlayersByAdp;
 use App\Http\Resources\PlayerResource;
-use App\Models\Player;
-use Illuminate\Support\Facades\Validator;
-use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
-use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
+use App\MCP\Support\ToolHelpers;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
 class FetchADPPlayersTool implements ToolInterface
 {
+    use ToolHelpers;
+
     public function isStreaming(): bool
     {
         return false;
@@ -58,27 +58,20 @@ class FetchADPPlayersTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
-        $validator = Validator::make($arguments, [
+        $arguments = $this->normalizeArgumentsGeneric(
+            $arguments,
+            aliases: ['pos' => 'position'],
+            stringKeys: ['position']
+        );
+
+        $this->validateOrFail($arguments, [
             'position' => ['nullable', 'string', 'max:10'],
         ]);
 
-        if ($validator->fails()) {
-            throw new JsonRpcErrorException(
-                message: 'Validation failed: '.$validator->errors()->first(),
-                code: JsonRpcErrorCode::INVALID_REQUEST
-            );
-        }
-
         $position = $arguments['position'] ?? null;
 
-        $query = Player::whereNotNull('adp')
-            ->orderBy('adp', 'asc');
-
-        if ($position) {
-            $query->where('position', $position);
-        }
-
-        $players = $query->get();
+        // Delegate fetching to an Action for reuse
+        $players = app(ListPlayersByAdp::class)->execute($position);
 
         $filterDescription = $position ? " for position '{$position}'" : ' for all positions';
 

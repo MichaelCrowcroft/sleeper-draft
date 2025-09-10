@@ -2,15 +2,15 @@
 
 namespace App\MCP\Tools;
 
+use App\Actions\Players\ListTrendingPlayers;
 use App\Http\Resources\PlayerResource;
-use App\Models\Player;
-use Illuminate\Support\Facades\Validator;
-use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
-use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
+use App\MCP\Support\ToolHelpers;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
 class FetchTrendingPlayersTool implements ToolInterface
 {
+    use ToolHelpers;
+
     public function isStreaming(): bool
     {
         return false;
@@ -58,23 +58,21 @@ class FetchTrendingPlayersTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
-        $validator = Validator::make($arguments, [
+        $arguments = $this->normalizeArgumentsGeneric(
+            $arguments,
+            aliases: ['trendType' => 'type'],
+            stringKeys: ['type']
+        );
+
+        $this->validateOrFail($arguments, [
             'type' => ['required', 'string', 'in:add,drop'],
         ]);
-
-        if ($validator->fails()) {
-            throw new JsonRpcErrorException(
-                message: 'Validation failed: '.$validator->errors()->first(),
-                code: JsonRpcErrorCode::INVALID_REQUEST
-            );
-        }
 
         $type = $arguments['type'];
         $column = $type === 'add' ? 'adds_24h' : 'drops_24h';
 
-        $players = Player::whereNotNull($column)
-            ->orderBy($column, 'desc')
-            ->get();
+        // Delegate to Action for reuse
+        $players = app(ListTrendingPlayers::class)->execute($type);
 
         return [
             'success' => true,

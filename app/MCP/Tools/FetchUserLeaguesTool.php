@@ -2,7 +2,8 @@
 
 namespace App\MCP\Tools;
 
-use Illuminate\Support\Facades\Validator;
+use App\Actions\Sleeper\FetchUserLeagues as FetchUserLeaguesAction;
+use App\MCP\Support\ToolHelpers;
 use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
@@ -10,6 +11,8 @@ use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
 class FetchUserLeaguesTool implements ToolInterface
 {
+    use ToolHelpers;
+
     public function isStreaming(): bool
     {
         return false;
@@ -66,25 +69,24 @@ class FetchUserLeaguesTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
-        $validator = Validator::make($arguments, [
+        $arguments = $this->normalizeArgumentsGeneric(
+            $arguments,
+            aliases: ['userId' => 'user_identifier', 'username' => 'user_identifier'],
+            stringKeys: ['user_identifier', 'sport', 'season']
+        );
+
+        $this->validateOrFail($arguments, [
             'user_identifier' => ['required', 'string'],
             'sport' => ['nullable', 'string'],
             'season' => ['nullable', 'string'],
         ]);
-
-        if ($validator->fails()) {
-            throw new JsonRpcErrorException(
-                message: 'Validation failed: '.$validator->errors()->first(),
-                code: JsonRpcErrorCode::INVALID_REQUEST
-            );
-        }
 
         $userIdentifier = $arguments['user_identifier'];
         $sport = $arguments['sport'] ?? 'nfl';
         $season = $arguments['season'] ?? null;
 
         try {
-            // If no season provided, get current season
+            // If no season provided, get current season from shared helper
             if ($season === null) {
                 $season = $this->getCurrentSeason($sport);
             }
@@ -92,24 +94,8 @@ class FetchUserLeaguesTool implements ToolInterface
             // Get user ID from identifier (could be username or user ID)
             $userId = $this->resolveUserId($userIdentifier, $sport);
 
-            // Fetch user's leagues
-            $response = Sleeper::users()->leagues($userId, $sport, $season);
-
-            if (! $response->successful()) {
-                throw new JsonRpcErrorException(
-                    message: 'Failed to fetch user leagues: HTTP '.$response->status(),
-                    code: JsonRpcErrorCode::INTERNAL_ERROR
-                );
-            }
-
-            $leagues = $response->json();
-
-            if (! is_array($leagues)) {
-                throw new JsonRpcErrorException(
-                    message: 'Unexpected response format from Sleeper API.',
-                    code: JsonRpcErrorCode::INTERNAL_ERROR
-                );
-            }
+            // Fetch user's leagues via Action (cached)
+            $leagues = app(FetchUserLeaguesAction::class)->execute($userId, $sport, (int) $season);
 
             // Extract league IDs and names
             $leagueData = [];
@@ -143,24 +129,6 @@ class FetchUserLeaguesTool implements ToolInterface
                 message: 'An unexpected error occurred: '.$e->getMessage(),
                 code: JsonRpcErrorCode::INTERNAL_ERROR
             );
-        }
-    }
-
-    private function getCurrentSeason(string $sport): string
-    {
-        try {
-            $response = Sleeper::state()->current($sport);
-
-            if (! $response->successful()) {
-                throw new \Exception('Failed to fetch current season from Sleeper API');
-            }
-
-            $state = $response->json();
-
-            return (string) ($state['league_season'] ?? $state['season'] ?? date('Y'));
-        } catch (\Exception $e) {
-            // Fallback to current year
-            return date('Y');
         }
     }
 

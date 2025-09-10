@@ -700,20 +700,20 @@ components:
         success:
           type: boolean
           example: true
-        operation:
-          type: string
-          example: fetch-players-season-data
-        count:
-          type: integer
-          example: 250
-        players:
+        data:
           type: array
           items:
             $ref: '#/components/schemas/PlayerWithSeasonSummaries'
+        count:
+          type: integer
+          example: 250
         nextCursor:
           type: string
           nullable: true
           description: Opaque cursor to fetch the next page. When absent, there are no more results.
+        message:
+          type: string
+          example: "Fetched 250 players with season data"
         metadata:
           type: object
           properties:
@@ -753,23 +753,23 @@ components:
         success:
           type: boolean
           example: true
-        operation:
-          type: string
-          example: fetch-player-season-data
-        mode:
-          type: string
-          enum: [by_id, by_name]
-          example: by_id
-        count:
-          type: integer
-          example: 1
-        players:
+        data:
           type: array
           items:
             $ref: '#/components/schemas/PlayerWithSeasonSummaries'
+        count:
+          type: integer
+          example: 1
+        message:
+          type: string
+          example: "Fetched 1 player(s) season data"
         metadata:
           type: object
           properties:
+            mode:
+              type: string
+              enum: [by_id, by_name]
+              example: by_id
             filters:
               type: object
               properties:
@@ -798,44 +798,54 @@ components:
         success:
           type: boolean
           example: true
-        league:
+        data:
           type: object
-          description: League details from Sleeper API
-          additionalProperties: true
-        users:
-          type: array
-          items:
-            type: object
-            properties:
-              user_id:
-                type: string
-                example: "123456789"
-              username:
-                type: string
-                nullable: true
-                example: "fantasyfan"
-              display_name:
-                type: string
-                nullable: true
-                example: "Fantasy Fan"
-              team_name:
-                type: string
-                example: "Dream Team"
-              wins:
-                type: integer
-                example: 8
-              losses:
-                type: integer
-                example: 6
-              fpts:
-                type: number
-                example: 1456.78
+          properties:
+            league:
+              type: object
+              description: League details from Sleeper API
+              additionalProperties: true
+            users:
+              type: array
+              items:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    example: "123456789"
+                  username:
+                    type: string
+                    nullable: true
+                    example: "fantasyfan"
+                  display_name:
+                    type: string
+                    nullable: true
+                    example: "Fantasy Fan"
+                  team_name:
+                    type: string
+                    example: "Dream Team"
+                  wins:
+                    type: integer
+                    example: 8
+                  losses:
+                    type: integer
+                    example: 6
+                  fpts:
+                    type: number
+                    example: 1456.78
+        count:
+          type: integer
+          description: Number of users in the league
+          example: 12
         message:
           type: string
-          example: "Successfully fetched league details and users"
+          example: "Fetched league details and users"
         metadata:
           type: object
           properties:
+            league_id:
+              type: string
+              example: "987654321"
             user_id:
               type: string
               example: "123456789"
@@ -858,61 +868,64 @@ components:
         success:
           type: boolean
           example: true
-        league_id:
-          type: string
-          example: "987654321"
-        week:
-          type: integer
-          example: 5
-        matchups:
-          type: array
-          items:
-            type: object
-            properties:
-              matchup_id:
-                type: integer
-                example: 1
-              teams:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    points:
-                      type: number
-                      nullable: true
-                      example: 125.6
-                    custom_points:
-                      type: number
-                      nullable: true
-                      example: 120.0
-                    user:
+        data:
+          type: object
+          properties:
+            league_id:
+              type: string
+              example: "987654321"
+            week:
+              type: integer
+              example: 5
+            matchups:
+              type: array
+              items:
+                type: object
+                properties:
+                  matchup_id:
+                    type: integer
+                    example: 1
+                  teams:
+                    type: array
+                    items:
                       type: object
-                      nullable: true
                       properties:
-                        user_id:
-                          type: string
-                          example: "123456789"
-                        username:
-                          type: string
+                        points:
+                          type: number
                           nullable: true
-                          example: "fantasyfan"
-                        display_name:
-                          type: string
+                          example: 125.6
+                        custom_points:
+                          type: number
                           nullable: true
-                          example: "Fantasy Fan"
-                        team_name:
-                          type: string
-                          example: "Dream Team"
-                        avatar:
-                          type: string
+                          example: 120.0
+                        user:
+                          type: object
                           nullable: true
-                          example: "https://sleepercdn.com/avatars/123456789"
+                          properties:
+                            user_id:
+                              type: string
+                              example: "123456789"
+                            username:
+                              type: string
+                              nullable: true
+                              example: "fantasyfan"
+                            display_name:
+                              type: string
+                              nullable: true
+                              example: "Fantasy Fan"
+                            team_name:
+                              type: string
+                              example: "Dream Team"
+                            avatar:
+                              type: string
+                              nullable: true
+                              example: "https://sleepercdn.com/avatars/123456789"
         count:
           type: integer
           example: 6
         message:
           type: string
-          example: "Successfully fetched 6 matchups for week 5"
+          example: "Fetched 6 matchups for week 5"
         metadata:
           type: object
           properties:
@@ -929,12 +942,6 @@ components:
         success:
           type: boolean
           example: true
-        operation:
-          type: string
-          example: get-roster
-        formattedOutput:
-          type: string
-          example: "Successfully fetched roster for user 123456789 in league 987654321"
         data:
           type: object
           description: Roster data with enhanced player details
@@ -1002,6 +1009,13 @@ components:
                 team_name:
                   type: string
                   example: "Dream Team"
+        count:
+          type: integer
+          description: Number of players on the roster
+          example: 16
+        message:
+          type: string
+          example: "Successfully fetched roster for user 123456789 in league 987654321"
         metadata:
           type: object
           properties:

@@ -2,13 +2,19 @@
 
 namespace App\MCP\Tools;
 
-use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
+use App\Actions\Sleeper\FetchLeague as FetchLeagueAction;
+use App\Actions\Sleeper\FetchLeagueUsers;
+use App\Actions\Sleeper\FetchRosters;
+use App\Actions\Sleeper\FetchUserLeagues as FetchUserLeaguesAction;
+use App\MCP\Support\ToolHelpers;
 use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
 use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
 class FetchLeagueTool implements ToolInterface
 {
+    use ToolHelpers;
+
     public function isStreaming(): bool
     {
         return false;
@@ -58,16 +64,23 @@ class FetchLeagueTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
-        $userId = $arguments['user_id'];
-        $leagueIdentifier = $arguments['league_identifier'];
-        $sport = $arguments['sport'] ?? 'nfl';
-        $season = $arguments['season'] ?? $this->getCurrentSeason($sport);
-
-        // Get user's leagues and find the target league
-        $leagues = $this->apiCall(fn () => Sleeper::users()->leagues($userId, $sport, $season), 'fetch user leagues');
-        $targetLeague = collect($leagues)->first(fn ($league) => $league['league_id'] === $leagueIdentifier ||
-            strcasecmp($league['name'] ?? '', $leagueIdentifier) === 0
+        // Normalize and validate
+        $args = $this->normalizeArgumentsGeneric(
+            $arguments,
+            aliases: ['userId' => 'user_id', 'leagueId' => 'league_identifier'],
+            stringKeys: ['user_id', 'league_identifier', 'sport', 'season']
         );
+
+        $userId = $args['user_id'];
+        $leagueIdentifier = $args['league_identifier'];
+        $sport = $args['sport'] ?? 'nfl';
+        $season = $args['season'] ?? $this->getCurrentSeason($sport);
+
+        // Get user's leagues and find the target league (via Action)
+        $leagues = app(FetchUserLeaguesAction::class)->execute($userId, $sport, (int) $season);
+        $targetLeague = collect($leagues)->first(fn ($league) => (
+            ($league['league_id'] ?? null) === $leagueIdentifier
+        ) || strcasecmp($league['name'] ?? '', (string) $leagueIdentifier) === 0);
 
         if (! $targetLeague) {
             throw new JsonRpcErrorException(
@@ -78,10 +91,10 @@ class FetchLeagueTool implements ToolInterface
 
         $leagueId = $targetLeague['league_id'];
 
-        // Get league details and users with rosters
-        $league = $this->apiCall(fn () => Sleeper::leagues()->get($leagueId), 'fetch league details');
-        $users = $this->apiCall(fn () => Sleeper::leagues()->users($leagueId), 'fetch league users');
-        $rosters = $this->apiCall(fn () => Sleeper::leagues()->rosters($leagueId), 'fetch league rosters');
+        // Get league details and users with rosters via Actions
+        $league = app(FetchLeagueAction::class)->execute($leagueId);
+        $users = app(FetchLeagueUsers::class)->execute($leagueId);
+        $rosters = app(FetchRosters::class)->execute($leagueId);
 
         // Map rosters to users
         $rostersByUserId = collect($rosters)->keyBy('owner_id');
@@ -100,35 +113,22 @@ class FetchLeagueTool implements ToolInterface
             ];
         });
 
-        return [
-            'league' => $league,
-            'users' => $enhancedUsers,
-        ];
+        $usersArray = $enhancedUsers->values()->all();
+
+        return $this->buildResponse(
+            data: [
+                'league' => $league,
+                'users' => $usersArray,
+            ],
+            count: count($usersArray),
+            message: 'Fetched league details and users',
+            metadata: [
+                'league_id' => $leagueId,
+                'season' => $season,
+                'sport' => $sport,
+            ]
+        );
     }
 
-    private function getCurrentSeason(string $sport): string
-    {
-        try {
-            $response = Sleeper::state()->current($sport);
-            $state = $response->successful() ? $response->json() : [];
-
-            return (string) ($state['league_season'] ?? $state['season'] ?? date('Y'));
-        } catch (\Exception) {
-            return date('Y');
-        }
-    }
-
-    private function apiCall(callable $request, string $action): array
-    {
-        $response = $request();
-
-        if (! $response->successful()) {
-            throw new JsonRpcErrorException(
-                message: "Failed to {$action}",
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
-        }
-
-        return $response->json();
-    }
+    // getCurrentSeason provided by ToolHelpers
 }
