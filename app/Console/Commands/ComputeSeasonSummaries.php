@@ -14,7 +14,7 @@ class ComputeSeasonSummaries extends Command
      *
      * @var string
      */
-    protected $signature = 'season-summaries:compute {--season=2024}';
+    protected $signature = 'players:compute-season-summaries {--season=2024}';
 
     /**
      * The console command description.
