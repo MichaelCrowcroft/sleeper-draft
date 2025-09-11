@@ -162,13 +162,5 @@ class FetchPlayersSeasonDataTool implements ToolInterface
         return $response;
     }
 
-    /**
-     * Build a mapping of player_id => league team name for a given Sleeper league
-     * using shared Actions (rosters and users).
-     */
-    private function buildPlayerLeagueTeamMap(string $leagueId): array
-    {
-        // Kept for backward compatibility if used elsewhere, but now unused in execute().
-        return app(\App\Actions\Sleeper\BuildPlayerLeagueTeamMap::class)->execute($leagueId);
-    }
+    // Note: previous buildPlayerLeagueTeamMap helper removed; season page now uses BuildLeagueRosterOwnerMap.
 }

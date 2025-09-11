@@ -54,14 +54,11 @@ class BuildPlayersTable
             'sortBy' => $sortBy,
             'sortDirection' => $sortDirection,
         ]);
-        // Restrict to playable positions via scope later before pagination
 
-        // Rankings (read from DB; no computation)
         $state = $this->determineCurrentWeek->execute('nfl');
         $resolvedWeek = $state['week'] ?? null;
         $season = isset($state['season']) ? (int) $state['season'] : null;
         if ($season && $resolvedWeek) {
-            // Include weekly position rank as a selected column via subquery
             $query->select('players.*')
                 ->selectSub(
                     PlayerStats::query()
@@ -86,7 +83,7 @@ class BuildPlayersTable
         if (! empty($rosterMap)) {
             foreach ($players as $player) {
                 $rosterInfo = $rosterMap[$player->player_id] ?? null;
-                $player->owner_or_free_agent = $rosterInfo ? ($rosterInfo['owner'] ?? 'Unknown Owner') : 'Free Agent';
+                $player->owner_or_free_agent = $rosterInfo ? ($rosterInfo['owner'] ?? 'Unknown Owner') : null;
             }
         }
 

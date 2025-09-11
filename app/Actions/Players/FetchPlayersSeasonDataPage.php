@@ -2,8 +2,8 @@
 
 namespace App\Actions\Players;
 
+use App\Actions\Sleeper\BuildLeagueRosterOwnerMap;
 use App\Actions\Sleeper\DetermineCurrentWeek;
-use App\Actions\Sleeper\BuildPlayerLeagueTeamMap;
 use App\Http\Resources\PlayerResource;
 use App\Models\Player;
 
@@ -11,7 +11,7 @@ class FetchPlayersSeasonDataPage
 {
     public function __construct(
         public DetermineCurrentWeek $determineCurrentWeek,
-        public BuildPlayerLeagueTeamMap $buildPlayerLeagueTeamMap,
+        public BuildLeagueRosterOwnerMap $buildLeagueRosterOwnerMap,
     ) {}
 
     /**
@@ -53,12 +53,14 @@ class FetchPlayersSeasonDataPage
         $data = $players->map(fn ($p) => (new PlayerResource($p))->resolve())->all();
 
         if (is_string($leagueId) && $leagueId !== '') {
-            $map = $this->buildPlayerLeagueTeamMap->execute($leagueId);
+            $ownerMap = $this->buildLeagueRosterOwnerMap->execute($leagueId);
             foreach ($data as &$item) {
                 $pid = $item['player_id'] ?? null;
-                $item['league_team_name'] = ($pid !== null && isset($map[(string) $pid]))
-                    ? $map[(string) $pid]
-                    : 'Free Agent';
+                $owner = ($pid !== null && isset($ownerMap[(string) $pid])) ? ($ownerMap[(string) $pid]['owner'] ?? null) : null;
+                // New unified field
+                $item['owner_or_free_agent'] = $owner; // null means Free Agent
+                // Back-compat alias used elsewhere
+                $item['league_team_name'] = $owner ?? 'Free Agent';
             }
             unset($item);
         }
