@@ -6,7 +6,7 @@ class BuildPlayerLeagueTeamMap
 {
     public function __construct(
         public FetchRosters $fetchRosters,
-        public FetchLeagueUsers $fetchLeagueUsers,
+        public FetchLeagueOwners $fetchLeagueOwners,
     ) {}
 
     /**
@@ -19,13 +19,13 @@ class BuildPlayerLeagueTeamMap
     {
         try {
             $rosters = $this->fetchRosters->execute($leagueId);
-            $users = $this->fetchLeagueUsers->execute($leagueId);
+            $owners = $this->fetchLeagueOwners->execute($leagueId);
 
-            $userById = [];
-            foreach ($users as $user) {
-                $uid = $user['user_id'] ?? null;
+            $ownerById = [];
+            foreach ($owners as $owner) {
+                $uid = $owner['user_id'] ?? null;
                 if ($uid !== null) {
-                    $userById[$uid] = $user;
+                    $ownerById[$uid] = $owner;
                 }
             }
 
@@ -41,9 +41,9 @@ class BuildPlayerLeagueTeamMap
             foreach ($rosters as $roster) {
                 $rid = $roster['roster_id'] ?? null;
                 $ownerId = $rid !== null ? ($ownerIdByRosterId[$rid] ?? null) : null;
-                $user = $ownerId !== null ? ($userById[$ownerId] ?? null) : null;
-                $teamName = $user['metadata']['team_name']
-                    ?? ($user['display_name'] ?? ($user['username'] ?? ($ownerId ? 'Team '.$ownerId : null)));
+                $owner = $ownerId !== null ? ($ownerById[$ownerId] ?? null) : null;
+                $teamName = $owner['metadata']['team_name']
+                    ?? ($owner['display_name'] ?? ($owner['username'] ?? ($ownerId ? 'Team '.$ownerId : null)));
 
                 $playerIds = array_unique(array_values(array_merge(
                     (array) ($roster['players'] ?? []),

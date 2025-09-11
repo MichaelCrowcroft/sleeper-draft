@@ -28,6 +28,8 @@ class BuildPlayersTable
         $search = (string) ($options['search'] ?? '');
         $position = (string) ($options['position'] ?? '');
         $team = (string) ($options['team'] ?? '');
+        $sortBy = (string) ($options['sortBy'] ?? 'adp');
+        $sortDirection = (string) ($options['sortDirection'] ?? 'asc');
         $leagueId = $options['league_id'] ?? null;
         $faOnly = (bool) ($options['fa_only'] ?? false);
         $perPage = (int) ($options['per_page'] ?? 25);
@@ -47,6 +49,8 @@ class BuildPlayersTable
             'team' => $team,
             'activeOnly' => true,
             'excludePlayerIds' => $excludeIds,
+            'sortBy' => $sortBy,
+            'sortDirection' => $sortDirection,
         ]);
         // Restrict to playable positions via scope later before pagination
 
