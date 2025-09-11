@@ -143,6 +143,14 @@ class Player extends Model
     }
 
     /**
+     * Cached season summaries relation.
+     */
+    public function seasonSummaries(): HasMany
+    {
+        return $this->hasMany(PlayerSeasonSummary::class, 'player_id', 'player_id');
+    }
+
+    /**
      * Get stats for a specific season.
      */
     public function getStatsForSeason(int $season): HasMany
@@ -457,41 +465,6 @@ class Player extends Model
         }
 
         return $shares;
-    }
-
-    /**
-     * Compute season average target share for 2024.
-     */
-    public function getSeason2024AverageTargetShare(): ?float
-    {
-        $collection = $this->relationLoaded('stats2024') ? $this->getRelation('stats2024') : $this->stats2024()->get();
-        if ($collection->isEmpty()) {
-            return null;
-        }
-
-        $sumShare = 0.0;
-        $count = 0;
-        foreach ($collection as $weeklyStats) {
-            $stats = is_array($weeklyStats->stats ?? null) ? $weeklyStats->stats : [];
-            if (! isset($stats['rec_tgt']) || ! is_numeric($stats['rec_tgt'])) {
-                continue;
-            }
-            $team = $weeklyStats->team ?? $this->team;
-            if (! $team) {
-                continue;
-            }
-            $teamTotal = self::getTeamTargetsForWeek(2024, (int) $weeklyStats->week, (string) $team);
-            if ($teamTotal > 0) {
-                $sumShare += ((float) $stats['rec_tgt'] / $teamTotal);
-                $count++;
-            }
-        }
-
-        if ($count <= 0) {
-            return null;
-        }
-
-        return ($sumShare / $count) * 100.0;
     }
 
     /**
@@ -965,6 +938,28 @@ class Player extends Model
      */
     public function getSeason2024Summary(): array
     {
+        // Prefer cached summary if available
+        if ($this->relationLoaded('seasonSummaries')) {
+            $cached = $this->getRelation('seasonSummaries')->firstWhere('season', 2024);
+        } else {
+            $cached = $this->seasonSummaries()->where('season', 2024)->first();
+        }
+
+        if ($cached) {
+            return [
+                'total_points' => $cached->total_points,
+                'min_points' => $cached->min_points,
+                'max_points' => $cached->max_points,
+                'average_points_per_game' => $cached->average_points_per_game,
+                'stddev_below' => $cached->stddev_below,
+                'stddev_above' => $cached->stddev_above,
+                'games_active' => (int) $cached->games_active,
+                'snap_percentage_avg' => $cached->snap_percentage_avg,
+                'position_rank' => $cached->position_rank,
+                'volatility' => is_array($cached->volatility) ? $cached->volatility : [],
+            ];
+        }
+
         if ($this->relationLoaded('stats2024')) {
             $collection = $this->getRelation('stats2024');
         } else {
@@ -1053,5 +1048,51 @@ class Player extends Model
             'position_rank' => null, // Will be set by calling method
             'volatility' => $volatilityMetrics,
         ];
+    }
+
+    /**
+     * Cached 2024 target share average if present.
+     */
+    public function getSeason2024AverageTargetShare(): ?float
+    {
+        if ($this->relationLoaded('seasonSummaries')) {
+            $cached = $this->getRelation('seasonSummaries')->firstWhere('season', 2024);
+        } else {
+            $cached = $this->seasonSummaries()->where('season', 2024)->first();
+        }
+
+        if ($cached && $cached->target_share_avg !== null) {
+            return (float) $cached->target_share_avg;
+        }
+
+        // Fallback to computing if no cache yet
+        $collection = $this->relationLoaded('stats2024') ? $this->getRelation('stats2024') : $this->stats2024()->get();
+        if ($collection->isEmpty()) {
+            return null;
+        }
+
+        $sumShare = 0.0;
+        $count = 0;
+        foreach ($collection as $weeklyStats) {
+            $stats = is_array($weeklyStats->stats ?? null) ? $weeklyStats->stats : [];
+            if (! isset($stats['rec_tgt']) || ! is_numeric($stats['rec_tgt'])) {
+                continue;
+            }
+            $team = $weeklyStats->team ?? $this->team;
+            if (! $team) {
+                continue;
+            }
+            $teamTotal = self::getTeamTargetsForWeek(2024, (int) $weeklyStats->week, (string) $team);
+            if ($teamTotal > 0) {
+                $sumShare += ((float) $stats['rec_tgt'] / $teamTotal);
+                $count++;
+            }
+        }
+
+        if ($count <= 0) {
+            return null;
+        }
+
+        return ($sumShare / $count) * 100.0;
     }
 }

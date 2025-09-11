@@ -2,15 +2,15 @@
 
 namespace App\Actions\Players;
 
-use App\Actions\Sleeper\DetermineCurrentWeek;
 use App\Actions\Sleeper\BuildLeagueRosterOwnerMap;
+use App\Actions\Sleeper\DetermineCurrentWeek;
+use App\Models\PlayerStats;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class BuildPlayersTable
 {
     public function __construct(
         public PlayerTableQuery $playerTableQuery,
-        public ComputeRankings $computeRankings,
         public EnrichPlayersForTable $enrichPlayers,
         public BuildLeagueRosterOwnerMap $buildLeagueRosterOwnerMap,
         public DetermineCurrentWeek $determineCurrentWeek,
@@ -62,19 +62,24 @@ class BuildPlayersTable
             $perPage
         );
 
-        // Rankings
-        $seasonRankLookup = $this->computeRankings->season2024();
-        $resolvedWeek = $this->determineCurrentWeek->execute('nfl')['week'] ?? null;
+        // Rankings (read from DB; no computation)
+        $state = $this->determineCurrentWeek->execute('nfl');
+        $resolvedWeek = $state['week'] ?? null;
+        $season = isset($state['season']) ? (int) $state['season'] : null;
         $weeklyRankLookup = [];
-        if ($resolvedWeek) {
-            $weeklyRankLookup = $this->computeRankings->weekly(2025, (int) $resolvedWeek);
+        if ($season && $resolvedWeek) {
+            $weeklyRankLookup = PlayerStats::query()
+                ->where('season', $season)
+                ->where('week', (int) $resolvedWeek)
+                ->pluck('weekly_ranking', 'player_id')
+                ->filter()
+                ->all();
         }
 
         // Enrich rows
         $this->enrichPlayers->execute(
             $players,
             $resolvedWeek ? (int) $resolvedWeek : null,
-            $seasonRankLookup,
             $weeklyRankLookup,
             collect($rosterMap)
         );

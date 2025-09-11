@@ -48,7 +48,7 @@ class PlayerTableQuery
      */
     public function addListEagerLoads(Builder $query): Builder
     {
-        return $query->with(['stats2024', 'projections2025']);
+        return $query->with(['stats2024', 'projections2025', 'seasonSummaries']);
     }
 
     /**

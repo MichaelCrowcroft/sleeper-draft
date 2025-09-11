@@ -6,14 +6,14 @@ use App\Models\PlayerStats;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
-class UpdateWeeklyRankings extends Command
+class ComputeWeeklyRankings extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'rankings:update-weekly {--season=}';
+    protected $signature = 'rankings:compute-weekly {--season=}';
 
     /**
      * The console command description.

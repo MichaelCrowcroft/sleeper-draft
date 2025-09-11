@@ -12,7 +12,6 @@ class EnrichPlayersForTable
      *
      * @param  iterable  $players  Eloquent models (can be a Paginator)
      * @param  int|null  $resolvedWeek  Current NFL week or null
-     * @param  array  $seasonRankLookup  [player_id => rank]
      * @param  array  $weeklyRankLookup  [player_id => rank]
      * @param  Collection  $rosteredPlayers  Map of player_id => ['owner'=>..., 'roster_id'=>..., 'owner_id'=>...]
      * @return mixed Returns the same $players reference for convenience
@@ -20,7 +19,6 @@ class EnrichPlayersForTable
     public function execute(
         LengthAwarePaginator|iterable $players,
         ?int $resolvedWeek,
-        array $seasonRankLookup,
         array $weeklyRankLookup,
         Collection $rosteredPlayers
     ): mixed {
@@ -29,11 +27,6 @@ class EnrichPlayersForTable
             $player->season_2024_summary = $player->getSeason2024Summary();
             $player->season_2025_projections = $player->getSeason2025ProjectionSummary();
             $player->season_2024_target_share_avg = $player->getSeason2024AverageTargetShare();
-
-            // Inject 2024 position rank into summary
-            $summaryWithRank = $player->season_2024_summary;
-            $summaryWithRank['position_rank'] = $seasonRankLookup[$player->player_id] ?? null;
-            $player->season_2024_summary = $summaryWithRank;
 
             // Weekly rank
             $player->weekly_position_rank = $weeklyRankLookup[$player->player_id] ?? null;
