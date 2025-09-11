@@ -125,8 +125,14 @@ new class extends Component
     #[Computed]
     public function leagues(): array
     {
+        $user = Auth::user();
+
+        if (! $user || empty($user->sleeper_user_id)) {
+            return [];
+        }
+
         return (new GetUserLeagues())->execute(
-            Auth::user()->sleeper_user_id, 'nfl', date('Y')
+            $user->sleeper_user_id, 'nfl', date('Y')
         );
     }
 
@@ -434,7 +440,9 @@ new class extends Component
 
                             @if($selectedMetrics['avg_ppg_2024'])
                             <flux:table.cell>
-                                @php($summary = optional($player->seasonSummaries->firstWhere('season', 2024)))
+                                @php
+                                    $summary = optional($player->seasonSummaries->firstWhere('season', 2024));
+                                @endphp
                                 @if ($summary && $summary->average_points_per_game > 0)
                                     <span class="font-medium text-green-600">{{ number_format($summary->average_points_per_game, 1) }}</span>
                                 @else
@@ -445,7 +453,9 @@ new class extends Component
 
                             @if($selectedMetrics['position_rank_2024'])
                             <flux:table.cell>
-                                @php($summary = optional($player->seasonSummaries->firstWhere('season', 2024)))
+                                @php
+                                    $summary = optional($player->seasonSummaries->firstWhere('season', 2024));
+                                @endphp
                                 @if ($summary && $summary->position_rank)
                                     <flux:badge variant="secondary" color="purple">{{ $player->position }}{{ $summary->position_rank }}</flux:badge>
                                 @else
@@ -456,7 +466,9 @@ new class extends Component
 
                             @if($selectedMetrics['snap_pct_2024'])
                             <flux:table.cell>
-                                @php($summary = optional($player->seasonSummaries->firstWhere('season', 2024)))
+                                @php
+                                    $summary = optional($player->seasonSummaries->firstWhere('season', 2024));
+                                @endphp
                                 @if ($summary && $summary->snap_percentage_avg !== null)
                                     <span class="font-medium text-blue-600">{{ number_format($summary->snap_percentage_avg, 1) }}%</span>
                                 @else
@@ -467,7 +479,9 @@ new class extends Component
 
                             @if($selectedMetrics['target_share_2024'])
                             <flux:table.cell>
-                                @php($summary = optional($player->seasonSummaries->firstWhere('season', 2024)))
+                                @php
+                                    $summary = optional($player->seasonSummaries->firstWhere('season', 2024));
+                                @endphp
                                 @if ($summary && $summary->target_share_avg !== null)
                                     <span class="font-medium text-purple-600">{{ number_format($summary->target_share_avg, 1) }}%</span>
                                 @else
@@ -478,7 +492,9 @@ new class extends Component
 
                             @if($selectedMetrics['stddev_above'])
                             <flux:table.cell>
-                                @php($summary = optional($player->seasonSummaries->firstWhere('season', 2024)))
+                                @php
+                                    $summary = optional($player->seasonSummaries->firstWhere('season', 2024));
+                                @endphp
                                 @if ($summary && $summary->stddev_above > 0)
                                     <span class="font-medium text-green-700">{{ number_format($summary->stddev_above, 1) }}</span>
                                 @else
@@ -489,7 +505,9 @@ new class extends Component
 
                             @if($selectedMetrics['stddev_below'])
                             <flux:table.cell>
-                                @php($summary = optional($player->seasonSummaries->firstWhere('season', 2024)))
+                                @php
+                                    $summary = optional($player->seasonSummaries->firstWhere('season', 2024));
+                                @endphp
                                 @if ($summary && $summary->stddev_below !== null)
                                     @if($summary->stddev_below > 0)
                                         <span class="font-medium text-green-500">{{ number_format($summary->stddev_below, 1) }}</span>

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Actions\Players\ComputeRankings;
 use App\Models\Player;
 use App\Models\PlayerSeasonSummary;
 use Illuminate\Console\Command;
@@ -30,18 +31,10 @@ class ComputeSeasonSummaries extends Command
     {
         $season = (int) $this->option('season');
 
-        // Build position rankings map for 2024 only (helper exists for 2024)
+        // Build position rankings map for 2024 only (computed via action)
         $positionRankings = [];
         if ($season === 2024) {
-            $positionRankings = Player::calculatePositionRankings2024();
-            // Flatten to lookup: player_id => rank
-            $flat = [];
-            foreach ($positionRankings as $position => $rows) {
-                foreach ($rows as $row) {
-                    $flat[$row['player_id']] = (int) $row['rank'];
-                }
-            }
-            $positionRankings = $flat;
+            $positionRankings = app(ComputeRankings::class)->season2024();
         }
 
         $players = Player::query()
