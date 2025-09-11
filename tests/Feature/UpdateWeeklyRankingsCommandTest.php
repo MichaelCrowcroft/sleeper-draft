@@ -88,7 +88,7 @@ test('command updates weekly rankings for entire season across multiple weeks', 
     expect($stats2->weekly_ranking)->toBe(1);
 });
 
-test('weekly_rank accessor returns stored weekly_ranking when available', function () {
+test('stored weekly_ranking is readable when set directly', function () {
     $player = Player::factory()->create(['position' => 'QB', 'player_id' => 'test_qb']);
 
     $stats = PlayerStats::create([
@@ -101,11 +101,11 @@ test('weekly_rank accessor returns stored weekly_ranking when available', functi
         'weekly_ranking' => 5,
     ]);
 
-    // The weekly_rank accessor should return the stored weekly_ranking
-    expect($stats->weekly_rank)->toBe(5);
+    // The stored weekly_ranking should be available on the model
+    expect($stats->weekly_ranking)->toBe(5);
 });
 
-test('weekly_rank accessor falls back to computed weekly_rank from scope', function () {
+test('command computes weekly_ranking when not present', function () {
     $player = Player::factory()->create(['position' => 'TE', 'player_id' => 'test_te']);
 
     PlayerStats::create([
@@ -118,9 +118,12 @@ test('weekly_rank accessor falls back to computed weekly_rank from scope', funct
         // No weekly_ranking stored
     ]);
 
-    // Use the scope that computes weekly_rank on the fly
-    $stats = PlayerStats::withWeeklyRank(2024, 1)->where('player_stats.player_id', $player->player_id)->first();
+    // Run the command to compute rankings for the season
+    $this->artisan('rankings:update-weekly --season=2024')
+        ->expectsOutput('Weekly rankings update completed!')
+        ->assertExitCode(0);
 
-    // The weekly_rank should be computed (should be 1 since it's the only TE)
-    expect($stats->weekly_rank)->toBe(1);
+    // Now the stored weekly_ranking should be set (1 since it's the only TE)
+    $stats = PlayerStats::where('player_id', $player->player_id)->first();
+    expect($stats->weekly_ranking)->toBe(1);
 });

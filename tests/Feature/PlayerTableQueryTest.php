@@ -9,7 +9,7 @@ use App\Models\PlayerProjections;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-it('computes weekly rank and joins player position for stats', function () {
+it('uses stored weekly_ranking on stats', function () {
     $season = 2024;
     $week = 3;
 
@@ -22,25 +22,25 @@ it('computes weekly rank and joins player position for stats', function () {
         'season' => $season,
         'week' => $week,
         'stats' => ['pts_ppr' => 15.0],
+        'weekly_ranking' => 2,
     ]);
     PlayerStats::factory()->create([
         'player_id' => $p2->player_id,
         'season' => $season,
         'week' => $week,
         'stats' => ['pts_ppr' => 20.0],
+        'weekly_ranking' => 1,
     ]);
     PlayerStats::factory()->create([
         'player_id' => $p3->player_id,
         'season' => $season,
         'week' => $week,
         'stats' => ['pts_ppr' => 5.0],
+        'weekly_ranking' => 3,
     ]);
 
-    $rows = PlayerStats::query()->withWeeklyRank($season, $week)->get();
-
-    $top = $rows->firstWhere('player_id', $p2->player_id);
-    expect($top->weekly_rank)->toBe(1);
-    expect($top->player_position)->toBe('WR');
+    $top = PlayerStats::where('season', $season)->where('week', $week)->orderBy('weekly_ranking')->first();
+    expect($top->player_id)->toBe($p2->player_id);
 });
 
 it('computes weekly rank and joins player position for projections', function () {

@@ -18,12 +18,7 @@ class PlayerStats extends Model
 
     public $incrementing = false;
 
-    /**
-     * Append computed attributes when serializing.
-     * - weekly_rank: computed via scopeWithWeeklyRank() selection
-     * - player_position: joined from players table or relation fallback
-     */
-    protected $appends = ['weekly_rank', 'player_position'];
+    // Ranking is stored in weekly_ranking; no computed weekly_rank attributes
 
     protected $casts = [
         'season' => 'integer',
@@ -34,6 +29,7 @@ class PlayerStats extends Model
         'last_modified_ms' => 'integer',
         'stats' => 'array',
         'raw' => 'array',
+        'weekly_ranking' => 'integer',
     ];
 
     /**
@@ -44,51 +40,7 @@ class PlayerStats extends Model
         return $this->belongsTo(Player::class, 'player_id', 'player_id');
     }
 
-    /**
-     * Scope to include weekly position rank and player position using SQL window function.
-     * Uses PPR points from the JSON stats payload.
-     */
-    public function scopeWithWeeklyRank($query, int $season, int $week, ?string $seasonType = null)
-    {
-        $query->where('season', $season)
-            ->where('week', $week);
-
-        if ($seasonType !== null) {
-            $query->where('season_type', $seasonType);
-        }
-
-        return $query
-            ->join('players', 'players.player_id', '=', 'player_stats.player_id')
-            ->select('player_stats.*')
-            ->selectRaw("ROW_NUMBER() OVER (\n                PARTITION BY players.position\n                ORDER BY COALESCE(CAST(json_extract(player_stats.stats, '$.pts_ppr') AS REAL), 0) DESC\n            ) as weekly_rank")
-            ->selectRaw('players.position as player_position');
-    }
-
-    /**
-     * Accessor for the computed weekly_rank column when selected via scope.
-     */
-    public function getWeeklyRankAttribute(): ?int
-    {
-        return isset($this->attributes['weekly_rank'])
-            ? (int) $this->attributes['weekly_rank']
-            : null;
-    }
-
-    /**
-     * Accessor for the joined player position. Falls back to relation when available.
-     */
-    public function getPlayerPositionAttribute(): ?string
-    {
-        if (array_key_exists('player_position', $this->attributes)) {
-            return $this->attributes['player_position'];
-        }
-
-        if ($this->relationLoaded('player') && $this->player) {
-            return $this->player->position;
-        }
-
-        return null;
-    }
+    // No weekly rank accessor or player_position computed attribute
 
     /**
      * Scope to filter by season.

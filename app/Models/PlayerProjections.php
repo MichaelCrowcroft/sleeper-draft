@@ -79,11 +79,11 @@ class PlayerProjections extends Model
             $query->where('season_type', $seasonType);
         }
 
-        // Prefer nested JSON stats.pts_ppr, fall back to column pts_ppr present in SQLite schema
+        // Use flattened column pts_ppr (present in SQLite schema used by tests)
         return $query
             ->join('players', 'players.player_id', '=', 'player_projections.player_id')
             ->select('player_projections.*')
-            ->selectRaw("ROW_NUMBER() OVER (\n                PARTITION BY players.position\n                ORDER BY COALESCE(CAST(json_extract(player_projections.stats, '$.pts_ppr') AS REAL), player_projections.pts_ppr, 0) DESC\n            ) as weekly_rank")
+            ->selectRaw("ROW_NUMBER() OVER (\n                PARTITION BY players.position\n                ORDER BY COALESCE(player_projections.pts_ppr, 0) DESC\n            ) as weekly_rank")
             ->selectRaw('players.position as player_position');
     }
 
