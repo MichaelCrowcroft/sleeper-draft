@@ -526,72 +526,6 @@ class Player extends Model
     }
 
     /**
-     * Calculate position-based rankings for weekly projections based on current week PPR points.
-     *
-     * @param  int  $season  The season year (e.g., 2025)
-     * @param  int  $week  The week number
-     * @return array Array with player rankings by position for the specified week
-     */
-    public static function calculateWeeklyPositionRankings(int $season, int $week): array
-    {
-        $players = self::where('active', true)
-            ->whereIn('position', ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'])
-            ->with(['projections' => function ($query) use ($season, $week) {
-                $query->where('season', $season)->where('week', $week);
-            }])
-            ->get();
-
-        $positionRankings = [];
-        $playersWithPoints = [];
-
-        // First, calculate projected points for each player for this week
-        foreach ($players as $player) {
-            $weeklyProjection = $player->projections->first();
-
-            if ($weeklyProjection) {
-                $stats = is_array($weeklyProjection->stats ?? null) ? $weeklyProjection->stats : null;
-                $pts = null;
-
-                if ($stats && isset($stats['pts_ppr']) && is_numeric($stats['pts_ppr'])) {
-                    $pts = (float) $stats['pts_ppr'];
-                } elseif (isset($weeklyProjection->pts_ppr) && is_numeric($weeklyProjection->pts_ppr)) {
-                    $pts = (float) $weeklyProjection->pts_ppr;
-                }
-
-                if ($pts !== null && $pts > 0) {
-                    $playersWithPoints[] = [
-                        'player' => $player,
-                        'weekly_points' => $pts,
-                        'position' => $player->position,
-                        'player_id' => $player->player_id,
-                    ];
-                }
-            }
-        }
-
-        // Group by position and sort by weekly points descending
-        $byPosition = collect($playersWithPoints)->groupBy('position');
-
-        foreach ($byPosition as $position => $positionPlayers) {
-            $sortedPlayers = $positionPlayers->sortByDesc('weekly_points')->values();
-
-            $positionRankings[$position] = [];
-            $rank = 1;
-
-            foreach ($sortedPlayers as $playerData) {
-                $positionRankings[$position][] = [
-                    'player_id' => $playerData['player_id'],
-                    'rank' => $rank,
-                    'weekly_points' => $playerData['weekly_points'],
-                ];
-                $rank++;
-            }
-        }
-
-        return $positionRankings;
-    }
-
-    /**
      * Accessor-like helper that returns aggregated season stats for 2024 if the relation is (pre)loaded.
      * If not loaded, it will load from DB efficiently and compute totals.
      */
@@ -1004,44 +938,7 @@ class Player extends Model
      */
     public function getSeason2024AverageTargetShare(): ?float
     {
-        if ($this->relationLoaded('seasonSummaries')) {
-            $cached = $this->getRelation('seasonSummaries')->firstWhere('season', 2024);
-        } else {
-            $cached = $this->seasonSummaries()->where('season', 2024)->first();
-        }
-
-        if ($cached && $cached->target_share_avg !== null) {
-            return (float) $cached->target_share_avg;
-        }
-
-        // Fallback to computing if no cache yet
-        $collection = $this->relationLoaded('stats2024') ? $this->getRelation('stats2024') : $this->stats2024()->get();
-        if ($collection->isEmpty()) {
-            return null;
-        }
-
-        $sumShare = 0.0;
-        $count = 0;
-        foreach ($collection as $weeklyStats) {
-            $stats = is_array($weeklyStats->stats ?? null) ? $weeklyStats->stats : [];
-            if (! isset($stats['rec_tgt']) || ! is_numeric($stats['rec_tgt'])) {
-                continue;
-            }
-            $team = $weeklyStats->team ?? $this->team;
-            if (! $team) {
-                continue;
-            }
-            $teamTotal = self::getTeamTargetsForWeek(2024, (int) $weeklyStats->week, (string) $team);
-            if ($teamTotal > 0) {
-                $sumShare += ((float) $stats['rec_tgt'] / $teamTotal);
-                $count++;
-            }
-        }
-
-        if ($count <= 0) {
-            return null;
-        }
-
-        return ($sumShare / $count) * 100.0;
+        // Deprecated: prefer using cached value on PlayerSeasonSummary.target_share_avg
+        return null;
     }
 }

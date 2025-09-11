@@ -27,12 +27,6 @@ new class extends Component
     #[Url]
     public ?bool $faOnly = false;
 
-    #[Url]
-    public ?string $sortBy = 'adp';
-
-    #[Url]
-    public ?string $sortDirection = 'asc';
-
     public $selectedMetrics = [
         // Core columns shown on this page
         'age' => true,
@@ -85,16 +79,6 @@ new class extends Component
         'fum_lost' => false,
     ];
 
-    public function sort($column)
-    {
-        if ($this->sortBy === $column) {
-            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            $this->sortBy = $column;
-            $this->sortDirection = 'asc';
-        }
-    }
-
     #[Computed]
     public function players()
     {
@@ -102,8 +86,6 @@ new class extends Component
             'search' => $this->search,
             'position' => $this->position,
             'team' => $this->team,
-            'sortBy' => $this->sortBy ?: 'adp',
-            'sortDirection' => $this->sortDirection ?: 'desc',
             'league_id' => $this->selectedLeagueId ?: null,
             'fa_only' => (bool) $this->faOnly,
             'per_page' => 25,
@@ -263,38 +245,22 @@ new class extends Component
                 <flux:table :paginate="$this->players" class="min-w-max">
                 <flux:table.columns>
                     <flux:table.column
-                        sortable
-                        :sorted="$sortBy === 'name'"
-                        :direction="$sortDirection"
-                        wire:click="sort('name')"
                         class="cursor-pointer"
                     >
                         Player
                     </flux:table.column>
                     <flux:table.column
-                        sortable
-                        :sorted="$sortBy === 'position'"
-                        :direction="$sortDirection"
-                        wire:click="sort('position')"
                         class="cursor-pointer"
                     >
                         Pos
                     </flux:table.column>
                     <flux:table.column
-                        sortable
-                        :sorted="$sortBy === 'team'"
-                        :direction="$sortDirection"
-                        wire:click="sort('team')"
                         class="cursor-pointer"
                     >
                         Team
                     </flux:table.column>
                     @if($selectedMetrics['age'])
                     <flux:table.column
-                        sortable
-                        :sorted="$sortBy === 'age'"
-                        :direction="$sortDirection"
-                        wire:click="sort('age')"
                         class="cursor-pointer"
                     >
                         Age
@@ -302,10 +268,6 @@ new class extends Component
                     @endif
                     @if($selectedMetrics['adp'])
                     <flux:table.column
-                        sortable
-                        :sorted="$sortBy === 'adp'"
-                        :direction="$sortDirection"
-                        wire:click="sort('adp')"
                         class="cursor-pointer"
                     >
                         ADP
@@ -521,7 +483,7 @@ new class extends Component
                                 @endphp
                                 @if (!is_null($projPts))
                                     <span class="font-medium text-blue-700">{{ number_format($projPts, 1) }}</span>
-                                @else
+                                    @else
                                     <span class="text-muted-foreground">-</span>
                                 @endif
                             </flux:table.cell>

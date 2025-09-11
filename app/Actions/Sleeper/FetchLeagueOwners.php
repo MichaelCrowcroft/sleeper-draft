@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 
-class FetchLeagueUsers
+class FetchLeagueOwners
 {
     public function __construct(public ?int $ttlSeconds = 600) {}
 
