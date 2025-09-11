@@ -501,10 +501,13 @@ new class extends Component
 
                             @if($selectedMetrics['owner'])
                             <flux:table.cell>
-                                @if ($player->is_rostered)
-                                    <flux:badge variant="secondary" color="blue">{{ $player->owner }}</flux:badge>
-                                @else
+                                @php $label = $player->owner_or_free_agent ?? null; @endphp
+                                @if ($label === 'Free Agent')
                                     <flux:badge variant="outline" color="gray">Free Agent</flux:badge>
+                                @elseif ($label)
+                                    <flux:badge variant="secondary" color="blue">{{ $label }}</flux:badge>
+                                @else
+                                    <span class="text-muted-foreground">-</span>
                                 @endif
                             </flux:table.cell>
                             @endif

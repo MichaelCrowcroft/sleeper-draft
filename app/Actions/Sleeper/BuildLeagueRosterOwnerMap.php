@@ -16,14 +16,14 @@ class BuildLeagueRosterOwnerMap
 
         $owners = collect($owners)->keyBy('user_id')->map(function ($owner) {
             return $owner['display_name'] ?? $owner['username'] ?? 'Unknown Owner';
-        });
+        })->all();
 
         $map = [];
 
-        foreach($rosters as $roster) {
+        foreach ($rosters as $roster) {
             $rosterId = $roster['roster_id'] ?? null;
             $ownerId = $roster['owner_id'] ?? null;
-            $ownerName = $ownerId ? ($userMap[$ownerId] ?? 'Unknown Owner') : 'Unknown Owner';
+            $ownerName = $ownerId ? ($owners[$ownerId] ?? 'Unknown Owner') : 'Unknown Owner';
 
             $players = is_array($roster['players'] ?? null) ? $roster['players'] : [];
 

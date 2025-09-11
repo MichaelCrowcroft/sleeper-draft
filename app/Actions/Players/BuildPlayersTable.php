@@ -34,12 +34,14 @@ class BuildPlayersTable
         $faOnly = (bool) ($options['fa_only'] ?? false);
         $perPage = (int) ($options['per_page'] ?? 25);
 
-        // Exclusions for free agents only
-        $excludeIds = [];
+        // Build roster map if a league is selected (for owner display and FA filtering)
         $rosterMap = [];
-        if ($faOnly && is_string($leagueId) && $leagueId !== '') {
+        $excludeIds = [];
+        if (is_string($leagueId) && $leagueId !== '') {
             $rosterMap = $this->buildLeagueRosterOwnerMap->execute($leagueId);
-            $excludeIds = array_keys($rosterMap);
+            if ($faOnly) {
+                $excludeIds = array_keys($rosterMap);
+            }
         }
 
         // Build base query
@@ -80,12 +82,11 @@ class BuildPlayersTable
             $perPage
         );
 
-        // Annotate owner info on each item for convenience
+        // Annotate a single owner_or_free_agent field for convenience
         if (! empty($rosterMap)) {
             foreach ($players as $player) {
                 $rosterInfo = $rosterMap[$player->player_id] ?? null;
-                $player->owner = $rosterInfo ? $rosterInfo['owner'] : 'Free Agent';
-                $player->is_rostered = $rosterInfo !== null;
+                $player->owner_or_free_agent = $rosterInfo ? ($rosterInfo['owner'] ?? 'Unknown Owner') : 'Free Agent';
             }
         }
 

@@ -96,12 +96,9 @@ class FetchPlayersTableTool implements ToolInterface
         $players = [];
         foreach ($paginator->items() as $player) {
             $row = (new PlayerResource($player))->resolve();
-            // add owner/is_rostered if present on model instance
-            if (isset($player->owner)) {
-                $row['owner'] = $player->owner;
-            }
-            if (isset($player->is_rostered)) {
-                $row['is_rostered'] = (bool) $player->is_rostered;
+            // add simplified owner_or_free_agent if present on model instance
+            if (isset($player->owner_or_free_agent)) {
+                $row['owner_or_free_agent'] = $player->owner_or_free_agent;
             }
             if (isset($player->weekly_position_rank)) {
                 $row['weekly_position_rank'] = $player->weekly_position_rank;
