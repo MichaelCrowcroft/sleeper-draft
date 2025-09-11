@@ -27,11 +27,10 @@ class ComputeWeeklyRankings extends Command
      */
     public function handle()
     {
-        $season = (int) $this->option('season');
+        $season = $this->option('season');
 
         // Process both regular and post season types
         $seasonTypes = ['regular', 'post'];
-        $processedAny = false;
         foreach ($seasonTypes as $seasonType) {
             // Gather all distinct weeks to process for the season & season type
             $weeks = PlayerStats::query()
@@ -43,12 +42,6 @@ class ComputeWeeklyRankings extends Command
                 ->map(fn ($w) => (int) $w)
                 ->all();
 
-            if (empty($weeks)) {
-                continue;
-            }
-
-            $processedAny = true;
-            // Iterate weeks and compute position ranks based on actual pts_ppr
             foreach ($weeks as $week) {
                 // Fetch stats joined with players to know positions
                 $rows = PlayerStats::query()
@@ -92,12 +85,6 @@ class ComputeWeeklyRankings extends Command
                 $this->line("Updated rankings for season {$season}, week {$week} ({$seasonType}).");
             }
         }
-
-        if (! $processedAny) {
-            $this->warn('No stats found for the given season.');
-        }
-
-        $this->info('Weekly rankings update completed!');
 
         return self::SUCCESS;
     }

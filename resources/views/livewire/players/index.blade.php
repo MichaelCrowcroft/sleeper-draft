@@ -125,14 +125,8 @@ new class extends Component
     #[Computed]
     public function leagues(): array
     {
-        $user = Auth::user();
-
-        if (! $user || empty($user->sleeper_user_id)) {
-            return [];
-        }
-
         return (new GetUserLeagues())->execute(
-            $user->sleeper_user_id, 'nfl', date('Y')
+            Auth::user()->sleeper_user_id, 'nfl', date('Y')
         );
     }
 
@@ -522,8 +516,11 @@ new class extends Component
 
                             @if($selectedMetrics['proj_pts_week'])
                             <flux:table.cell>
-                                @if (!is_null($player->proj_pts_week))
-                                    <span class="font-medium text-blue-700">{{ number_format($player->proj_pts_week, 1) }}</span>
+                                @php
+                                    $projPts = $this->resolvedWeek ? $player->getProjectedPointsForWeek(2025, (int) $this->resolvedWeek) : null;
+                                @endphp
+                                @if (!is_null($projPts))
+                                    <span class="font-medium text-blue-700">{{ number_format($projPts, 1) }}</span>
                                 @else
                                     <span class="text-muted-foreground">-</span>
                                 @endif
@@ -561,7 +558,7 @@ new class extends Component
                             @endif
 
                             @php
-                                $avg = $player->season_2025_avg_metrics ?? [];
+                                $avg = $player->getSeason2025ProjectionsAverages();
                                 $fmt = fn($v) => number_format((float) $v, 1);
                                 $val = fn($key) => isset($avg[$key]) && is_numeric($avg[$key]) ? $fmt($avg[$key]) : null;
                                 $passCmp = $avg['pass_cmp'] ?? null;

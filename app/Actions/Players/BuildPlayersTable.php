@@ -11,7 +11,6 @@ class BuildPlayersTable
 {
     public function __construct(
         public PlayerTableQuery $playerTableQuery,
-        public EnrichPlayersForTable $enrichPlayers,
         public BuildLeagueRosterOwnerMap $buildLeagueRosterOwnerMap,
         public DetermineCurrentWeek $determineCurrentWeek,
     ) {}
@@ -43,7 +42,7 @@ class BuildPlayersTable
             $excludeIds = array_keys($rosterMap);
         }
 
-        // Build and paginate query
+        // Build base query
         $query = $this->playerTableQuery->build([
             'search' => $search,
             'position' => $position,
@@ -55,6 +54,25 @@ class BuildPlayersTable
         ]);
         // Restrict to playable positions via scope later before pagination
 
+        // Rankings (read from DB; no computation)
+        $state = $this->determineCurrentWeek->execute('nfl');
+        $resolvedWeek = $state['week'] ?? null;
+        $season = isset($state['season']) ? (int) $state['season'] : null;
+        if ($season && $resolvedWeek) {
+            // Include weekly position rank as a selected column via subquery
+            $query->select('players.*')
+                ->selectSub(
+                    PlayerStats::query()
+                        ->select('weekly_ranking')
+                        ->whereColumn('player_stats.player_id', 'players.player_id')
+                        ->where('season', $season)
+                        ->where('week', (int) $resolvedWeek)
+                        ->limit(1),
+                    'weekly_position_rank'
+                );
+        }
+
+        // Eager loads and paginate
         $players = $this->playerTableQuery->paginate(
             $this->playerTableQuery->addListEagerLoads(
                 $query->playablePositions()
@@ -62,27 +80,14 @@ class BuildPlayersTable
             $perPage
         );
 
-        // Rankings (read from DB; no computation)
-        $state = $this->determineCurrentWeek->execute('nfl');
-        $resolvedWeek = $state['week'] ?? null;
-        $season = isset($state['season']) ? (int) $state['season'] : null;
-        $weeklyRankLookup = [];
-        if ($season && $resolvedWeek) {
-            $weeklyRankLookup = PlayerStats::query()
-                ->where('season', $season)
-                ->where('week', (int) $resolvedWeek)
-                ->pluck('weekly_ranking', 'player_id')
-                ->filter()
-                ->all();
+        // Annotate owner info on each item for convenience
+        if (! empty($rosterMap)) {
+            foreach ($players as $player) {
+                $rosterInfo = $rosterMap[$player->player_id] ?? null;
+                $player->owner = $rosterInfo ? $rosterInfo['owner'] : 'Free Agent';
+                $player->is_rostered = $rosterInfo !== null;
+            }
         }
-
-        // Enrich rows
-        $this->enrichPlayers->execute(
-            $players,
-            $resolvedWeek ? (int) $resolvedWeek : null,
-            $weeklyRankLookup,
-            collect($rosterMap)
-        );
 
         return $players;
     }

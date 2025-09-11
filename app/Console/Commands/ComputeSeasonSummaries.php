@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Actions\Players\ComputeRankings;
+use App\Actions\Players\ComputeSeasonRankings;
 use App\Models\Player;
 use App\Models\PlayerSeasonSummary;
 use Illuminate\Console\Command;
@@ -31,16 +31,15 @@ class ComputeSeasonSummaries extends Command
     {
         $season = (int) $this->option('season');
 
-        // Build position rankings map for 2024 only (computed via action)
-        $positionRankings = [];
-        if ($season === 2024) {
-            $positionRankings = app(ComputeRankings::class)->season2024();
-        }
+        // Build position rankings map for the selected season
+        $positionRankings = app(ComputeSeasonRankings::class)->handle($season);
 
         $players = Player::query()
             ->active()
             ->playablePositions()
-            ->with(['stats2024'])
+            ->with(['stats' => function ($q) use ($season) {
+                $q->where('season', $season);
+            }])
             ->get();
 
         if ($players->isEmpty()) {
@@ -52,15 +51,63 @@ class ComputeSeasonSummaries extends Command
         $count = 0;
         DB::transaction(function () use ($players, $season, $positionRankings, &$count) {
             foreach ($players as $player) {
-                // Compute summaries using existing helpers (will compute from stats when no cache present)
-                if ($season === 2024) {
-                    $summary = $player->getSeason2024Summary();
-                    $targetShareAvg = $player->getSeason2024AverageTargetShare();
-                } else {
-                    // For other seasons, reuse 2024 methods by temporarily swapping relation query
-                    // Not implemented yet; skip non-2024 seasons to avoid incorrect data.
-                    continue;
+                // Compute summaries dynamically from stats for the requested season
+                $totals = $player->calculateSeasonStatTotals($season);
+
+                $pointsPerWeek = [];
+                $gamesActive = 0;
+                foreach ($player->getStatsForSeason($season)->get() as $weekly) {
+                    $stats = is_array($weekly->stats ?? null) ? $weekly->stats : [];
+                    $ppr = isset($stats['pts_ppr']) && is_numeric($stats['pts_ppr']) ? (float) $stats['pts_ppr'] : null;
+                    $gmsActive = isset($stats['gms_active']) && is_numeric($stats['gms_active']) ? (int) $stats['gms_active'] : null;
+                    $isActive = ($gmsActive !== null ? $gmsActive >= 1 : ($ppr !== null));
+                    if ($isActive && $ppr !== null) {
+                        $pointsPerWeek[] = $ppr;
+                        $gamesActive += ($gmsActive !== null ? max(0, (int) $gmsActive) : 1);
+                    }
                 }
+
+                if (empty($pointsPerWeek)) {
+                    $summary = [
+                        'total_points' => 'rookie',
+                        'min_points' => 0.0,
+                        'max_points' => 0.0,
+                        'average_points_per_game' => 0.0,
+                        'stddev_below' => 0.0,
+                        'stddev_above' => 0.0,
+                        'games_active' => 0,
+                        'snap_percentage_avg' => null,
+                        'volatility' => null,
+                    ];
+                } else {
+                    $total = array_sum($pointsPerWeek);
+                    $min = min($pointsPerWeek);
+                    $max = max($pointsPerWeek);
+                    $games = $gamesActive > 0 ? $gamesActive : count($pointsPerWeek);
+                    $avg = $games > 0 ? $total / $games : 0.0;
+                    $n = count($pointsPerWeek);
+                    $variance = 0.0;
+                    foreach ($pointsPerWeek as $p) {
+                        $variance += ($p - $avg) * ($p - $avg);
+                    }
+                    $variance = $n > 0 ? $variance / $n : 0.0;
+                    $stddev = sqrt($variance);
+                    $summary = [
+                        'total_points' => $total,
+                        'min_points' => $min,
+                        'max_points' => $max,
+                        'average_points_per_game' => $avg,
+                        'stddev_below' => $avg - $stddev,
+                        'stddev_above' => $avg + $stddev,
+                        'games_active' => $games,
+                        'snap_percentage_avg' => null,
+                        'volatility' => null,
+                    ];
+                }
+
+                // Target share average for this season
+                $weeklyShares = $player->getWeeklyTargetSharesForSeason($season);
+                $targetShareAvg = ! empty($weeklyShares) ? (array_sum($weeklyShares) / count($weeklyShares)) : null;
 
                 // Normalize rookie/no-data case
                 $totalPoints = is_numeric($summary['total_points']) ? (float) $summary['total_points'] : null;
@@ -88,8 +135,6 @@ class ComputeSeasonSummaries extends Command
                 $count++;
             }
         });
-
-        $this->info("Computed and stored summaries for {$count} players (season {$season}).");
 
         return self::SUCCESS;
     }
