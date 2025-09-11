@@ -23,10 +23,8 @@ class EnrichPlayersForTable
         Collection $rosteredPlayers
     ): mixed {
         foreach ($players as $player) {
-            // Season summaries
-            $player->season_2024_summary = $player->getSeason2024Summary();
+            // 2025 projections summary
             $player->season_2025_projections = $player->getSeason2025ProjectionSummary();
-            $player->season_2024_target_share_avg = $player->getSeason2024AverageTargetShare();
 
             // Weekly rank
             $player->weekly_position_rank = $weeklyRankLookup[$player->player_id] ?? null;

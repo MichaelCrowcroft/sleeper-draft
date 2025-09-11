@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Resources\PlayerResource;
 use App\Models\Player;
 use App\Models\PlayerProjections;
+use App\Models\PlayerSeasonSummary;
 use App\Models\PlayerStats;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -128,8 +129,25 @@ it('includes season_2024_summary in PlayerResource when relation is loaded', fun
         ],
     ]);
 
-    // Eager-load stats2024 relation
-    $player->load('stats2024');
+    // Persist cached season summary (simulating precomputed cache)
+    PlayerSeasonSummary::create([
+        'player_id' => $player->player_id,
+        'season' => 2024,
+        'total_points' => 5.0,
+        'min_points' => 2.0,
+        'max_points' => 3.0,
+        'average_points_per_game' => 2.5,
+        'stddev_below' => 2.0,
+        'stddev_above' => 3.0,
+        'games_active' => 2,
+        'snap_percentage_avg' => null,
+        'position_rank' => null,
+        'target_share_avg' => null,
+        'volatility' => null,
+    ]);
+
+    // Eager-load cached relation
+    $player->load('seasonSummaries');
     $request = Request::create('/', 'GET');
     $resource = (new PlayerResource($player))->toArray($request);
 

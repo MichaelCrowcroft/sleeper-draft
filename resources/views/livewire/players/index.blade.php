@@ -434,8 +434,9 @@ new class extends Component
 
                             @if($selectedMetrics['avg_ppg_2024'])
                             <flux:table.cell>
-                                @if (isset($player->season_2024_summary) && isset($player->season_2024_summary['average_points_per_game']) && $player->season_2024_summary['average_points_per_game'] > 0)
-                                    <span class="font-medium text-green-600">{{ number_format($player->season_2024_summary['average_points_per_game'], 1) }}</span>
+                                @php($summary = optional($player->seasonSummaries->firstWhere('season', 2024)))
+                                @if ($summary && $summary->average_points_per_game > 0)
+                                    <span class="font-medium text-green-600">{{ number_format($summary->average_points_per_game, 1) }}</span>
                                 @else
                                     <span class="text-muted-foreground">-</span>
                                 @endif
@@ -444,8 +445,9 @@ new class extends Component
 
                             @if($selectedMetrics['position_rank_2024'])
                             <flux:table.cell>
-                                @if (isset($player->season_2024_summary) && isset($player->season_2024_summary['position_rank']) && $player->season_2024_summary['position_rank'])
-                                    <flux:badge variant="secondary" color="purple">{{ $player->position }}{{ $player->season_2024_summary['position_rank'] }}</flux:badge>
+                                @php($summary = optional($player->seasonSummaries->firstWhere('season', 2024)))
+                                @if ($summary && $summary->position_rank)
+                                    <flux:badge variant="secondary" color="purple">{{ $player->position }}{{ $summary->position_rank }}</flux:badge>
                                 @else
                                     <span class="text-muted-foreground">-</span>
                                 @endif
@@ -454,8 +456,9 @@ new class extends Component
 
                             @if($selectedMetrics['snap_pct_2024'])
                             <flux:table.cell>
-                                @if (isset($player->season_2024_summary) && isset($player->season_2024_summary['snap_percentage_avg']) && $player->season_2024_summary['snap_percentage_avg'] !== null)
-                                    <span class="font-medium text-blue-600">{{ number_format($player->season_2024_summary['snap_percentage_avg'], 1) }}%</span>
+                                @php($summary = optional($player->seasonSummaries->firstWhere('season', 2024)))
+                                @if ($summary && $summary->snap_percentage_avg !== null)
+                                    <span class="font-medium text-blue-600">{{ number_format($summary->snap_percentage_avg, 1) }}%</span>
                                 @else
                                     <span class="text-muted-foreground">-</span>
                                 @endif
@@ -464,8 +467,9 @@ new class extends Component
 
                             @if($selectedMetrics['target_share_2024'])
                             <flux:table.cell>
-                                @if (!is_null($player->season_2024_target_share_avg))
-                                    <span class="font-medium text-purple-600">{{ number_format($player->season_2024_target_share_avg, 1) }}%</span>
+                                @php($summary = optional($player->seasonSummaries->firstWhere('season', 2024)))
+                                @if ($summary && $summary->target_share_avg !== null)
+                                    <span class="font-medium text-purple-600">{{ number_format($summary->target_share_avg, 1) }}%</span>
                                 @else
                                     <span class="text-muted-foreground">-</span>
                                 @endif
@@ -474,8 +478,9 @@ new class extends Component
 
                             @if($selectedMetrics['stddev_above'])
                             <flux:table.cell>
-                                @if (isset($player->season_2024_summary) && isset($player->season_2024_summary['stddev_above']) && $player->season_2024_summary['stddev_above'] > 0)
-                                    <span class="font-medium text-green-700">{{ number_format($player->season_2024_summary['stddev_above'], 1) }}</span>
+                                @php($summary = optional($player->seasonSummaries->firstWhere('season', 2024)))
+                                @if ($summary && $summary->stddev_above > 0)
+                                    <span class="font-medium text-green-700">{{ number_format($summary->stddev_above, 1) }}</span>
                                 @else
                                     <span class="text-muted-foreground">-</span>
                                 @endif
@@ -484,11 +489,12 @@ new class extends Component
 
                             @if($selectedMetrics['stddev_below'])
                             <flux:table.cell>
-                                @if (isset($player->season_2024_summary) && isset($player->season_2024_summary['stddev_below']))
-                                    @if($player->season_2024_summary['stddev_below'] > 0)
-                                        <span class="font-medium text-green-500">{{ number_format($player->season_2024_summary['stddev_below'], 1) }}</span>
+                                @php($summary = optional($player->seasonSummaries->firstWhere('season', 2024)))
+                                @if ($summary && $summary->stddev_below !== null)
+                                    @if($summary->stddev_below > 0)
+                                        <span class="font-medium text-green-500">{{ number_format($summary->stddev_below, 1) }}</span>
                                     @else
-                                        <span class="font-medium text-red-500">{{ number_format($player->season_2024_summary['stddev_below'], 1) }}</span>
+                                        <span class="font-medium text-red-500">{{ number_format($summary->stddev_below, 1) }}</span>
                                     @endif
                                 @else
                                     <span class="text-muted-foreground">-</span>

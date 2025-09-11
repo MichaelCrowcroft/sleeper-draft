@@ -68,7 +68,7 @@ it('computes and stores 2024 season summaries and target share averages', functi
     ]);
 
     // Run command
-    Artisan::call('season-summaries:compute', ['--season' => 2024, '--no-interaction' => true]);
+    Artisan::call('players:compute-season-summaries', ['--season' => 2024, '--no-interaction' => true]);
 
     $summary = PlayerSeasonSummary::where('player_id', 'p1')->where('season', 2024)->first();
     expect($summary)->not->toBeNull();

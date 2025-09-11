@@ -106,8 +106,9 @@ class FetchPlayersTableTool implements ToolInterface
             if (isset($player->weekly_position_rank)) {
                 $row['weekly_position_rank'] = $player->weekly_position_rank;
             }
-            if (isset($player->season_2024_summary['position_rank'])) {
-                $row['season_2024_position_rank'] = $player->season_2024_summary['position_rank'];
+            $summary = $player->relationLoaded('seasonSummaries') ? $player->seasonSummaries->firstWhere('season', 2024) : null;
+            if ($summary && $summary->position_rank) {
+                $row['season_2024_position_rank'] = $summary->position_rank;
             }
             $players[] = $row;
         }

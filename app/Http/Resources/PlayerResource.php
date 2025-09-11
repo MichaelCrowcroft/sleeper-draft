@@ -49,9 +49,22 @@ class PlayerResource extends JsonResource
             'bye_week' => $this->bye_week,
         ];
 
-        // Append 2024 season PPR summary if available
-        if (method_exists($this->resource, 'getSeason2024Summary')) {
-            $data['season_2024_summary'] = $this->resource->getSeason2024Summary();
+        // Append 2024 season summary from cache if relation present
+        $summary = $this->resource->relationLoaded('seasonSummaries')
+            ? $this->resource->seasonSummaries->firstWhere('season', 2024)
+            : null;
+        if ($summary) {
+            $data['season_2024_summary'] = [
+                'total_points' => $summary->total_points,
+                'min_points' => $summary->min_points,
+                'max_points' => $summary->max_points,
+                'average_points_per_game' => $summary->average_points_per_game,
+                'stddev_below' => $summary->stddev_below,
+                'stddev_above' => $summary->stddev_above,
+                'games_active' => $summary->games_active,
+                'snap_percentage_avg' => $summary->snap_percentage_avg,
+                'position_rank' => $summary->position_rank,
+            ];
         }
 
         // Append 2025 projections PPR summary if available
