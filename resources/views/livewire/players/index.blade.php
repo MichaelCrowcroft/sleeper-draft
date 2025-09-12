@@ -95,6 +95,7 @@ new class extends Component
             ->when($this->team, fn($q) => $q->where('team', $this->team))
             ->when($this->search, fn($q) => $q->search($this->search))
             ->whereNotIn('player_id', $excluded_player_ids)
+            ->select('players.*')
             ->selectSub(PlayerStats::query()
                 ->select('weekly_ranking')
                 ->whereColumn('player_stats.player_id', 'players.player_id')
