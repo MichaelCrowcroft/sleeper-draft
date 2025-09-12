@@ -149,6 +149,13 @@ new class extends Component
         return $colspan;
     }
 
+    public function mount()
+    {
+        if(!$this->selectedLeagueId) {
+            $this->selectedLeagueId = $this->leagues[0]['league_id'] ?? '';
+        }
+    }
+
     #[Computed]
     public function resolvedWeek(): ?int
     {
