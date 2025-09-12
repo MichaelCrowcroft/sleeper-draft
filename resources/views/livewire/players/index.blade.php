@@ -25,10 +25,10 @@ new class extends Component
     public ?string $team = '';
 
     #[Url]
-    public ?string $selectedLeagueId = '';
+    public ?string $selected_league_id = '';
 
     #[Url]
-    public ?bool $faOnly = false;
+    public ?bool $fa_only = false;
 
     public $selectedMetrics = [
         // Core columns shown on this page
@@ -85,8 +85,8 @@ new class extends Component
     #[Computed]
     public function players()
     {
-        $rostered_players = new GetRosteredPlayers()->execute($this->selectedLeagueId);
-        $excluded_player_ids = $this->faOnly ? array_keys($rostered_players) : [];
+        $rostered_players = new GetRosteredPlayers()->execute($this->selected_league_id);
+        $excluded_player_ids = $this->fa_only ? array_keys($rostered_players) : [];
         $state = new DetermineCurrentWeek()->execute('nfl');
 
         $players = Player::query()
@@ -151,8 +151,8 @@ new class extends Component
 
     public function mount()
     {
-        if(!$this->selectedLeagueId) {
-            $this->selectedLeagueId = $this->leagues[0]['league_id'] ?? '';
+        if(!$this->selected_league_id) {
+            $this->selected_league_id = $this->leagues[0]['league_id'] ?? '';
         }
     }
 
@@ -233,7 +233,7 @@ new class extends Component
                 <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 place-items-center">
                     <!-- League Selection -->
                     <div>
-                        <flux:select wire:model.live="selectedLeagueId">
+                        <flux:select wire:model.live="selected_league_id">
                             <flux:select.option value="">No League Selected</flux:select.option>
                             @foreach ($this->leagues as $league)
                                 <flux:select.option value="{{ $league['league_id'] }}">{{ $league['name'] }}</flux:select.option>
@@ -242,10 +242,10 @@ new class extends Component
                     </div>
 
                     <!-- Free Agents Only -->
-                    @if($selectedLeagueId)
+                    @if($selected_league_id)
                         <div>
                             <label class="flex items-center gap-2 text-sm">
-                                <flux:switch wire:model.live="faOnly" />
+                                <flux:switch wire:model.live="fa_only" />
                                 <span>Free agents only</span>
                             </label>
                         </div>
