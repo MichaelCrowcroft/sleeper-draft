@@ -93,7 +93,7 @@ new class extends Component
             ->where('active', true)
             ->when($this->position, fn($q) => $q->where('position', $this->position))
             ->when($this->team, fn($q) => $q->where('team', $this->team))
-            ->search($this->search)
+            ->when($this->search, fn($q) => $q->search($this->search))
             ->whereNotIn('player_id', $excluded_player_ids)
             ->selectSub(PlayerStats::query()
                 ->select('weekly_ranking')
