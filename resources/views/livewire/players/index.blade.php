@@ -91,8 +91,8 @@ new class extends Component
 
         $players = Player::query()
             ->where('active', true)
-            ->where('position', $this->position)
-            ->where('team', $this->team)
+            ->when($this->position, fn($q) => $q->where('position', $this->position))
+            ->when($this->team, fn($q) => $q->where('team', $this->team))
             ->search($this->search)
             ->whereNotIn('player_id', $excluded_player_ids)
             ->selectSub(PlayerStats::query()

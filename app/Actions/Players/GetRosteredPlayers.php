@@ -41,13 +41,6 @@ class GetRosteredPlayers
             }
         }
 
-        if(!empty($rostered_players)) {
-            foreach ($players as $player) {
-                $roster_info = $rostered_players[$player->player_id] ?? null;
-                $player->owner_or_free_agent = $roster_info ? ($roster_info['owner'] ?? 'Unknown Owner') : null;
-            }
-        }
-
         return $players;
     }
 }
