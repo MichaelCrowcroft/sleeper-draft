@@ -43,30 +43,6 @@ class Player extends Model
     }
 
     /**
-     * Scope: filter by single position (case-insensitive) when provided.
-     */
-    public function scopePosition(Builder $query, ?string $position): Builder
-    {
-        $pos = strtoupper((string) ($position ?? ''));
-
-        return $pos !== ''
-            ? $query->where('position', $pos)
-            : $query;
-    }
-
-    /**
-     * Scope: filter by team (case-insensitive) when provided.
-     */
-    public function scopeTeam(Builder $query, ?string $team): Builder
-    {
-        $tm = strtoupper((string) ($team ?? ''));
-
-        return $tm !== ''
-            ? $query->where('team', $tm)
-            : $query;
-    }
-
-    /**
      * Scope: search by name fields when term provided.
      */
     public function scopeSearch(Builder $query, ?string $term): Builder
@@ -82,18 +58,6 @@ class Player extends Model
                 ->orWhere('full_name', 'like', '%'.$search.'%')
                 ->orWhere('search_full_name', 'like', '%'.strtolower($search).'%');
         });
-    }
-
-    /**
-     * Scope: exclude players by their external player_id values.
-     *
-     * @param  array<int, string|int>  $ids
-     */
-    public function scopeExcludePlayerIds(Builder $query, array $ids): Builder
-    {
-        return ! empty($ids)
-            ? $query->whereNotIn('player_id', $ids)
-            : $query;
     }
 
     /**

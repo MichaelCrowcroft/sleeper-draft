@@ -2,22 +2,11 @@
 
 namespace App\Actions\Rosters;
 
-use App\Actions\Sleeper\FetchLeagueUsers;
 use App\Http\Resources\PlayerResource;
 use App\Models\Player;
 
 class FetchEnhancedRoster
 {
-    public function __construct(public FetchLeagueUsers $fetchLeagueUsers) {}
-
-    /**
-     * Enhance a Sleeper roster payload with optional player details from DB and owner details from Sleeper.
-     *
-     * @param  array  $roster  Raw roster from Sleeper API
-     * @param  bool  $includePlayerDetails  Whether to include player resource data
-     * @param  bool  $includeOwnerDetails  Whether to include owner details
-     * @return array Enhanced roster array
-     */
     public function execute(string $leagueId, array $roster, bool $includePlayerDetails = true, bool $includeOwnerDetails = true): array
     {
         $enhanced = $roster;
@@ -62,7 +51,7 @@ class FetchEnhancedRoster
     private function buildOwnerDetails(string $leagueId, string $ownerId): array
     {
         try {
-            $users = $this->fetchLeagueUsers->execute($leagueId);
+            $users = $this->getLeagueOwners->execute($leagueId);
             if (is_array($users)) {
                 foreach ($users as $user) {
                     $userId = $user['user_id'] ?? null;

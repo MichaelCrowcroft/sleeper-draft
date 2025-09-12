@@ -7,8 +7,11 @@ use Livewire\Attributes\Computed;
 use App\Actions\Sleeper\DetermineCurrentWeek;
 use App\Actions\Players\AvailablePositions;
 use App\Actions\Players\AvailableTeams;
-use App\Actions\Sleeper\GetUserLeagues;
-use App\Actions\Players\BuildPlayersTable;
+use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
+use App\Actions\Players\GetRosteredPlayers;
+use App\Models\Player;
+use App\Models\PlayerStats;
+use App\Actions\Players\AddOwnerToPlayers;
 
 new class extends Component
 {
@@ -82,14 +85,30 @@ new class extends Component
     #[Computed]
     public function players()
     {
-        return app(BuildPlayersTable::class)->execute([
-            'search' => $this->search,
-            'position' => $this->position,
-            'team' => $this->team,
-            'league_id' => $this->selectedLeagueId ?: null,
-            'fa_only' => (bool) $this->faOnly,
-            'per_page' => 25,
-        ]);
+        $rostered_players = app(GetRosteredPlayers::class)->execute($this->selectedLeagueId);
+        $excluded_player_ids = $this->faOnly ? array_keys($rostered_players) : [];
+        $state = app(DetermineCurrentWeek::class)->execute('nfl');
+
+        $players = Player::query()
+            ->where('active', true)
+            ->where('position', $this->position)
+            ->where('team', $this->team)
+            ->search($this->search)
+            ->whereNotIn('player_id', $excluded_player_ids)
+            ->selectSub(PlayerStats::query()
+                ->select('weekly_ranking')
+                ->whereColumn('player_stats.player_id', 'players.player_id')
+                ->where('season', $state['season'])
+                ->where('week', (int) $state['week'])
+                ->limit(1),
+                'weekly_position_rank'
+            )->playablePositions()
+            ->with(['projections2025', 'seasonSummaries'])
+            ->paginate(25);
+
+        $players = app(AddOwnerToPlayers::class)->execute($players, $rostered_players);
+
+        return $players;
     }
 
     #[Computed]
@@ -107,9 +126,9 @@ new class extends Component
     #[Computed]
     public function leagues(): array
     {
-        return (new GetUserLeagues())->execute(
-            Auth::user()->sleeper_user_id, 'nfl', date('Y')
-        );
+        return Sleeper::user(Auth::user()->sleeper_user_id)
+            ->leagues('nfl', date('Y'))
+            ->json();
     }
 
     #[Computed]
