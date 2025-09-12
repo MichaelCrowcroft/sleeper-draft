@@ -7,6 +7,11 @@ new class extends Component
 {
     public Player $player;
 
+    public function mount($playerId)
+    {
+        $this->player = Player::where('player_id', $playerId)->firstOrFail();
+    }
+
     public function getStats2024Property()
     {
         return $this->player->getSeason2024Totals();
