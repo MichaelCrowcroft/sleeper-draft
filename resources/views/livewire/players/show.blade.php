@@ -3,7 +3,8 @@
 use App\Models\Player;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     public Player $player;
 
     public function getStats2024Property()
