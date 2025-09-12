@@ -105,6 +105,7 @@ new class extends Component
                 'weekly_position_rank'
             )->playablePositions()
             ->with(['projections2025', 'seasonSummaries'])
+            ->orderByAdpBy()
             ->paginate(25);
 
         $players = app(AddOwnerToPlayers::class)->execute($players, $rostered_players);
