@@ -85,9 +85,9 @@ new class extends Component
     #[Computed]
     public function players()
     {
-        $rostered_players = app(GetRosteredPlayers::class)->execute($this->selectedLeagueId);
+        $rostered_players = new GetRosteredPlayers()->execute($this->selectedLeagueId);
         $excluded_player_ids = $this->faOnly ? array_keys($rostered_players) : [];
-        $state = app(DetermineCurrentWeek::class)->execute('nfl');
+        $state = new DetermineCurrentWeek()->execute('nfl');
 
         $players = Player::query()
             ->where('active', true)
@@ -108,7 +108,7 @@ new class extends Component
             ->orderByAdp()
             ->paginate(25);
 
-        $players = app(AddOwnerToPlayers::class)->execute($players, $rostered_players);
+        $players = new AddOwnerToPlayers()->execute($players, $rostered_players);
 
         return $players;
     }
@@ -116,13 +116,13 @@ new class extends Component
     #[Computed]
     public function availablePositions(): array
     {
-        return (new AvailablePositions())->execute();
+        return new AvailablePositions()->execute();
     }
 
     #[Computed]
     public function availableTeams(): array
     {
-        return (new AvailableTeams())->execute();
+        return new AvailableTeams()->execute();
     }
 
     #[Computed]
@@ -152,7 +152,7 @@ new class extends Component
     #[Computed]
     public function resolvedWeek(): ?int
     {
-        $state = (new DetermineCurrentWeek())->execute('nfl');
+        $state = new DetermineCurrentWeek()->execute('nfl');
 
         return $state['week'] ?? null;
     }
