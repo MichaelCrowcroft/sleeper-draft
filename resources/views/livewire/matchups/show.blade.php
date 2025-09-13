@@ -5,6 +5,7 @@ use App\Actions\Matchups\FilterMatchups;
 use App\Actions\Matchups\GetMatchupsWithOwners;
 use App\Actions\Matchups\OptimizeLineup;
 use App\Actions\Matchups\MergeEnrichedMatchupsWithRosterPositions;
+use App\Actions\Matchups\AttachOptimizationToUserTeam;
 use App\Actions\Sleeper\FetchLeague;
 use App\Actions\Sleeper\GetSeasonState;
 use Illuminate\Support\Facades\Auth;
@@ -32,47 +33,7 @@ new class extends Component
         $matchups = new FilterMatchups()->execute($matchups, Auth::user()->sleeper_user_id);
         $matchups = new EnrichMatchupsWithPlayerData()->execute($matchups, 2025, $this->week);
         $matchups = new MergeEnrichedMatchupsWithRosterPositions()->execute($matchups, $this->league_id);
-
-        foreach ($matchups as $mid => &$teams) {
-            foreach ($teams as &$team) {
-                if (! is_array($team) || ! isset($team['owner_id'])) {
-                    continue;
-                }
-                if ((string) ($team['owner_id'] ?? '') !== (string) (Auth::user()->sleeper_user_id ?? '')) {
-                    continue;
-                }
-
-                // Build simple starters/bench and points maps from enriched data
-                // Note: after merge, starters is indexed by slot with nulls allowed
-                $current_starters = array_values(array_filter(array_map(function ($p) {
-                    return is_array($p) ? ($p['player_id'] ?? null) : $p;
-                }, (array) ($team['starters'] ?? []))));
-
-                $bench_players = array_values(array_filter(array_map(function ($p) {
-                    return is_array($p) ? ($p['player_id'] ?? null) : $p;
-                }, (array) ($team['players'] ?? []))));
-
-                $points = [];
-                foreach (array_merge((array) ($team['starters'] ?? []), (array) ($team['players'] ?? [])) as $p) {
-                    if (! is_array($p)) { continue; }
-                    $pid = $p['player_id'] ?? null;
-                    if (! $pid) { continue; }
-                    $actual = $p['stats']['stats']['pts_ppr'] ?? null;
-                    $projected = $p['projection']['stats']['pts_ppr'] ?? ($p['projection']['pts_ppr'] ?? null);
-                    $used = ($actual !== null) ? (float) $actual : (float) ($projected ?? 0.0);
-                    $points[$pid] = [
-                        'actual' => (float) ($actual ?? 0.0),
-                        'projected' => (float) ($projected ?? 0.0),
-                        'used' => (float) $used,
-                        'status' => $actual !== null ? 'locked' : 'upcoming',
-                    ];
-                }
-
-                $opt = new OptimizeLineup()->execute($current_starters, $bench_players, $points, 2025, (int) $this->week, $team['roster_slots'] ?? null);
-                $team['lineup_optimization'] = $opt;
-                // roster_slots already attached by merge action
-            }
-        }
+        $matchups = new AttachOptimizationToUserTeam()->execute($matchups, 2025, (int) $this->week);
 
         return $matchups;
     }
@@ -197,7 +158,7 @@ new class extends Component
                                 </div>
                             </div>
 
-                            <!-- Players -->
+                            <!-- Players by Slot -->
                             <div class="space-y-3">
                                 <h4 class="font-medium text-sm text-muted-foreground uppercase tracking-wide">Starters</h4>
                                 @php $slotLabels = $team['roster_slots'] ?? []; @endphp
