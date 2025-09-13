@@ -64,15 +64,17 @@ class FetchUserLeaguesTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
-        $this->validateOrFail($arguments, [
-            'user_identifier' => ['required', 'string'],
-            'sport' => ['nullable', 'string'],
-            'season' => ['nullable', 'string'],
-        ]);
-
-        $user_identifier = $arguments['user_identifier'];
+        $user_identifier = $arguments['user_identifier'] ?? null;
         $sport = $arguments['sport'] ?? 'nfl';
         $season = $arguments['season'] ?? null;
+
+        if (!$user_identifier) {
+            return [
+                'success' => false,
+                'error' => 'Missing required parameter: user_identifier',
+                'message' => 'The user_identifier parameter is required',
+            ];
+        }
 
         if ($season === null) {
             $state = new GetSeasonState()->execute($sport);
