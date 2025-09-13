@@ -57,7 +57,7 @@ class FetchPlayersTool implements ToolInterface
                 'per_page' => [
                     'type' => 'integer',
                     'minimum' => 1,
-                    'maximum' => 20,
+                    'maximum' => 40,
                     'description' => 'The number of players to fetch per page',
                 ],
                 'page' => [
@@ -90,7 +90,7 @@ class FetchPlayersTool implements ToolInterface
         $position = $arguments['position'] ?? null;
         $team = $arguments['team'] ?? null;
         $search = $arguments['search'] ?? null;
-        $page = (int) $arguments['page'] ?? 1;
+        $page = isset($arguments['page']) ? (int) $arguments['page'] : 1;
         $per_page = (int) $arguments['per_page'] ?? 10;
 
         $rostered_players = new GetRosteredPlayers()->execute($league_id);
