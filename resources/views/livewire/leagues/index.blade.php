@@ -1,10 +1,10 @@
 <?php
 
 // use App\Actions\Sleeper\DetermineCurrentWeek; // not used here
-use App\Actions\Sleeper\GetUserLeagues;
 use App\Models\User;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Auth;
+use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 
 new class extends Component
 {
@@ -15,8 +15,9 @@ new class extends Component
         $user = Auth::user();
 
         if($user->sleeper_user_id) {
-            $this->leagues = app(GetUserLeagues::class)
-                ->execute($user->sleeper_user_id, 'nfl', '2025');
+            $this->leagues = Sleeper::user($user->sleeper_user_id)
+                ->leagues('nfl', '2025')
+                ->json();
         } else {
             $this->leagues = [];
         }
