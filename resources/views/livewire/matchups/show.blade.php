@@ -182,40 +182,7 @@ new class extends Component
                                         <h4 class="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-3">Bench</h4>
                                         @foreach($team['bench_players'] as $player)
                                             @if(is_array($player))
-                                                <div class="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-dashed border-muted-foreground/30">
-                                                    <div class="flex items-center gap-3">
-                                                        <flux:badge variant="outline" size="sm" class="text-muted-foreground">BN</flux:badge>
-                                                        <div>
-                                                            <div class="font-medium text-sm">{{ $player['name'] ?? ($player['first_name'] . ' ' . $player['last_name']) }}</div>
-                                                            <div class="text-xs text-muted-foreground">{{ $player['position'] }} • {{ $player['team'] }}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="text-right">
-                                                        <div class="text-sm font-medium">
-                                                            @if(isset($player['stats']['stats']['pts_ppr']) && $player['stats']['stats']['pts_ppr'] !== null)
-                                                                <span class="text-green-600">{{ number_format($player['stats']['stats']['pts_ppr'], 1) }}</span>
-                                                            @elseif(isset($player['projection']) && $player['projection'])
-                                                                @php
-                                                                    $proj = $player['projection']['pts_ppr'] ?? ($player['projection']['stats']['pts_ppr'] ?? null);
-                                                                @endphp
-                                                                @if($proj !== null)
-                                                                    <span class="text-blue-600">{{ number_format($proj, 1) }}</span>
-                                                                @else
-                                                                    <span class="text-muted-foreground">—</span>
-                                                                @endif
-                                                            @else
-                                                                <span class="text-muted-foreground">—</span>
-                                                            @endif
-                                                        </div>
-                                                        <div class="text-xs text-muted-foreground">
-                                                            @if(isset($player['stats']['stats']['pts_ppr']) && $player['stats']['stats']['pts_ppr'] !== null)
-                                                                Actual
-                                                            @else
-                                                                Proj
-                                                            @endif
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                @include('components.matchup-player-card', ['player' => $player, 'isBench' => true])
                                             @endif
                                         @endforeach
                                     </div>
