@@ -3,8 +3,6 @@
 namespace App\Actions\Matchups;
 
 use App\Models\Player;
-use App\Models\PlayerProjections;
-use App\Models\PlayerStats;
 use Illuminate\Support\Collection;
 
 class EnrichMatchupsWithPlayerData
@@ -57,7 +55,7 @@ class EnrichMatchupsWithPlayerData
     {
         return collect($team)
             ->transform(function ($value, $key) use ($players) {
-                if($key === 'starters' || $key === 'players') {
+                if ($key === 'starters' || $key === 'players') {
                     return collect($value)
                         ->map(fn ($player_id) => $this->enrichPlayer($player_id, $players))
                         ->all();
@@ -71,7 +69,6 @@ class EnrichMatchupsWithPlayerData
     private function enrichPlayer(string $player_id, Collection $players): array
     {
         $player = $players->get($player_id);
-
 
         $projection = $player->projections->first();
         $stats = $player->stats->first();

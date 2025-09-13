@@ -1,7 +1,5 @@
 <?php
 
-// use App\Actions\Sleeper\DetermineCurrentWeek; // not used here
-use App\Models\User;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Auth;
 use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;

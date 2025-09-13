@@ -1,11 +1,9 @@
 <?php
 
-use App\Actions\Matchups\AssembleMatchupViewModel;
 use App\Actions\Matchups\EnrichMatchupsWithPlayerData;
 use App\Actions\Matchups\FilterMatchups;
 use App\Actions\Matchups\GetMatchupsWithOwners;
 use App\Actions\Sleeper\GetSeasonState;
-use App\Actions\Sleeper\FetchLeague;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
@@ -36,12 +34,77 @@ new class extends Component
 }; ?>
 
 <section class="w-full">
-    <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center justify-between mb-6">
         <div>
             <flux:heading size="xl">Matchups</flux:heading>
-            <p class="text-muted-foreground">Week {{ $this->week }} • {{ $this->league['name'] ?? 'League' }}</p>
+            <p class="text-muted-foreground">Week {{ $this->week }} • League {{ $this->league_id }}</p>
         </div>
     </div>
 
-    <pre class="text-xs">{{ json_encode($this->matchup, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+    @if(empty($this->matchup))
+        <div class="text-center py-12">
+            <flux:heading size="lg" class="text-muted-foreground">No matchup data available</flux:heading>
+            <p class="text-muted-foreground mt-2">Matchup data will appear once the week begins.</p>
+        </div>
+    @else
+        @foreach($this->matchup as $matchupId => $teams)
+            <div class="bg-card rounded-lg border p-6 mb-6">
+                <!-- Matchup Header -->
+                <div class="flex items-center justify-between mb-6">
+                    <flux:heading size="lg">Matchup #{{ $matchupId }}</flux:heading>
+                    <div class="text-sm text-muted-foreground">
+                        Week {{ $this->week }}
+                    </div>
+                </div>
+
+                <!-- Teams Side by Side -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    @foreach($teams as $index => $team)
+                        <div class="space-y-4">
+                            <!-- Team Header -->
+                            <div class="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                                <div>
+                                    <h3 class="font-semibold text-lg">{{ $team['owner_name'] ?? $team['owner_id'] ?? 'Unknown Owner' }}</h3>
+                                    @if(isset($team['roster_settings']['name']) && !empty($team['roster_settings']['name']))
+                                        <p class="text-sm text-muted-foreground">{{ $team['roster_settings']['name'] }}</p>
+                                    @endif
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold text-green-600">{{ number_format($team['points'] ?? 0, 1) }}</div>
+                                    <div class="text-sm text-muted-foreground">Points</div>
+                                </div>
+                            </div>
+
+                            <!-- Players -->
+                            <div class="space-y-3">
+                                <h4 class="font-medium text-sm text-muted-foreground uppercase tracking-wide">Starters</h4>
+                                @if(isset($team['starters']) && is_array($team['starters']) && !empty($team['starters']))
+                                    @foreach($team['starters'] as $player)
+                                        @if(is_array($player))
+                                            @include('components.matchup-player-card', ['player' => $player])
+                                        @endif
+                                    @endforeach
+                                @else
+                                    <div class="text-center py-4 text-muted-foreground">
+                                        No starters available
+                                    </div>
+                                @endif
+
+                                @if(isset($team['players']) && is_array($team['players']) && !empty($team['players']))
+                                    <div class="pt-3 border-t">
+                                        <h4 class="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-3">Bench</h4>
+                                        @foreach($team['players'] as $player)
+                                            @if(is_array($player))
+                                                @include('components.matchup-player-card', ['player' => $player, 'isBench' => true])
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endforeach
+    @endif
 </section>
