@@ -158,15 +158,68 @@ new class extends Component
                                 </div>
                             </div>
 
+                            <!-- Lineup Optimization (User's Team Only) -->
+                            @if(isset($team['lineup_optimization']) && (string)($team['owner_id'] ?? '') === (string)(Auth::user()->sleeper_user_id ?? ''))
+                                @php $opt = $team['lineup_optimization']; @endphp
+                                @if(!empty($opt['recommendations']) || $opt['optimized_lineup']['improvement'] != 0)
+                                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <h4 class="font-semibold text-green-800 dark:text-green-200">🎯 Lineup Optimization</h4>
+                                            <div class="text-right">
+                                                <div class="text-lg font-bold {{ $opt['optimized_lineup']['improvement'] > 0 ? 'text-green-600' : 'text-gray-600' }}">
+                                                    {{ $opt['optimized_lineup']['improvement'] > 0 ? '+' : '' }}{{ number_format($opt['optimized_lineup']['improvement'], 1) }} pts
+                                                </div>
+                                                <div class="text-xs text-muted-foreground">Potential improvement</div>
+                                            </div>
+                                        </div>
+
+                                        @if(!empty($opt['recommendations']))
+                                            <div class="space-y-2">
+                                                <div class="text-sm font-medium text-green-700 dark:text-green-300">Recommended Changes:</div>
+                                                @foreach($opt['recommendations'] as $playerId => $rec)
+                                                    <div class="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border">
+                                                        <div class="flex items-center gap-2">
+                                                            <flux:badge variant="secondary" size="sm">{{ $rec['position'] ?? 'POS' }}</flux:badge>
+                                                            <span class="text-sm font-medium">Start {{ $playerId }}</span>
+                                                        </div>
+                                                        <div class="text-right">
+                                                            <div class="text-sm font-medium text-green-600">{{ number_format($rec['projection'], 1) }} pts</div>
+                                                            <div class="text-xs text-muted-foreground">{{ round($rec['confidence_score'] * 100) }}% confidence</div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <div class="text-sm text-green-700 dark:text-green-300">
+                                                ✅ Your current lineup is already optimal!
+                                            </div>
+                                        @endif
+
+                                        <div class="mt-3 pt-3 border-t border-green-200 dark:border-green-700">
+                                            <div class="flex items-center justify-between text-xs text-muted-foreground">
+                                                <span>Risk Level: <span class="font-medium">{{ ucfirst($opt['risk']['level']) }}</span></span>
+                                                <span>Avg Confidence: {{ round($opt['risk']['average_confidence'] * 100) }}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                            @endif
+
                             <!-- Players by Slot -->
                             <div class="space-y-3">
                                 <h4 class="font-medium text-sm text-muted-foreground uppercase tracking-wide">Starters</h4>
-                                @php $slotLabels = $team['roster_slots'] ?? []; @endphp
+                                @php
+                                    $slotLabels = $team['roster_slots'] ?? [];
+                                    $recommendedPlayerIds = isset($team['lineup_optimization']['recommendations']) ? array_keys($team['lineup_optimization']['recommendations']) : [];
+                                @endphp
                                 @if(!empty($slotLabels))
                                     @foreach($slotLabels as $i => $slot)
-                                        @php $player = $team['starters'][$i] ?? null; @endphp
+                                        @php
+                                            $player = $team['starters'][$i] ?? null;
+                                            $isRecommended = is_array($player) && in_array($player['player_id'] ?? '', $recommendedPlayerIds);
+                                        @endphp
                                         @if(is_array($player))
-                                            @include('components.matchup-player-card', ['player' => $player, 'slotLabel' => $slot])
+                                            @include('components.matchup-player-card', ['player' => $player, 'slotLabel' => $slot, 'isRecommended' => $isRecommended])
                                         @else
                                             <div class="flex items-center justify-between p-3 rounded-lg bg-muted/10 border border-dashed">
                                                 <div class="flex items-center gap-3">

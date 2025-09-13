@@ -2,9 +2,10 @@
     'player',
     'isBench' => false,
     'slotLabel' => null,
+    'isRecommended' => false,
 ])
 
-<div class="flex items-center justify-between p-3 rounded-lg {{ $isBench ? 'bg-muted/30 border border-muted' : 'bg-background border' }} hover:bg-muted/20 transition-colors">
+<div class="flex items-center justify-between p-3 rounded-lg {{ $isBench ? 'bg-muted/30 border border-muted' : 'bg-background border' }} {{ $isRecommended ? 'ring-2 ring-green-400 bg-green-50 dark:bg-green-950/20' : '' }} hover:bg-muted/20 transition-colors">
     <div class="flex items-center gap-3 flex-1 min-w-0">
         <!-- Position / Slot Badge -->
         <div class="flex items-center gap-1 shrink-0">
@@ -22,19 +23,26 @@
 
         <!-- Player Info -->
         <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-                <h4 class="font-medium text-sm truncate">{{ $player['name'] }}</h4>
-                <flux:badge variant="outline" size="sm" class="shrink-0">
-                    {{ $player['team'] }}
-                </flux:badge>
-
-                <!-- Injury Status -->
-                @if($player['injury_status'] && $player['injury_status'] !== 'Healthy')
-                    <flux:badge variant="destructive" size="sm" class="shrink-0">
-                        {{ $player['injury_status'] }}
+                <div class="flex items-center gap-2">
+                    <h4 class="font-medium text-sm truncate">{{ $player['name'] }}</h4>
+                    <flux:badge variant="outline" size="sm" class="shrink-0">
+                        {{ $player['team'] }}
                     </flux:badge>
-                @endif
-            </div>
+
+                    <!-- Recommended Badge -->
+                    @if($isRecommended)
+                        <flux:badge variant="secondary" size="sm" class="shrink-0 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            OPTIMAL
+                        </flux:badge>
+                    @endif
+
+                    <!-- Injury Status -->
+                    @if($player['injury_status'] && $player['injury_status'] !== 'Healthy')
+                        <flux:badge variant="destructive" size="sm" class="shrink-0">
+                            {{ $player['injury_status'] }}
+                        </flux:badge>
+                    @endif
+                </div>
 
             @if($player['injury_status'] && $player['injury_status'] !== 'Healthy')
                 <p class="text-xs text-muted-foreground mt-1">Injured</p>
