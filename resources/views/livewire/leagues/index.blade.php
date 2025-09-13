@@ -44,10 +44,10 @@ new class extends Component
                             <div class="text-xs text-muted-foreground">{{ $league['league_id'] ?? '' }}</div>
                         </div>
                         <div class="flex gap-2">
-                            <flux:button href="{{ route('matchups.show.current', ['leagueId' => $league['league_id'] ?? '']) }}" wire:navigate variant="outline" size="sm">
+                            <flux:button href="{{ route('matchups.show.current', ['league_id' => $league['league_id'] ?? '']) }}" wire:navigate variant="outline" size="sm">
                                 View Matchup
                             </flux:button>
-                            <flux:button href="{{ route('weekly-summary.show', ['leagueId' => $league['league_id'] ?? '', 'year' => 2025, 'week' => 1]) }}" wire:navigate variant="primary" size="sm">
+                            <flux:button href="{{ route('weekly-summary.show', ['league_id' => $league['league_id'] ?? '', 'year' => 2025, 'week' => 1]) }}" wire:navigate variant="primary" size="sm">
                                 <flux:icon name="sparkles" class="w-4 h-4 mr-2" />
                                 Weekly Summary
                             </flux:button>

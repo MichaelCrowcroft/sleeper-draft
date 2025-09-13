@@ -1,17 +1,21 @@
 <?php
 
 use App\Actions\Matchups\AssembleMatchupViewModel;
+use App\Actions\Matchups\EnrichMatchupsWithPlayerData;
+use App\Actions\Matchups\FilterMatchups;
+use App\Actions\Matchups\GetMatchupsWithOwners;
 use App\Actions\Sleeper\GetSeasonState;
+use App\Actions\Sleeper\FetchLeague;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
-use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 
 new class extends Component
 {
-    public int|string $league_id;
+    public string $league_id;
     public ?int $week = null;
 
-    public function mount(int $league_id, ?int $week = null): void
+    public function mount(string $league_id, ?int $week = null): void
     {
         $this->league_id = $league_id;
         $this->week = $week;
@@ -23,10 +27,9 @@ new class extends Component
     #[Computed]
     public function matchup(): array
     {
-        $matchups = Sleeper::leagues()->matchups($this->league_id, $this->week)->json();
-        if($matchups === []) {
-            return [];
-        }
+        $matchups = new GetMatchupsWithOwners()->execute($this->league_id, $this->week);
+        $matchups = new FilterMatchups()->execute($matchups, Auth::user()->sleeper_user_id);
+        $matchups = new EnrichMatchupsWithPlayerData()->execute($matchups, 2025, $this->week);
 
         return $matchups;
     }
@@ -35,10 +38,10 @@ new class extends Component
 <section class="w-full">
     <div class="flex items-center justify-between mb-4">
         <div>
-            <flux:heading size="xl">Matchup</flux:heading>
-            <p class="text-muted-foreground">Week {{ $this->model['week'] }} • {{ $this->model['league']['name'] ?? 'League' }}</p>
+            <flux:heading size="xl">Matchups</flux:heading>
+            <p class="text-muted-foreground">Week {{ $this->week }} • {{ $this->league['name'] ?? 'League' }}</p>
         </div>
     </div>
 
-    <p>{!! $this->matchup !!}/p>
+    <pre class="text-xs">{{ json_encode($this->matchup, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
 </section>
