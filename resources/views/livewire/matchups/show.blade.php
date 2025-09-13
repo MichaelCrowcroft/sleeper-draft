@@ -57,6 +57,61 @@ new class extends Component
                     </div>
                 </div>
 
+                <!-- Matchup Summary with Confidence Intervals and Win Probabilities -->
+                @if(isset($matchup['win_probabilities']))
+                <div class="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 rounded-lg p-6 mb-6 border border-green-200 dark:border-green-800">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        @php $teamIndex = 0; @endphp
+                        @foreach($teams as $index => $team)
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="font-semibold text-lg">{{ $team['owner_name'] ?? $team['owner_id'] ?? 'Unknown Owner' }}</h3>
+                                    <div class="text-right">
+                                        @if($teamIndex === 0)
+                                            <div class="text-2xl font-bold text-green-600">{{ $matchup['win_probabilities']['team_a_win_probability'] }}%</div>
+                                            <div class="text-xs text-muted-foreground">Win Probability</div>
+                                        @else
+                                            <div class="text-2xl font-bold text-blue-600">{{ $matchup['win_probabilities']['team_b_win_probability'] }}%</div>
+                                            <div class="text-xs text-muted-foreground">Win Probability</div>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                @if(isset($team['confidence_interval']))
+                                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border">
+                                    <div class="text-center">
+                                        <div class="text-sm text-muted-foreground mb-1">90% Confidence Range</div>
+                                        <div class="text-xl font-bold text-gray-900 dark:text-gray-100">
+                                            {{ $team['confidence_interval']['lower_90'] }} - {{ $team['confidence_interval']['upper_90'] }}
+                                        </div>
+                                        <div class="text-xs text-muted-foreground mt-1">
+                                            ±{{ number_format($team['confidence_interval']['confidence_range'] / 2, 1) }} pts
+                                        </div>
+                                    </div>
+                                </div>
+                                @endif
+                            </div>
+                            @php $teamIndex++; @endphp
+                        @endforeach
+                    </div>
+
+                    <!-- Matchup Insights -->
+                    <div class="mt-4 pt-4 border-t border-green-200 dark:border-green-700">
+                        <div class="text-center text-sm text-muted-foreground">
+                            @php
+                                $teamA = array_values($teams)[0] ?? null;
+                                $teamB = array_values($teams)[1] ?? null;
+                                $probA = $matchup['win_probabilities']['team_a_win_probability'] ?? 0;
+                                $probB = $matchup['win_probabilities']['team_b_win_probability'] ?? 0;
+                                $favored = $probA > $probB ? ($teamA['owner_name'] ?? 'Team A') : ($teamB['owner_name'] ?? 'Team B');
+                                $confidence = max($probA, $probB);
+                            @endphp
+                            <span class="font-medium">{{ $favored }}</span> has a <span class="font-medium">{{ $confidence }}%</span> chance to win this matchup
+                        </div>
+                    </div>
+                </div>
+                @endif
+
                 <!-- Teams Side by Side -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     @foreach($teams as $index => $team)
