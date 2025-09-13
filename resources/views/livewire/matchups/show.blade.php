@@ -177,10 +177,47 @@ new class extends Component
                                             <div class="space-y-2">
                                                 <div class="text-sm font-medium text-green-700 dark:text-green-300">Recommended Changes:</div>
                                                 @foreach($opt['recommendations'] as $playerId => $rec)
-                                                    <div class="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border">
-                                                        <div class="flex items-center gap-2">
+                                                    @php
+                                                        // Find the player name from the team's players
+                                                        $addPlayerName = null;
+                                                        $dropPlayerName = null;
+                                                        $dropPlayerId = null;
+
+                                                        // Find the player to add (from bench or starters)
+                                                        foreach (array_merge($team['starters'] ?? [], $team['players'] ?? []) as $p) {
+                                                            if (is_array($p) && ($p['player_id'] ?? '') === $playerId) {
+                                                                $addPlayerName = $p['name'] ?? $playerId;
+                                                                break;
+                                                            }
+                                                        }
+
+                                                        // Find who to drop (current starter in same position not in optimized lineup)
+                                                        $currentStarters = array_filter($team['starters'] ?? [], fn($p) => is_array($p));
+                                                        $optimizedStarters = $opt['optimized_lineup']['starters'] ?? [];
+
+                                                        foreach ($currentStarters as $starter) {
+                                                            if (is_array($starter) &&
+                                                                ($starter['position'] ?? '') === ($rec['position'] ?? '') &&
+                                                                !in_array($starter['player_id'] ?? '', $optimizedStarters)) {
+                                                                $dropPlayerName = $starter['name'] ?? ($starter['player_id'] ?? '');
+                                                                $dropPlayerId = $starter['player_id'] ?? '';
+                                                                break;
+                                                            }
+                                                        }
+                                                    @endphp
+                                                    <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded border">
+                                                        <div class="flex items-center gap-2 flex-1">
                                                             <flux:badge variant="secondary" size="sm">{{ $rec['position'] ?? 'POS' }}</flux:badge>
-                                                            <span class="text-sm font-medium">Start {{ $playerId }}</span>
+                                                            <div class="flex-1">
+                                                                <div class="text-sm font-medium text-green-600">
+                                                                    ▲ Start {{ $addPlayerName ?? $playerId }}
+                                                                </div>
+                                                                @if($dropPlayerName)
+                                                                    <div class="text-xs text-red-600">
+                                                                        ▼ Drop {{ $dropPlayerName }}
+                                                                    </div>
+                                                                @endif
+                                                            </div>
                                                         </div>
                                                         <div class="text-right">
                                                             <div class="text-sm font-medium text-green-600">{{ number_format($rec['projection'], 1) }} pts</div>

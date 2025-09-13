@@ -59,7 +59,7 @@ class OptimizeLineup
         $optimized_starters = $optimal_result['starters'];
         $optimized_bench = array_values(array_diff($all_player_ids, $optimized_starters));
 
-        $current_total = $this->calculateTotal($current_starters, $current_points);
+        $current_total = $this->calculateTotal($current_starters, $current_points, $candidates);
         $optimized_total = $this->calculateTotal($optimized_starters, $current_points, $candidates);
         $improvement = round($optimized_total - $current_total, 1);
 
