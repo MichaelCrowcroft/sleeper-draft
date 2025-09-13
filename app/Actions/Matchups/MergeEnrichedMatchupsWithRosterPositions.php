@@ -47,46 +47,48 @@ class MergeEnrichedMatchupsWithRosterPositions
                 $count_slots = count($starter_slots);
 
                 for ($i = 0; $i < $count_slots; $i++) {
-                    $starters[$i] = $raw_starters[$i] ?? null; // keep null if missing
+                    $player = $raw_starters[$i] ?? null;
+                    if (is_array($player)) {
+                        $player['is_starter'] = true;
+                        // Attach the slot label so frontend can show where they start
+                        $player['slot_label'] = $starter_slots[$i] ?? null;
+                    }
+                    $starters[$i] = $player; // keep null if missing
                 }
 
                 $team['starters'] = $starters; // indexed array where value may be player array or null
 
-                // Identify bench players (those not in starters)
-                $bench_players = [];
-                foreach ($raw_players as $player_id) {
-                    $is_starter = false;
-                    foreach ($raw_starters as $starter_id) {
-                        if ($starter_id === $player_id) {
-                            $is_starter = true;
-                            break;
-                        }
+                // Identify starters by player_id from aligned starters array
+                $starter_ids = array_values(array_filter(array_map(function ($p) {
+                    return is_array($p) && isset($p['player_id']) ? $p['player_id'] : null;
+                }, $team['starters'])));
+
+                // Mark all players with starter flag and compute bench players
+                $players_marked = [];
+                foreach ($raw_players as $player) {
+                    if (! is_array($player)) {
+                        // Preserve non-array entries as-is
+                        $players_marked[] = $player;
+
+                        continue;
                     }
 
-                    if (! $is_starter) {
-                        // Find the player data from the enriched starters or players
-                        $player_data = null;
-                        if (isset($team['starters'])) {
-                            foreach ($team['starters'] as $starter) {
-                                if (is_array($starter) && isset($starter['player_id']) && $starter['player_id'] === $player_id) {
-                                    $player_data = $starter;
-                                    break;
-                                }
-                            }
-                        }
+                    $player['is_starter'] = in_array($player['player_id'] ?? null, $starter_ids, true);
+                    $players_marked[] = $player;
+                }
 
-                        if (! $player_data && isset($team['players'])) {
-                            foreach ($team['players'] as $player) {
-                                if (is_array($player) && isset($player['player_id']) && $player['player_id'] === $player_id) {
-                                    $player_data = $player;
-                                    break;
-                                }
-                            }
-                        }
+                $team['players'] = $players_marked;
 
-                        if ($player_data) {
-                            $bench_players[] = $player_data;
-                        }
+                $bench_players = array_values(array_filter($players_marked, function ($p) use ($starter_ids) {
+                    return is_array($p)
+                        ? ! in_array($p['player_id'] ?? null, $starter_ids, true)
+                        : false;
+                }));
+
+                // Ensure bench players are explicitly marked
+                foreach ($bench_players as &$bp) {
+                    if (is_array($bp)) {
+                        $bp['is_starter'] = false;
                     }
                 }
 
