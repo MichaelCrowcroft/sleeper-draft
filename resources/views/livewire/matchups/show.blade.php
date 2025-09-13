@@ -43,13 +43,10 @@ new class extends Component
     {
         $total = 0.0;
 
-        // Get all players (starters + bench)
-        $allPlayers = array_merge(
-            $team['starters'] ?? [],
-            $team['players'] ?? []
-        );
+        // Only count starters for the projected total
+        $starters = $team['starters'] ?? [];
 
-        foreach ($allPlayers as $player) {
+        foreach ($starters as $player) {
             if (!is_array($player)) {
                 continue;
             }
