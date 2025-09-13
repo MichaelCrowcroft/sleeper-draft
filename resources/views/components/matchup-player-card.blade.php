@@ -36,21 +36,31 @@
         </div>
     </div>
 
-    <!-- Projected Points -->
+    <!-- Points Display -->
     <div class="text-right shrink-0">
-        @if(isset($player['projection']['stats']['pts_ppr']) && $player['projection']['stats']['pts_ppr'] !== null)
-            <div class="font-semibold text-green-600">
-                {{ number_format($player['projection']['stats']['pts_ppr'], 1) }}
-            </div>
-            <div class="text-xs text-muted-foreground">Proj</div>
-        @elseif(isset($player['stats']['stats']['pts_ppr']) && $player['stats']['stats']['pts_ppr'] !== null)
+        @php
+            $hasActual = isset($player['stats']['stats']['pts_ppr']) && $player['stats']['stats']['pts_ppr'] !== null;
+            $hasProjected = isset($player['projection']['stats']['pts_ppr']) && $player['projection']['stats']['pts_ppr'] !== null;
+        @endphp
+
+        @if($hasActual)
             <div class="font-semibold text-blue-600">
                 {{ number_format($player['stats']['stats']['pts_ppr'], 1) }}
             </div>
             <div class="text-xs text-muted-foreground">Actual</div>
+            @if($hasProjected)
+                <div class="text-xs text-muted-foreground mt-1">
+                    (Proj: {{ number_format($player['projection']['stats']['pts_ppr'], 1) }})
+                </div>
+            @endif
+        @elseif($hasProjected)
+            <div class="font-semibold text-green-600">
+                {{ number_format($player['projection']['stats']['pts_ppr'], 1) }}
+            </div>
+            <div class="text-xs text-muted-foreground">Projected</div>
         @else
             <div class="text-muted-foreground">-</div>
-            <div class="text-xs text-muted-foreground">Proj</div>
+            <div class="text-xs text-muted-foreground">No Data</div>
         @endif
     </div>
 </div>

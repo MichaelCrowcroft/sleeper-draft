@@ -29,7 +29,40 @@ new class extends Component
         $matchups = new FilterMatchups()->execute($matchups, Auth::user()->sleeper_user_id);
         $matchups = new EnrichMatchupsWithPlayerData()->execute($matchups, 2025, $this->week);
 
+        // Calculate projected totals for each team
+        foreach ($matchups as &$matchup) {
+            foreach ($matchup as &$team) {
+                $team['projected_total'] = $this->calculateProjectedTotal($team);
+            }
+        }
+
         return $matchups;
+    }
+
+    private function calculateProjectedTotal(array $team): float
+    {
+        $total = 0.0;
+
+        // Get all players (starters + bench)
+        $allPlayers = array_merge(
+            $team['starters'] ?? [],
+            $team['players'] ?? []
+        );
+
+        foreach ($allPlayers as $player) {
+            if (!is_array($player)) {
+                continue;
+            }
+
+            // Use actual points if available, otherwise use projected points
+            if (isset($player['stats']['stats']['pts_ppr']) && $player['stats']['stats']['pts_ppr'] !== null) {
+                $total += (float) $player['stats']['stats']['pts_ppr'];
+            } elseif (isset($player['projection']['stats']['pts_ppr']) && $player['projection']['stats']['pts_ppr'] !== null) {
+                $total += (float) $player['projection']['stats']['pts_ppr'];
+            }
+        }
+
+        return $total;
     }
 }; ?>
 
@@ -70,8 +103,16 @@ new class extends Component
                                     @endif
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-2xl font-bold text-green-600">{{ number_format($team['points'] ?? 0, 1) }}</div>
-                                    <div class="text-sm text-muted-foreground">Points</div>
+                                    <div class="flex items-center gap-4">
+                                        <div>
+                                            <div class="text-lg font-bold text-green-600">{{ number_format($team['projected_total'] ?? 0, 1) }}</div>
+                                            <div class="text-xs text-muted-foreground">Projected</div>
+                                        </div>
+                                        <div class="border-l border-muted-foreground/20 pl-4">
+                                            <div class="text-2xl font-bold text-blue-600">{{ number_format($team['points'] ?? 0, 1) }}</div>
+                                            <div class="text-xs text-muted-foreground">Actual</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
