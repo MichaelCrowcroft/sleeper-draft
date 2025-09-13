@@ -139,7 +139,6 @@ class FetchPlayersTool implements ToolInterface
             ])
             ->paginate($perPage);
 
-        // Add owner information to players
         $players = new AddOwnerToPlayers()->execute($players, $rostered_players);
 
         return [
