@@ -251,7 +251,7 @@ return [
         \App\MCP\Tools\FetchTrendingPlayersTool::class,
         \App\MCP\Tools\FetchPlayersTool::class,
         \App\MCP\Tools\FetchUserLeaguesTool::class,
-        \App\MCP\Tools\FetchMatchupsTool::class,
+        // \App\MCP\Tools\FetchMatchupsTool::class,
 
         // ===== REGISTER YOUR CUSTOM TOOLS BELOW =====
         // App\MCP\Tools\Database\Your::class,
