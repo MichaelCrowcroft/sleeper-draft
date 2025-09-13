@@ -44,6 +44,11 @@ class UpdatePlayerProjections extends Command
         $weeks = $response->json();
 
         foreach ($weeks as $week) {
+            // Skip null entries (some weeks may not have projections)
+            if ($week === null) {
+                continue;
+            }
+
             $attributes = [
                 'player_id' => $playerId,
                 'season' => $week['season'],
