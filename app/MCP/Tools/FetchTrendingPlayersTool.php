@@ -72,9 +72,9 @@ class FetchTrendingPlayersTool implements ToolInterface
     {
         $type = $arguments['type'];
         $column = $type === 'add' ? 'adds_24h' : 'drops_24h';
-        $league_id = (int) $arguments['league_id'] ?? '';
-        $fa_only = (bool) $arguments['fa_only'] ?? false;
-        $position = $arguments['position'] ?? null;
+        $league_id = isset($arguments['league_id']) ? (int) $arguments['league_id'] : '';
+        $fa_only = isset($arguments['fa_only']) ? (bool) $arguments['fa_only'] : false;
+        $position = isset($arguments['position']) ? $arguments['position'] : null;
 
         $rostered_players = new GetRosteredPlayers()->execute($league_id);
         $excluded_player_ids = $fa_only ? array_keys($rostered_players) : [];
