@@ -117,8 +117,14 @@ class EnrichMatchupsWithPlayerData
             // Use actual points if available, otherwise use projected points
             if (isset($player['stats']['stats']['pts_ppr']) && $player['stats']['stats']['pts_ppr'] !== null) {
                 $total += (float) $player['stats']['stats']['pts_ppr'];
-            } elseif (isset($player['projection']['stats']['pts_ppr']) && $player['projection']['stats']['pts_ppr'] !== null) {
-                $total += (float) $player['projection']['stats']['pts_ppr'];
+            } elseif (isset($player['projection']) && $player['projection']) {
+                // Try flattened column first, then JSON stats
+                $projection = $player['projection'];
+                if (isset($projection['pts_ppr']) && $projection['pts_ppr'] !== null) {
+                    $total += (float) $projection['pts_ppr'];
+                } elseif (isset($projection['stats']['pts_ppr']) && $projection['stats']['pts_ppr'] !== null) {
+                    $total += (float) $projection['stats']['pts_ppr'];
+                }
             }
         }
 
@@ -181,8 +187,18 @@ class EnrichMatchupsWithPlayerData
                 $projectedPoints = (float) $player['stats']['stats']['pts_ppr'];
                 // Actual points have no uncertainty (game already played)
                 continue;
-            } elseif (isset($player['projection']['stats']['pts_ppr']) && $player['projection']['stats']['pts_ppr'] !== null) {
-                $projectedPoints = (float) $player['projection']['stats']['pts_ppr'];
+            } elseif (isset($player['projection']) && $player['projection']) {
+                // Try flattened column first, then JSON stats
+                $projection = $player['projection'];
+                if (isset($projection['pts_ppr']) && $projection['pts_ppr'] !== null) {
+                    $projectedPoints = (float) $projection['pts_ppr'];
+                } elseif (isset($projection['stats']['pts_ppr']) && $projection['stats']['pts_ppr'] !== null) {
+                    $projectedPoints = (float) $projection['stats']['pts_ppr'];
+                } else {
+                    $projectedPoints = 0;
+                }
+            } else {
+                $projectedPoints = 0;
             }
 
             $projectedTotal += $projectedPoints;
@@ -209,14 +225,29 @@ class EnrichMatchupsWithPlayerData
 
     private function calculateWinProbability(array $teamA, array $teamB, float $projectionStdDev): float
     {
-        $confidenceA = $this->calculateTeamConfidenceInterval($teamA, $projectionStdDev);
-        $confidenceB = $this->calculateTeamConfidenceInterval($teamB, $projectionStdDev);
+        // Use the projected_total that's already calculated for the team
+        $scoreA = $teamA['projected_total'] ?? 0;
+        $scoreB = $teamB['projected_total'] ?? 0;
 
-        $scoreA = $confidenceA['projected'];
-        $scoreB = $confidenceB['projected'];
+        // If either team has no starters or projections, default to 50/50
+        $startersA = $teamA['starters'] ?? [];
+        $startersB = $teamB['starters'] ?? [];
 
-        // Simple case: if scores are very close, 50/50 chance
-        if (abs($scoreA - $scoreB) < 1.0) {
+        if (empty($startersA) && empty($startersB)) {
+            return 50.0;
+        }
+
+        // If one team has no starters but the other does, the team with starters wins
+        if (empty($startersA) && !empty($startersB)) {
+            return 0.0; // Team A has no starters, Team B wins
+        }
+        if (!empty($startersA) && empty($startersB)) {
+            return 100.0; // Team A has starters, Team B doesn't
+        }
+
+        // Both teams have starters, use projected scores
+        // If scores are very close (within 2 points), 50/50 chance
+        if (abs($scoreA - $scoreB) < 2.0) {
             return 50.0;
         }
 
