@@ -2,7 +2,7 @@
 
 namespace App\MCP\Tools;
 
-use App\Actions\Sleeper\DetermineCurrentWeek;
+use App\Actions\Sleeper\GetSeasonState;
 use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
@@ -75,7 +75,7 @@ class FetchUserLeaguesTool implements ToolInterface
         $season = $arguments['season'] ?? null;
 
         if ($season === null) {
-            $state = new DetermineCurrentWeek()->execute($sport);
+            $state = new GetSeasonState()->execute($sport);
             $season = $state['season'];
         }
 

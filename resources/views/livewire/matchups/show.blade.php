@@ -1,7 +1,7 @@
 <?php
 
 use App\Actions\Matchups\AssembleMatchupViewModel;
-use App\Actions\Sleeper\DetermineCurrentWeek;
+use App\Actions\Sleeper\GetSeasonState;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -25,7 +25,7 @@ new class extends Component
     public function refreshMatchup(): void
     {
         // Determine the current week if not specified
-        $currentWeek = $this->week ?? app(DetermineCurrentWeek::class)->execute('nfl')['week'];
+        $currentWeek = $this->week ?? app(GetSeasonState::class)->execute('nfl')['week'];
 
         // Clear all relevant cache keys
         $cacheKeys = [
@@ -253,8 +253,8 @@ new class extends Component
                             @for ($i = 1; $i <= 18; $i++)
                                 @php
                                     $isCurrentWeek = $i === $this->model['week'];
-                                    $routeName = $i === app(DetermineCurrentWeek::class)->execute('nfl')['week'] ? 'matchups.show.current' : 'matchups.show';
-                                    $routeParams = $i === app(DetermineCurrentWeek::class)->execute('nfl')['week']
+                                    $routeName = $i === app(GetSeasonState::class)->execute('nfl')['week'] ? 'matchups.show.current' : 'matchups.show';
+                                    $routeParams = $i === app(GetSeasonState::class)->execute('nfl')['week']
                                         ? ['leagueId' => $this->leagueId]
                                         : ['leagueId' => $this->leagueId, 'week' => $i];
                                 @endphp

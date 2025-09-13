@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Url;
 use Livewire\Attributes\Computed;
-use App\Actions\Sleeper\DetermineCurrentWeek;
+use App\Actions\Sleeper\GetSeasonState;
 use App\Actions\Players\AvailablePositions;
 use App\Actions\Players\AvailableTeams;
 use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
@@ -87,7 +87,7 @@ new class extends Component
     {
         $rostered_players = new GetRosteredPlayers()->execute($this->selected_league_id);
         $excluded_player_ids = $this->fa_only ? array_keys($rostered_players) : [];
-        $state = new DetermineCurrentWeek()->execute('nfl');
+        $state = new GetSeasonState()->execute('nfl');
 
         $players = Player::query()
             ->where('active', true)
@@ -159,7 +159,7 @@ new class extends Component
     #[Computed]
     public function resolvedWeek(): ?int
     {
-        $state = new DetermineCurrentWeek()->execute('nfl');
+        $state = new GetSeasonState()->execute('nfl');
 
         return $state['week'] ?? null;
     }

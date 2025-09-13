@@ -5,7 +5,7 @@ namespace App\Actions\Sleeper;
 use Illuminate\Support\Facades\Cache;
 use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 
-class DetermineCurrentWeek
+class GetSeasonState
 {
     public function execute(string $sport = 'nfl'): array
     {

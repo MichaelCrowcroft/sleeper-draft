@@ -6,7 +6,7 @@ use App\Actions\Players\AddOwnerToPlayers;
 use App\Actions\Players\AvailablePositions;
 use App\Actions\Players\AvailableTeams;
 use App\Actions\Players\GetRosteredPlayers;
-use App\Actions\Sleeper\DetermineCurrentWeek;
+use App\Actions\Sleeper\GetSeasonState;
 use App\Models\Player;
 use App\Models\PlayerStats;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
@@ -33,13 +33,38 @@ class FetchPlayersTool implements ToolInterface
         return [
             'type' => 'object',
             'properties' => [
-                'search' => ['type' => 'string'],
-                'position' => ['type' => 'string'],
-                'team' => ['type' => 'string'],
-                'league_id' => ['type' => 'string'],
-                'fa_only' => ['type' => 'boolean'],
-                'per_page' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100],
-                'page' => ['type' => 'integer', 'minimum' => 1],
+                'search' => [
+                    'type' => 'string',
+                    'description' => 'The search query to filter players by',
+                ],
+                'position' => [
+                    'type' => 'string',
+                    'enum' => ['QB', 'RB', 'WR', 'TE', 'K', 'DEF', 'DST'],
+                    'description' => 'The position of the players to fetch',
+                ],
+                'team' => [
+                    'type' => 'string',
+                    'description' => 'The team of the players to fetch',
+                ],
+                'league_id' => [
+                    'type' => 'string',
+                    'description' => 'The league ID to fetch players from',
+                ],
+                'fa_only' => [
+                    'type' => 'boolean',
+                    'description' => 'Whether to fetch only free agents (only works if league_id is provided)',
+                ],
+                'per_page' => [
+                    'type' => 'integer',
+                    'minimum' => 1,
+                    'maximum' => 100,
+                    'description' => 'The number of players to fetch per page',
+                ],
+                'page' => [
+                    'type' => 'integer',
+                    'minimum' => 1,
+                    'description' => 'The page number to fetch',
+                ],
             ],
         ];
     }
@@ -62,14 +87,13 @@ class FetchPlayersTool implements ToolInterface
     {
         $perPage = (int) ($arguments['per_page'] ?? 10);
 
-        // Respect explicit page if provided
         if(isset($arguments['page'])) {
             request()->merge(['page' => (int) $arguments['page']]);
         }
 
         $rostered_players = new GetRosteredPlayers()->execute($arguments['league_id'] ?? '');
         $excluded_player_ids = ($arguments['fa_only'] ?? false) ? array_keys($rostered_players) : [];
-        $state = new DetermineCurrentWeek()->execute('nfl');
+        $state = new GetSeasonState()->execute('nfl');
 
         $players = Player::query()
             ->where('active', true)
