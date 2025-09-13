@@ -28,7 +28,7 @@ class FetchPlayersTool implements ToolInterface
 
     public function description(): string
     {
-        return 'Fetch a paginated, enriched list of players with comprehensive filtering and league integration.';
+        return 'Fetch a paginated, enriched list of players with comprehensive filtering and league integration. Pass a league ID and you can see free agents and rostered player owner information.';
     }
 
     public function inputSchema(): array
