@@ -104,7 +104,12 @@ new class extends Component
                 ->limit(1),
                 'weekly_position_rank'
             )->playablePositions()
-            ->with(['projections2025', 'seasonSummaries'])
+            ->with([
+                'seasonSummaries',
+                'projections' => fn ($query) => $query
+                    ->where('season', $state['season'])
+                    ->where('week', $state['week'])
+            ])
             ->orderByAdp()
             ->paginate(25);
 
