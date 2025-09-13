@@ -158,10 +158,9 @@ new class extends Component
                             <!-- Players by Slot -->
                             <div class="space-y-3">
                                 <h4 class="font-medium text-sm text-muted-foreground uppercase tracking-wide">Starters</h4>
-                                @php $slotLabels = $team['roster_slots'] ?? []; @endphp
-                                @if(!empty($slotLabels))
-                                    @foreach($slotLabels as $i => $slot)
-                                        @php $player = $team['starters'][$i] ?? null; @endphp
+                                @if(!empty($team['starters']))
+                                    @foreach($team['starters'] as $i => $player)
+                                        @php $slot = $team['roster_slots'][$i] ?? 'UNK'; @endphp
                                         @if(is_array($player))
                                             @include('components.matchup-player-card', ['player' => $player, 'slotLabel' => $slot])
                                         @else
