@@ -29,37 +29,7 @@ new class extends Component
         $matchups = new FilterMatchups()->execute($matchups, Auth::user()->sleeper_user_id);
         $matchups = new EnrichMatchupsWithPlayerData()->execute($matchups, 2025, $this->week);
 
-        // Calculate projected totals for each team
-        foreach ($matchups as &$matchup) {
-            foreach ($matchup as &$team) {
-                $team['projected_total'] = $this->calculateProjectedTotal($team);
-            }
-        }
-
         return $matchups;
-    }
-
-    private function calculateProjectedTotal(array $team): float
-    {
-        $total = 0.0;
-
-        // Only count starters for the projected total
-        $starters = $team['starters'] ?? [];
-
-        foreach ($starters as $player) {
-            if (!is_array($player)) {
-                continue;
-            }
-
-            // Use actual points if available, otherwise use projected points
-            if (isset($player['stats']['stats']['pts_ppr']) && $player['stats']['stats']['pts_ppr'] !== null) {
-                $total += (float) $player['stats']['stats']['pts_ppr'];
-            } elseif (isset($player['projection']['stats']['pts_ppr']) && $player['projection']['stats']['pts_ppr'] !== null) {
-                $total += (float) $player['projection']['stats']['pts_ppr'];
-            }
-        }
-
-        return $total;
     }
 }; ?>
 
