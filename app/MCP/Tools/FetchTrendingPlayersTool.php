@@ -41,7 +41,7 @@ class FetchTrendingPlayersTool implements ToolInterface
                     'description' => 'The type of trending data to fetch: "add" for players being added, "drop" for players being dropped',
                 ],
                 'league_id' => [
-                    'type' => 'string',
+                    'type' => 'integer',
                     'description' => 'The league ID to fetch players from',
                 ],
                 'fa_only' => [
@@ -72,14 +72,17 @@ class FetchTrendingPlayersTool implements ToolInterface
     {
         $type = $arguments['type'];
         $column = $type === 'add' ? 'adds_24h' : 'drops_24h';
+        $league_id = (int) $arguments['league_id'] ?? '';
+        $fa_only = (bool) $arguments['fa_only'] ?? false;
+        $position = $arguments['position'] ?? null;
 
-        $rostered_players = new GetRosteredPlayers()->execute($arguments['league_id'] ?? '');
-        $excluded_player_ids = ($arguments['fa_only'] ?? false) ? array_keys($rostered_players) : [];
+        $rostered_players = new GetRosteredPlayers()->execute($league_id);
+        $excluded_player_ids = $fa_only ? array_keys($rostered_players) : [];
         $state = new GetSeasonState()->execute('nfl');
 
         $players = Player::query()
             ->where('active', true)
-            ->when($arguments['position'] ?? null, fn ($q) => $q->where('position', $arguments['position']))
+            ->when($position, fn ($q) => $q->where('position', $position))
             ->whereNotIn('player_id', $excluded_player_ids)
             ->select([
                 'players.player_id',
@@ -118,6 +121,13 @@ class FetchTrendingPlayersTool implements ToolInterface
                 'type' => $type,
                 'column' => $column,
                 'executed_at' => now()->toISOString(),
+                'filters' => [
+                    'league_id' => $league_id,
+                    'fa_only' => $fa_only,
+                    'position' => $position,
+                ],
+                'current_week' => $state['week'],
+                'current_season' => $state['season'],
             ],
         ];
     }
