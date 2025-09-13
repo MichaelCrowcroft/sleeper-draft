@@ -3,6 +3,8 @@
 use App\Actions\Matchups\EnrichMatchupsWithPlayerData;
 use App\Actions\Matchups\FilterMatchups;
 use App\Actions\Matchups\GetMatchupsWithOwners;
+use App\Actions\Matchups\OptimizeLineup;
+use App\Actions\Sleeper\FetchLeague;
 use App\Actions\Sleeper\GetSeasonState;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -28,6 +30,56 @@ new class extends Component
         $matchups = new GetMatchupsWithOwners()->execute($this->league_id, $this->week);
         $matchups = new FilterMatchups()->execute($matchups, Auth::user()->sleeper_user_id);
         $matchups = new EnrichMatchupsWithPlayerData()->execute($matchups, 2025, $this->week);
+
+        $league = new FetchLeague()->execute($this->league_id);
+        $roster_positions = $league['roster_positions'] ?? null;
+
+        foreach ($matchups as $mid => &$teams) {
+            foreach ($teams as &$team) {
+                if (! is_array($team) || ! isset($team['owner_id'])) {
+                    continue;
+                }
+                if ((string) ($team['owner_id'] ?? '') !== (string) (Auth::user()->sleeper_user_id ?? '')) {
+                    continue;
+                }
+
+                // Build simple starters/bench and points maps from enriched data
+                $current_starters = array_values(array_filter(array_map(function ($p) {
+                    return is_array($p) ? ($p['player_id'] ?? null) : $p;
+                }, (array) ($team['starters'] ?? []))));
+
+                $bench_players = array_values(array_filter(array_map(function ($p) {
+                    return is_array($p) ? ($p['player_id'] ?? null) : $p;
+                }, (array) ($team['players'] ?? []))));
+
+                $points = [];
+                foreach (array_merge((array) ($team['starters'] ?? []), (array) ($team['players'] ?? [])) as $p) {
+                    if (! is_array($p)) { continue; }
+                    $pid = $p['player_id'] ?? null;
+                    if (! $pid) { continue; }
+                    $actual = $p['stats']['stats']['pts_ppr'] ?? null;
+                    $projected = $p['projection']['stats']['pts_ppr'] ?? ($p['projection']['pts_ppr'] ?? null);
+                    $used = ($actual !== null) ? (float) $actual : (float) ($projected ?? 0.0);
+                    $points[$pid] = [
+                        'actual' => (float) ($actual ?? 0.0),
+                        'projected' => (float) ($projected ?? 0.0),
+                        'used' => (float) $used,
+                        'status' => $actual !== null ? 'locked' : 'upcoming',
+                    ];
+                }
+
+                $opt = new OptimizeLineup()->execute($current_starters, $bench_players, $points, 2025, (int) $this->week, $roster_positions);
+                $team['lineup_optimization'] = $opt;
+
+                // Provide roster slot labels for UI (excluding bench-like)
+                if (is_array($roster_positions) && $roster_positions !== []) {
+                    $team['roster_slots'] = array_values(array_filter($roster_positions, function ($slot) {
+                        $slot = strtoupper((string) $slot);
+                        return ! in_array($slot, ['BN', 'BENCH', 'TAXI', 'IR', 'RESERVE'], true);
+                    }));
+                }
+            }
+        }
 
         return $matchups;
     }
@@ -156,9 +208,12 @@ new class extends Component
                             <div class="space-y-3">
                                 <h4 class="font-medium text-sm text-muted-foreground uppercase tracking-wide">Starters</h4>
                                 @if(isset($team['starters']) && is_array($team['starters']) && !empty($team['starters']))
-                                    @foreach($team['starters'] as $player)
+                                    @php
+                                        $slotLabels = $team['roster_slots'] ?? [];
+                                    @endphp
+                                    @foreach($team['starters'] as $i => $player)
                                         @if(is_array($player))
-                                            @include('components.matchup-player-card', ['player' => $player])
+                                            @include('components.matchup-player-card', ['player' => $player, 'slotLabel' => ($slotLabels[$i] ?? null)])
                                         @endif
                                     @endforeach
                                 @else

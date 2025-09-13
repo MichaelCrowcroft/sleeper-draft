@@ -1,18 +1,24 @@
 @props([
     'player',
-    'isBench' => false
+    'isBench' => false,
+    'slotLabel' => null,
 ])
 
 <div class="flex items-center justify-between p-3 rounded-lg {{ $isBench ? 'bg-muted/30 border border-muted' : 'bg-background border' }} hover:bg-muted/20 transition-colors">
     <div class="flex items-center gap-3 flex-1 min-w-0">
-        <!-- Position Badge -->
-        <flux:badge
-            variant="{{ $isBench ? 'outline' : 'secondary' }}"
-            size="sm"
-            class="shrink-0"
-        >
-            {{ $player['position'] }}
-        </flux:badge>
+        <!-- Position / Slot Badge -->
+        <div class="flex items-center gap-1 shrink-0">
+            <flux:badge
+                variant="{{ $isBench ? 'outline' : 'secondary' }}"
+                size="sm"
+                class="shrink-0"
+            >
+                {{ $player['position'] }}
+            </flux:badge>
+            @if(!$isBench && $slotLabel)
+                <flux:badge variant="outline" size="sm" class="shrink-0">{{ $slotLabel }}</flux:badge>
+            @endif
+        </div>
 
         <!-- Player Info -->
         <div class="flex-1 min-w-0">
