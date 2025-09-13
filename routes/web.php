@@ -41,8 +41,8 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('leagues/{league_id}/year/{year}/week/{week}/summary', 'weekly-summary.show')->name('weekly-summary.show');
 
     // // Lineup Optimizer routes
-    // Volt::route('leagues/{leagueId}/week/{week}/lineup-optimizer', 'lineup-optimizer')->name('lineup-optimizer.show');
-    // Volt::route('leagues/{leagueId}/lineup-optimizer', 'lineup-optimizer')->name('lineup-optimizer.current');
+    Volt::route('leagues/{league_id}/week/{week}/lineup-optimizer', 'lineup-optimizer')->name('lineup-optimizer.show');
+    Volt::route('leagues/{league_id}/lineup-optimizer', 'lineup-optimizer')->name('lineup-optimizer.current');
 
     // Leagues index
     Volt::route('leagues', 'leagues.index')->name('leagues.index');
