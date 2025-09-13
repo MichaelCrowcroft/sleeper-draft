@@ -4,6 +4,7 @@ use App\Actions\Matchups\EnrichMatchupsWithPlayerData;
 use App\Actions\Matchups\FilterMatchups;
 use App\Actions\Matchups\GetMatchupsWithOwners;
 use App\Actions\Matchups\OptimizeLineup;
+use App\Actions\Matchups\MergeEnrichedMatchupsWithRosterPositions;
 use App\Actions\Sleeper\FetchLeague;
 use App\Actions\Sleeper\GetSeasonState;
 use Illuminate\Support\Facades\Auth;
@@ -30,9 +31,7 @@ new class extends Component
         $matchups = new GetMatchupsWithOwners()->execute($this->league_id, $this->week);
         $matchups = new FilterMatchups()->execute($matchups, Auth::user()->sleeper_user_id);
         $matchups = new EnrichMatchupsWithPlayerData()->execute($matchups, 2025, $this->week);
-
-        $league = new FetchLeague()->execute($this->league_id);
-        $roster_positions = $league['roster_positions'] ?? null;
+        $matchups = new MergeEnrichedMatchupsWithRosterPositions()->execute($matchups, $this->league_id);
 
         foreach ($matchups as $mid => &$teams) {
             foreach ($teams as &$team) {
@@ -44,6 +43,7 @@ new class extends Component
                 }
 
                 // Build simple starters/bench and points maps from enriched data
+                // Note: after merge, starters is indexed by slot with nulls allowed
                 $current_starters = array_values(array_filter(array_map(function ($p) {
                     return is_array($p) ? ($p['player_id'] ?? null) : $p;
                 }, (array) ($team['starters'] ?? []))));
@@ -68,16 +68,9 @@ new class extends Component
                     ];
                 }
 
-                $opt = new OptimizeLineup()->execute($current_starters, $bench_players, $points, 2025, (int) $this->week, $roster_positions);
+                $opt = new OptimizeLineup()->execute($current_starters, $bench_players, $points, 2025, (int) $this->week, $team['roster_slots'] ?? null);
                 $team['lineup_optimization'] = $opt;
-
-                // Provide roster slot labels for UI (excluding bench-like)
-                if (is_array($roster_positions) && $roster_positions !== []) {
-                    $team['roster_slots'] = array_values(array_filter($roster_positions, function ($slot) {
-                        $slot = strtoupper((string) $slot);
-                        return ! in_array($slot, ['BN', 'BENCH', 'TAXI', 'IR', 'RESERVE'], true);
-                    }));
-                }
+                // roster_slots already attached by merge action
             }
         }
 
@@ -207,19 +200,24 @@ new class extends Component
                             <!-- Players -->
                             <div class="space-y-3">
                                 <h4 class="font-medium text-sm text-muted-foreground uppercase tracking-wide">Starters</h4>
-                                @if(isset($team['starters']) && is_array($team['starters']) && !empty($team['starters']))
-                                    @php
-                                        $slotLabels = $team['roster_slots'] ?? [];
-                                    @endphp
-                                    @foreach($team['starters'] as $i => $player)
+                                @php $slotLabels = $team['roster_slots'] ?? []; @endphp
+                                @if(!empty($slotLabels))
+                                    @foreach($slotLabels as $i => $slot)
+                                        @php $player = $team['starters'][$i] ?? null; @endphp
                                         @if(is_array($player))
-                                            @include('components.matchup-player-card', ['player' => $player, 'slotLabel' => ($slotLabels[$i] ?? null)])
+                                            @include('components.matchup-player-card', ['player' => $player, 'slotLabel' => $slot])
+                                        @else
+                                            <div class="flex items-center justify-between p-3 rounded-lg bg-muted/10 border border-dashed">
+                                                <div class="flex items-center gap-3">
+                                                    <flux:badge variant="outline" size="sm">{{ $slot }}</flux:badge>
+                                                    <div class="text-sm text-muted-foreground">Empty</div>
+                                                </div>
+                                                <div class="text-xs text-muted-foreground">—</div>
+                                            </div>
                                         @endif
                                     @endforeach
                                 @else
-                                    <div class="text-center py-4 text-muted-foreground">
-                                        No starters available
-                                    </div>
+                                    <div class="text-center py-4 text-muted-foreground">No starters available</div>
                                 @endif
 
                                 @if(isset($team['players']) && is_array($team['players']) && !empty($team['players']))
