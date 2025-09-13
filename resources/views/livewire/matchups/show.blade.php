@@ -31,6 +31,24 @@ new class extends Component
 
         return $matchups;
     }
+
+    public function getMatchupInsights(array $matchup): array
+    {
+        $teams = array_values($matchup);
+        $teamA = $teams[0] ?? null;
+        $teamB = $teams[1] ?? null;
+
+        $probA = $matchup['win_probabilities']['team_a_win_probability'] ?? 0;
+        $probB = $matchup['win_probabilities']['team_b_win_probability'] ?? 0;
+
+        $favored = $probA > $probB ? ($teamA['owner_name'] ?? 'Team A') : ($teamB['owner_name'] ?? 'Team B');
+        $confidence = max($probA, $probB);
+
+        return [
+            'favored_team' => $favored,
+            'win_probability' => $confidence,
+        ];
+    }
 }; ?>
 
 <section class="w-full">
@@ -98,15 +116,8 @@ new class extends Component
                     <!-- Matchup Insights -->
                     <div class="mt-4 pt-4 border-t border-green-200 dark:border-green-700">
                         <div class="text-center text-sm text-muted-foreground">
-                            @php
-                                $teamA = array_values($teams)[0] ?? null;
-                                $teamB = array_values($teams)[1] ?? null;
-                                $probA = $matchup['win_probabilities']['team_a_win_probability'] ?? 0;
-                                $probB = $matchup['win_probabilities']['team_b_win_probability'] ?? 0;
-                                $favored = $probA > $probB ? ($teamA['owner_name'] ?? 'Team A') : ($teamB['owner_name'] ?? 'Team B');
-                                $confidence = max($probA, $probB);
-                            @endphp
-                            <span class="font-medium">{{ $favored }}</span> has a <span class="font-medium">{{ $confidence }}%</span> chance to win this matchup
+                            @php $insights = $this->getMatchupInsights($matchup) @endphp
+                            <span class="font-medium">{{ $insights['favored_team'] }}</span> has a <span class="font-medium">{{ $insights['win_probability'] }}%</span> chance to win this matchup
                         </div>
                     </div>
                 </div>

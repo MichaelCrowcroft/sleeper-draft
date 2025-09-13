@@ -4,7 +4,7 @@ namespace App\Actions\Matchups;
 
 use App\Models\Player;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
+use App\Models\PlayerProjections;
 
 class EnrichMatchupsWithPlayerData
 {
@@ -43,27 +43,23 @@ class EnrichMatchupsWithPlayerData
             ->get()
             ->keyBy('player_id');
 
-        // Calculate projection accuracy for confidence intervals
         $projectionStdDev = $this->getProjectionStandardDeviation();
 
-        foreach ($matchups as &$matchup) {
-            $teams = array_values($matchup); // Get teams as array for win probability calculation
+        foreach($matchups as &$matchup) {
+            $teams = array_values($matchup);
             foreach ($matchup as &$team) {
                 $team = $this->enrichTeam($team, $players);
                 $team['projected_total'] = $this->calculateProjectedTotal($team);
                 $team['confidence_interval'] = $this->calculateTeamConfidenceInterval($team, $projectionStdDev);
             }
 
-            // Calculate win probabilities between the two teams in this matchup
-            if (count($teams) === 2) {
-                $teamA = $teams[0];
-                $teamB = $teams[1];
+            $teamA = $teams[0];
+            $teamB = $teams[1];
 
-                $matchup['win_probabilities'] = [
-                    'team_a_win_probability' => $this->calculateWinProbability($teamA, $teamB, $projectionStdDev),
-                    'team_b_win_probability' => $this->calculateWinProbability($teamB, $teamA, $projectionStdDev),
-                ];
-            }
+            $matchup['win_probabilities'] = [
+                'team_a_win_probability' => $this->calculateWinProbability($teamA, $teamB, $projectionStdDev),
+                'team_b_win_probability' => $this->calculateWinProbability($teamB, $teamA, $projectionStdDev),
+            ];
         }
 
         return $matchups;
@@ -133,24 +129,38 @@ class EnrichMatchupsWithPlayerData
     {
         // Calculate historical projection accuracy from past seasons
         // Use current season and past seasons to estimate projection error
-        $projectionErrors = DB::table('player_projections as p')
-            ->join('player_stats as s', function ($join) {
-                $join->on('p.player_id', '=', 's.player_id')
-                    ->on('p.season', '=', 's.season')
-                    ->on('p.week', '=', 's.week');
+        $projections = PlayerProjections::with('player')
+            ->join('player_stats', function ($join) {
+                $join->on('player_projections.player_id', '=', 'player_stats.player_id')
+                    ->on('player_projections.season', '=', 'player_stats.season')
+                    ->on('player_projections.week', '=', 'player_stats.week');
             })
-            ->where('p.season', '>=', 2023) // Use recent seasons for accuracy
-            ->whereNotNull('p.pts_ppr')
-            ->whereRaw('JSON_EXTRACT(s.stats, "$.pts_ppr") IS NOT NULL')
-            ->selectRaw('ABS(JSON_EXTRACT(s.stats, "$.pts_ppr") - p.pts_ppr) as error')
-            ->pluck('error');
+            ->where('player_projections.season', '>=', 2023)
+            ->whereNotNull('player_projections.stats->pts_ppr')
+            ->whereNotNull('player_stats.stats->pts_ppr')
+            ->select([
+                'player_projections.stats',
+                'player_stats.stats as actual_stats'
+            ])
+            ->limit(1000) // Limit to avoid memory issues
+            ->get();
 
-        if ($projectionErrors->isEmpty()) {
+        $errors = [];
+        foreach ($projections as $projection) {
+            $projected = $projection->stats['pts_ppr'] ?? null;
+            $actual = $projection->actual_stats['pts_ppr'] ?? null;
+
+            if ($projected !== null && $actual !== null) {
+                $errors[] = abs($actual - $projected);
+            }
+        }
+
+        if (empty($errors)) {
             // Fallback to a reasonable default based on typical fantasy football projection accuracy
             return 8.0; // ~8 points standard deviation is typical
         }
 
-        return $projectionErrors->avg(); // Use average absolute error as standard deviation estimate
+        return collect($errors)->avg();
     }
 
     private function calculateTeamConfidenceInterval(array $team, float $projectionStdDev): array
