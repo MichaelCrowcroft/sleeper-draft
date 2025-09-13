@@ -57,7 +57,7 @@ class FetchPlayersTool implements ToolInterface
                 'per_page' => [
                     'type' => 'integer',
                     'minimum' => 1,
-                    'maximum' => 100,
+                    'maximum' => 20,
                     'description' => 'The number of players to fetch per page',
                 ],
                 'page' => [
