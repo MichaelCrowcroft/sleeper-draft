@@ -12,6 +12,14 @@ class GetRosteredPlayers
             return [];
         }
 
+        $rosters = Sleeper::leagues()->rosters($league_id)->body();
+        $owners = Sleeper::leagues()->users($league_id)->body();
+        $rosters = $rosters !== '' ? (json_decode($rosters, true) ?: []) : [];
+        $owners = $owners !== '' ? (json_decode($owners, true) ?: []) : [];
+
+        $owners = collect($owners)->keyBy('user_id')->map(function ($owner) {
+            return $owner['display_name'] ?? $owner['username'] ?? 'Unknown Owner';
+        })->all();
 
         $players = [];
 
