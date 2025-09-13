@@ -80,7 +80,27 @@ class FetchPlayersTool implements ToolInterface
             ->when($arguments['team'] ?? null, fn ($q) => $q->where('team', $arguments['team']))
             ->when($arguments['search'] ?? null, fn ($q) => $q->search($arguments['search']))
             ->whereNotIn('player_id', $excluded_player_ids)
-            ->select('players.*')
+            ->select([
+                'players.player_id',
+                'players.full_name',
+                'players.position',
+                'players.team',
+                'players.active',
+                'players.age',
+                'players.years_exp',
+                'players.number',
+                'players.height',
+                'players.weight',
+                'players.injury_status',
+                'players.injury_start_date',
+                'players.news_updated',
+                'players.adp',
+                'players.adp_formatted',
+                'players.adds_24h',
+                'players.drops_24h',
+                'players.times_drafted',
+                'players.bye_week'
+            ])
             ->selectSub(PlayerStats::query()
                 ->select('weekly_ranking')
                 ->whereColumn('player_stats.player_id', 'players.player_id')
