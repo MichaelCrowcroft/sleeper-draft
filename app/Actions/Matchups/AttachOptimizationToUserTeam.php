@@ -14,7 +14,7 @@ class AttachOptimizationToUserTeam
      */
     public function execute(array $matchups, int $season, int $week): array
     {
-        $optimizer = new OptimizeLineup;
+        $optimizer = app(OptimizeLineup::class);
         $points_builder = new BuildTeamPointsMap;
 
         foreach ($matchups as $mid => &$teams) {
