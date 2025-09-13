@@ -230,7 +230,10 @@ class Player extends Model
      */
     public function getProjectedPointsForWeek(int $season, int $week): ?float
     {
-        $weekly = $this->getProjectionsForWeek($season, $week);
+        $weekly = $this->projections()
+            ->where('season', $season)
+            ->where('week', $week)
+            ->first();
 
         if (! $weekly) {
             return null;
