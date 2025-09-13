@@ -6,7 +6,7 @@ use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 
 class GetRosteredPlayers
 {
-    public function execute(?string $league_id): array
+    public function execute(?int $league_id): array
     {
         if(!$league_id) {
             return [];
