@@ -32,14 +32,14 @@ new class extends Component {
     public bool $showActivity = false;
     public ?WeeklySummary $weeklySummary = null;
 
-    public function mount(string $leagueId, int $year, int $week): void
+    public function mount(string $league_id, int $year, int $week): void
     {
-        $this->leagueId = $leagueId;
+        $this->leagueId = $league_id;
         $this->year = $year;
         $this->week = $week;
 
         // Load existing summary if available
-        $this->weeklySummary = WeeklySummary::forLeagueWeek($leagueId, $year, $week)->first();
+        $this->weeklySummary = WeeklySummary::forLeagueWeek($league_id, $year, $week)->first();
     }
 
     public function getLeagueProperty(): array
