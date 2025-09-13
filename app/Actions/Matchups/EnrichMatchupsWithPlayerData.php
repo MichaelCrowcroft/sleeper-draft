@@ -162,12 +162,20 @@ class EnrichMatchupsWithPlayerData
             ];
         }
 
-        // Simple risk classification for UI
-        $riskProfile = null;
+        // Risk classification for UI (tighter bands)
+        // Prefer CV from prior season; fallback to relative stddev this week
+        $effectiveCv = null;
         if ($cv !== null) {
-            if ($cv < 0.3) {
+            $effectiveCv = $cv;
+        } elseif ($projectedPoints !== null && $projectedPoints > 0 && $playerStdDev !== null) {
+            $effectiveCv = min(2.0, (float) $playerStdDev / (float) $projectedPoints);
+        }
+
+        $riskProfile = null;
+        if ($effectiveCv !== null) {
+            if ($effectiveCv < 0.20) {
                 $riskProfile = 'safe';
-            } elseif ($cv <= 0.6) {
+            } elseif ($effectiveCv < 0.40) {
                 $riskProfile = 'balanced';
             } else {
                 $riskProfile = 'volatile';
