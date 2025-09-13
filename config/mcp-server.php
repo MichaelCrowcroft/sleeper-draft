@@ -249,14 +249,11 @@ return [
     'tools' => [
         // Custom Sleeper Fantasy Sports Tools
         \App\MCP\Tools\FetchTrendingPlayersTool::class,
-        \App\MCP\Tools\FetchADPPlayersTool::class,
+        \App\MCP\Tools\FetchPlayersTool::class,
         \App\MCP\Tools\FetchUserLeaguesTool::class,
         \App\MCP\Tools\FetchLeagueTool::class,
         \App\MCP\Tools\FetchRosterTool::class,
         \App\MCP\Tools\FetchMatchupsTool::class,
-        \App\MCP\Tools\FetchPlayersSeasonDataTool::class,
-        \App\MCP\Tools\FetchPlayerSeasonDataTool::class,
-        \App\MCP\Tools\FetchPlayersTableTool::class,
 
         // ===== REGISTER YOUR CUSTOM TOOLS BELOW =====
         // App\MCP\Tools\Database\Your::class,
