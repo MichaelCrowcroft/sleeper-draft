@@ -212,44 +212,25 @@ class EnrichMatchupsWithPlayerData
         $confidenceA = $this->calculateTeamConfidenceInterval($teamA, $projectionStdDev);
         $confidenceB = $this->calculateTeamConfidenceInterval($teamB, $projectionStdDev);
 
-        $meanA = $confidenceA['projected'];
-        $meanB = $confidenceB['projected'];
+        $scoreA = $confidenceA['projected'];
+        $scoreB = $confidenceB['projected'];
 
-        // Calculate standard deviations from confidence intervals
-        // 90% CI = mean ± 1.645 * σ, so σ = (upper - lower) / (2 * 1.645)
-        $stdDevA = $confidenceA['confidence_range'] / (2 * 1.645);
-        $stdDevB = $confidenceB['confidence_range'] / (2 * 1.645);
-
-        $combinedStdDev = sqrt(pow($stdDevA, 2) + pow($stdDevB, 2));
-
-        if ($combinedStdDev == 0) {
-            // No uncertainty, just compare means
-            return $meanA > $meanB ? 100.0 : 0.0;
+        // Simple case: if scores are very close, 50/50 chance
+        if (abs($scoreA - $scoreB) < 1.0) {
+            return 50.0;
         }
 
-        // Calculate win probability for team A using normal distribution
-        $zScore = ($meanA - $meanB) / $combinedStdDev;
+        // Calculate win probability using logistic function
+        // Higher score = higher probability, with some uncertainty
+        $scoreDiff = $scoreA - $scoreB;
 
-        // Use approximation of normal CDF for win probability
-        return round($this->normalCDF($zScore) * 100, 1);
-    }
+        // Scale the difference to create reasonable probabilities
+        // A 10-point difference should be about 75% vs 25%, not 100% vs 0%
+        $zScore = $scoreDiff / 8.0; // Assume ~8 points standard deviation
 
-    private function normalCDF(float $z): float
-    {
-        // Abramowitz & Stegun approximation for normal CDF
-        $a1 =  0.254829592;
-        $a2 = -0.284496736;
-        $a3 =  1.421413741;
-        $a4 = -1.453152027;
-        $a5 =  1.061405429;
-        $p  =  0.3275911;
+        // Logistic function for probability
+        $probability = 1 / (1 + exp(-$zScore));
 
-        $sign = $z < 0 ? -1 : 1;
-        $z = abs($z) / sqrt(2.0);
-
-        $t = 1.0 / (1.0 + $p * $z);
-        $erf = 1.0 - (((((($a5 * $t + $a4) * $t) + $a3) * $t + $a2) * $t + $a1) * $t) * exp(-$z * $z);
-
-        return 0.5 * (1.0 + $sign * $erf);
+        return round($probability * 100, 1);
     }
 }
