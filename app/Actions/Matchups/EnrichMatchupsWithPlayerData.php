@@ -45,10 +45,11 @@ class EnrichMatchupsWithPlayerData
             ->keyBy('player_id');
 
         $projectionStdDev = $this->getProjectionStandardDeviation();
+        $positionCvThresholds = $this->getPositionCvThresholds();
 
         foreach ($matchups as &$matchup) {
             foreach ($matchup as &$team) {
-                $team = $this->enrichTeam($team, $players, $season, $projectionStdDev);
+                $team = $this->enrichTeam($team, $players, $season, $projectionStdDev, $positionCvThresholds);
                 $team['projected_total'] = $this->calculateProjectedTotal($team);
                 $team['confidence_interval'] = $this->calculateTeamConfidenceInterval($team, $projectionStdDev);
             }
@@ -71,13 +72,13 @@ class EnrichMatchupsWithPlayerData
         return $matchups;
     }
 
-    private function enrichTeam(array $team, Collection $players, int $season, float $projectionStdDev): array
+    private function enrichTeam(array $team, Collection $players, int $season, float $projectionStdDev, array $positionCvThresholds): array
     {
         return collect($team)
-            ->transform(function ($value, $key) use ($players, $season, $projectionStdDev) {
+            ->transform(function ($value, $key) use ($players, $season, $projectionStdDev, $positionCvThresholds) {
                 if ($key === 'starters' || $key === 'players') {
                     return collect($value)
-                        ->map(fn ($player_id) => $this->enrichPlayer($player_id, $players, $season, $projectionStdDev))
+                        ->map(fn ($player_id) => $this->enrichPlayer($player_id, $players, $season, $projectionStdDev, $positionCvThresholds))
                         ->all();
                 }
 
@@ -86,7 +87,7 @@ class EnrichMatchupsWithPlayerData
             ->all();
     }
 
-    private function enrichPlayer(string $player_id, Collection $players, int $season, float $projectionStdDev): array
+    private function enrichPlayer(string $player_id, Collection $players, int $season, float $projectionStdDev, array $positionCvThresholds): array
     {
         $player = $players->get($player_id);
 
@@ -173,9 +174,14 @@ class EnrichMatchupsWithPlayerData
 
         $riskProfile = null;
         if ($effectiveCv !== null) {
-            if ($effectiveCv < 0.20) {
+            $pos = $player->position ?? ($player->fantasy_positions[0] ?? null);
+            $thresholds = ($pos && isset($positionCvThresholds[$pos])) ? $positionCvThresholds[$pos] : null;
+            $safeCut = $thresholds['safe_upper'] ?? 0.20;
+            $balancedCut = $thresholds['balanced_upper'] ?? 0.40;
+
+            if ($effectiveCv <= $safeCut) {
                 $riskProfile = 'safe';
-            } elseif ($effectiveCv < 0.40) {
+            } elseif ($effectiveCv <= $balancedCut) {
                 $riskProfile = 'balanced';
             } else {
                 $riskProfile = 'volatile';
@@ -198,6 +204,86 @@ class EnrichMatchupsWithPlayerData
             'risk_profile' => $riskProfile,
             'projected_range_90' => $range,
         ];
+    }
+
+    /**
+     * Compute per-position CV thresholds from prior seasons (33rd/66th percentiles).
+     * Falls back to sensible defaults if insufficient data.
+     *
+     * @return array<string, array{safe_upper: float, balanced_upper: float}>
+     */
+    private function getPositionCvThresholds(): array
+    {
+        static $cache = null;
+        if (is_array($cache)) {
+            return $cache;
+        }
+
+        $defaults = [
+            'QB' => ['safe_upper' => 0.18, 'balanced_upper' => 0.32],
+            'RB' => ['safe_upper' => 0.24, 'balanced_upper' => 0.42],
+            'WR' => ['safe_upper' => 0.28, 'balanced_upper' => 0.50],
+            'TE' => ['safe_upper' => 0.30, 'balanced_upper' => 0.52],
+            'K' => ['safe_upper' => 0.20, 'balanced_upper' => 0.38],
+            'DEF' => ['safe_upper' => 0.24, 'balanced_upper' => 0.44],
+        ];
+
+        // Try to leverage cached season summaries which include CV
+        $rows = \Illuminate\Support\Facades\DB::table('player_season_summaries')
+            ->join('players', 'player_season_summaries.player_id', '=', 'players.player_id')
+            ->where('player_season_summaries.season', '>=', 2023)
+            ->select(['players.position', 'player_season_summaries.volatility'])
+            ->limit(5000)
+            ->get();
+
+        $cvByPos = [];
+        foreach ($rows as $row) {
+            $pos = $row->position ?? null;
+            if (! $pos) {
+                continue;
+            }
+            $vol = is_string($row->volatility) ? json_decode($row->volatility, true) : (array) $row->volatility;
+            $cv = $vol['coefficient_of_variation'] ?? null;
+            if (is_numeric($cv) && $cv >= 0) {
+                $cvByPos[$pos][] = (float) $cv;
+            }
+        }
+
+        $thresholds = [];
+        foreach ($cvByPos as $pos => $values) {
+            if (count($values) < 10) {
+                continue;
+            }
+            sort($values);
+            $p33 = $this->percentile($values, 33);
+            $p66 = $this->percentile($values, 66);
+            $thresholds[$pos] = [
+                'safe_upper' => round($p33, 3),
+                'balanced_upper' => round(max($p33, $p66), 3),
+            ];
+        }
+
+        // Merge with defaults where missing
+        $cache = array_merge($defaults, $thresholds);
+
+        return $cache;
+    }
+
+    private function percentile(array $sortedValues, int $percent): float
+    {
+        $count = count($sortedValues);
+        if ($count === 0) {
+            return 0.0;
+        }
+        $index = ($percent / 100) * ($count - 1);
+        $lower = (int) floor($index);
+        $upper = (int) ceil($index);
+        if ($lower === $upper) {
+            return (float) $sortedValues[$lower];
+        }
+        $weight = $index - $lower;
+
+        return (float) ($sortedValues[$lower] * (1 - $weight) + $sortedValues[$upper] * $weight);
     }
 
     private function calculateProjectedTotal(array $team): float
