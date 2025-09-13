@@ -7,11 +7,8 @@ use App\Actions\Players\AvailablePositions;
 use App\Actions\Players\AvailableTeams;
 use App\Actions\Players\GetRosteredPlayers;
 use App\Actions\Sleeper\DetermineCurrentWeek;
-use App\Http\Resources\PlayerResource;
 use App\Models\Player;
 use App\Models\PlayerStats;
-use Illuminate\Support\Facades\Auth;
-use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
 class FetchPlayersTool implements ToolInterface

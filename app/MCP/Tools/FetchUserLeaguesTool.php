@@ -2,17 +2,12 @@
 
 namespace App\MCP\Tools;
 
-use App\Actions\Sleeper\FetchUserLeagues as FetchUserLeaguesAction;
-use App\MCP\Support\ToolHelpers;
+use App\Actions\Sleeper\DetermineCurrentWeek;
 use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
-use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
-use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
 class FetchUserLeaguesTool implements ToolInterface
 {
-    use ToolHelpers;
-
     public function isStreaming(): bool
     {
         return false;
@@ -69,95 +64,45 @@ class FetchUserLeaguesTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
-        $arguments = $this->normalizeArgumentsGeneric(
-            $arguments,
-            aliases: ['userId' => 'user_identifier', 'username' => 'user_identifier'],
-            stringKeys: ['user_identifier', 'sport', 'season']
-        );
-
         $this->validateOrFail($arguments, [
             'user_identifier' => ['required', 'string'],
             'sport' => ['nullable', 'string'],
             'season' => ['nullable', 'string'],
         ]);
 
-        $userIdentifier = $arguments['user_identifier'];
+        $user_identifier = $arguments['user_identifier'];
         $sport = $arguments['sport'] ?? 'nfl';
         $season = $arguments['season'] ?? null;
 
-        try {
-            // If no season provided, get current season from shared helper
-            if ($season === null) {
-                $season = $this->getCurrentSeason($sport);
-            }
+        if ($season === null) {
+            $state = new DetermineCurrentWeek()->execute($sport);
+            $season = $state['season'];
+        }
 
-            // Get user ID from identifier (could be username or user ID)
-            $userId = $this->resolveUserId($userIdentifier, $sport);
+        if(is_numeric($user_identifier)) {
+            $user_id = $user_identifier;
+        } else {
+            $response = Sleeper::users()->get($user_identifier, $sport);
+            $user = $response->json();
+            $user_id = $user['user_id'];
+        }
+        $leagues = Sleeper::user($user_id)
+            ->leagues($sport, $season)
+            ->json();
 
-            // Fetch user's leagues via Action (cached)
-            $leagues = app(FetchUserLeaguesAction::class)->execute($userId, $sport, (int) $season);
-
-            // Extract league IDs and names
-            $leagueData = [];
-            foreach ($leagues as $league) {
-                if (isset($league['league_id']) && isset($league['name'])) {
-                    $leagueData[] = [
-                        'id' => $league['league_id'],
-                        'name' => $league['name'],
-                    ];
-                }
-            }
 
             return [
                 'success' => true,
-                'data' => $leagueData,
-                'count' => count($leagueData),
-                'message' => 'Successfully fetched '.count($leagueData)." leagues for user '{$userIdentifier}'",
+                'data' => $leagues,
+                'count' => count($leagues),
+                'message' => 'Successfully fetched '.count($leagues)." leagues for user '{$user_identifier}'",
                 'metadata' => [
-                    'user_identifier' => $userIdentifier,
-                    'resolved_user_id' => $userId,
+                    'resolved_user_id' => $user_id,
                     'sport' => $sport,
                     'season' => $season,
                     'executed_at' => now()->toISOString(),
                 ],
             ];
 
-        } catch (JsonRpcErrorException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            throw new JsonRpcErrorException(
-                message: 'An unexpected error occurred: '.$e->getMessage(),
-                code: JsonRpcErrorCode::INTERNAL_ERROR
-            );
-        }
-    }
-
-    private function resolveUserId(string $userIdentifier, string $sport): string
-    {
-        // Check if the identifier is already a user ID (numeric)
-        if (is_numeric($userIdentifier)) {
-            return $userIdentifier;
-        }
-
-        // Try to find user by username
-        $response = Sleeper::users()->get($userIdentifier, $sport);
-
-        if (! $response->successful()) {
-            throw new JsonRpcErrorException(
-                message: 'Failed to fetch user by username: HTTP '.$response->status(),
-                code: JsonRpcErrorCode::INVALID_REQUEST
-            );
-        }
-
-        $user = $response->json();
-
-        if (! is_array($user) || ! isset($user['user_id'])) {
-            throw new JsonRpcErrorException(
-                message: 'User not found or invalid response format.',
-                code: JsonRpcErrorCode::INVALID_REQUEST
-            );
-        }
-
-        return $user['user_id'];
     }
 }
