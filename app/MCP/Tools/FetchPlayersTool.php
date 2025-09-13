@@ -110,7 +110,12 @@ class FetchPlayersTool implements ToolInterface
                 'weekly_position_rank'
             )->playablePositions()
             ->orderByAdp()
-            ->with(['seasonSummaries'])
+            ->with([
+                'seasonSummaries',
+                'projectionsForWeek' => fn ($query) => $query
+                    ->where('season', $state['season'])
+                    ->where('week', $state['week'])
+            ])
             ->paginate($perPage);
 
         // Add owner information to players

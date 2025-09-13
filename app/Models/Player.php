@@ -144,7 +144,7 @@ class Player extends Model
     /**
      * Get projections for a specific season and week.
      */
-    public function getProjectionsForWeek(int $season, int $week)
+    public function projectionsForWeek(int $season, int $week)
     {
         return $this->projections()
             ->where('season', $season)
