@@ -3,17 +3,13 @@
 namespace App\MCP\Tools;
 
 use App\Actions\Sleeper\FetchLeagueUsers;
-use App\Actions\Sleeper\FetchMatchups as FetchMatchupsAction;
 use App\Actions\Sleeper\FetchRosters;
-use App\MCP\Support\ToolHelpers;
-use OPGG\LaravelMcpServer\Exceptions\Enums\JsonRpcErrorCode;
-use OPGG\LaravelMcpServer\Exceptions\JsonRpcErrorException;
+use App\Actions\Sleeper\GetSeasonState;
+use MichaelCrowcroft\SleeperLaravel\Facades\Sleeper;
 use OPGG\LaravelMcpServer\Services\ToolService\ToolInterface;
 
 class FetchMatchupsTool implements ToolInterface
 {
-    use ToolHelpers;
-
     public function isStreaming(): bool
     {
         return false;
@@ -35,7 +31,7 @@ class FetchMatchupsTool implements ToolInterface
             'type' => 'object',
             'properties' => [
                 'league_id' => [
-                    'type' => 'string',
+                    'type' => 'integer',
                     'description' => 'Sleeper league ID to fetch matchups for',
                 ],
                 'week' => [
@@ -74,38 +70,24 @@ class FetchMatchupsTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
-        $arguments = $this->normalizeArgumentsGeneric(
-            $arguments,
-            aliases: [
-                'leagueId' => 'league_id',
-                'weekNumber' => 'week',
-                'sportType' => 'sport',
-            ],
-            intKeys: ['week'],
-            boolKeys: [],
-            stringKeys: ['league_id', 'sport']
-        );
-
-        $leagueId = $arguments['league_id'] ?? null;
+        $league_id = $arguments['league_id'] ?? null;
         $week = $arguments['week'] ?? null;
         $sport = $arguments['sport'] ?? 'nfl';
 
-        if (! is_string($leagueId) || $leagueId === '') {
-            throw new JsonRpcErrorException(
-                message: 'league_id is required',
-                code: JsonRpcErrorCode::INVALID_REQUEST
-            );
-        }
-
         if ($week === null) {
-            $week = $this->getCurrentWeek($sport);
+            $week = new GetSeasonState($sport)->execute()['week'];
         }
 
-        // Fetch matchups via shared Action (cached)
-        $matchups = app(FetchMatchupsAction::class)->execute($leagueId, (int) $week);
+        $matchups = Sleeper::leagues()->matchups($league_id, $week)->json();
+        if($matchups === []) {
+            return [];
+        }
+        $users = Sleeper::leagues()->users($league_id)->json();
+        $rosters = Sleeper::leagues()->rosters($league_id)->json();
 
-        // Supplement with user info via shared Actions
-        $supplemented = $this->supplementWithUsers($leagueId, $matchups);
+        foreach($matchups as $matchup) {
+            $matchup['owner_id'] = $matchup['roster_id'] ?? null;
+        }
 
         // Group into head-to-head matchups with two teams per matchup_id
         $paired = $this->pairByMatchupId($supplemented);
@@ -126,14 +108,6 @@ class FetchMatchupsTool implements ToolInterface
 
     private function supplementWithUsers(string $leagueId, array $matchups): array
     {
-        if ($matchups === []) {
-            return [];
-        }
-
-        // Fetch league users and rosters once via Actions
-        $users = app(FetchLeagueUsers::class)->execute($leagueId);
-        $rosters = app(FetchRosters::class)->execute($leagueId);
-
         // Build maps
         $ownerIdByRosterId = [];
         foreach ($rosters as $roster) {
