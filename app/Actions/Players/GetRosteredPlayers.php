@@ -8,7 +8,7 @@ class GetRosteredPlayers
 {
     public function execute(string|int|null $league_id): array
     {
-        if(!$league_id) {
+        if($league_id === null) {
             return [];
         }
 
