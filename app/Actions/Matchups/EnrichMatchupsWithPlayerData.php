@@ -3,6 +3,7 @@
 namespace App\Actions\Matchups;
 
 use App\Models\Player;
+use App\Models\PlayerProjections;
 use Illuminate\Support\Collection;
 
 class EnrichMatchupsWithPlayerData
@@ -13,7 +14,7 @@ class EnrichMatchupsWithPlayerData
             return [];
         }
 
-        $player_ids = collect($matchups)
+        $playerIds = collect($matchups)
             ->flatten(1)
             ->flatMap(function ($matchup) {
                 $ids = [];
@@ -26,11 +27,11 @@ class EnrichMatchupsWithPlayerData
             ->unique()
             ->values();
 
-        if ($player_ids->isEmpty()) {
+        if ($playerIds->isEmpty()) {
             return $matchups;
         }
 
-        $players = Player::whereIn('player_id', $player_ids)
+        $players = Player::whereIn('player_id', $playerIds)
             ->with([
                 'projections' => function ($query) use ($season, $week) {
                     $query->where('season', $season)->where('week', $week);
@@ -38,18 +39,15 @@ class EnrichMatchupsWithPlayerData
                 'stats' => function ($query) use ($season, $week) {
                     $query->where('season', $season)->where('week', $week);
                 },
-                // Eager load season summaries to source volatility metrics
-                'seasonSummaries',
             ])
             ->get()
             ->keyBy('player_id');
 
         $projectionStdDev = $this->getProjectionStandardDeviation();
-        $positionCvThresholds = $this->getPositionCvThresholds();
 
         foreach ($matchups as &$matchup) {
             foreach ($matchup as &$team) {
-                $team = $this->enrichTeam($team, $players, $season, $projectionStdDev, $positionCvThresholds);
+                $team = $this->enrichTeam($team, $players);
                 $team['projected_total'] = $this->calculateProjectedTotal($team);
                 $team['confidence_interval'] = $this->calculateTeamConfidenceInterval($team, $projectionStdDev);
             }
@@ -72,13 +70,13 @@ class EnrichMatchupsWithPlayerData
         return $matchups;
     }
 
-    private function enrichTeam(array $team, Collection $players, int $season, float $projectionStdDev, array $positionCvThresholds): array
+    private function enrichTeam(array $team, Collection $players): array
     {
         return collect($team)
-            ->transform(function ($value, $key) use ($players, $season, $projectionStdDev, $positionCvThresholds) {
+            ->transform(function ($value, $key) use ($players) {
                 if ($key === 'starters' || $key === 'players') {
                     return collect($value)
-                        ->map(fn ($player_id) => $this->enrichPlayer($player_id, $players, $season, $projectionStdDev, $positionCvThresholds))
+                        ->map(fn ($player_id) => $this->enrichPlayer($player_id, $players))
                         ->all();
                 }
 
@@ -87,106 +85,12 @@ class EnrichMatchupsWithPlayerData
             ->all();
     }
 
-    private function enrichPlayer(string $player_id, Collection $players, int $season, float $projectionStdDev, array $positionCvThresholds): array
+    private function enrichPlayer(string $player_id, Collection $players): array
     {
         $player = $players->get($player_id);
 
         $projection = $player->projections->first();
         $stats = $player->stats->first();
-
-        // Determine projected and actual points for this week
-        $actualPoints = null;
-        if (isset($stats) && is_array($stats->stats ?? null)) {
-            $actualPoints = $stats->stats['pts_ppr'] ?? null;
-            $actualPoints = is_numeric($actualPoints) ? (float) $actualPoints : null;
-        }
-
-        $projectedPoints = null;
-        if (isset($projection)) {
-            // Prefer flattened column, else nested stats
-            if (isset($projection->pts_ppr) && is_numeric($projection->pts_ppr)) {
-                $projectedPoints = (float) $projection->pts_ppr;
-            } elseif (is_array($projection->stats ?? null) && isset($projection->stats['pts_ppr']) && is_numeric($projection->stats['pts_ppr'])) {
-                $projectedPoints = (float) $projection->stats['pts_ppr'];
-            }
-        }
-
-        // Pull prior season summary for player-specific volatility (fallback to latest available)
-        $summary = null;
-        if ($player->relationLoaded('seasonSummaries')) {
-            $summary = $player->seasonSummaries->firstWhere('season', $season - 1)
-                ?? $player->seasonSummaries->sortByDesc('season')->first();
-        }
-
-        $volatility = is_array($summary->volatility ?? null) ? $summary->volatility : [];
-        $cv = isset($volatility['coefficient_of_variation']) && is_numeric($volatility['coefficient_of_variation'])
-            ? max(0.0, (float) $volatility['coefficient_of_variation'])
-            : null;
-
-        // Derive player-specific weekly stddev estimate
-        $stddevFromSummary = null;
-        if ($summary && is_numeric($summary->stddev_above) && is_numeric($summary->average_points_per_game)) {
-            $stddevFromSummary = abs((float) $summary->stddev_above - (float) $summary->average_points_per_game);
-        }
-
-        $z = 1.645; // 90% CI
-        $playerStdDev = null;
-        if ($actualPoints !== null) {
-            $playerStdDev = 0.0;
-        } elseif ($cv !== null && $projectedPoints !== null && $cv > 0) {
-            $playerStdDev = $cv * $projectedPoints;
-        } elseif ($stddevFromSummary !== null && $stddevFromSummary > 0) {
-            $playerStdDev = $stddevFromSummary;
-        } else {
-            $playerStdDev = $projectionStdDev; // global fallback
-        }
-
-        $range = null;
-        if ($actualPoints !== null) {
-            $range = [
-                'base' => round($actualPoints, 1),
-                'lower_90' => round($actualPoints, 1),
-                'upper_90' => round($actualPoints, 1),
-                'stddev' => 0.0,
-                'source' => 'actual',
-            ];
-        } elseif ($projectedPoints !== null) {
-            $margin = $z * (float) $playerStdDev;
-            $lower = max(0.0, (float) $projectedPoints - $margin);
-            $upper = (float) $projectedPoints + $margin;
-            $range = [
-                'base' => round((float) $projectedPoints, 1),
-                'lower_90' => round($lower, 1),
-                'upper_90' => round($upper, 1),
-                'stddev' => round((float) $playerStdDev, 3),
-                'source' => 'projection',
-            ];
-        }
-
-        // Risk classification for UI (tighter bands)
-        // Prefer CV from prior season; fallback to relative stddev this week
-        $effectiveCv = null;
-        if ($cv !== null) {
-            $effectiveCv = $cv;
-        } elseif ($projectedPoints !== null && $projectedPoints > 0 && $playerStdDev !== null) {
-            $effectiveCv = min(2.0, (float) $playerStdDev / (float) $projectedPoints);
-        }
-
-        $riskProfile = null;
-        if ($effectiveCv !== null) {
-            $pos = $player->position ?? ($player->fantasy_positions[0] ?? null);
-            $thresholds = ($pos && isset($positionCvThresholds[$pos])) ? $positionCvThresholds[$pos] : null;
-            $safeCut = $thresholds['safe_upper'] ?? 0.20;
-            $balancedCut = $thresholds['balanced_upper'] ?? 0.40;
-
-            if ($effectiveCv <= $safeCut) {
-                $riskProfile = 'safe';
-            } elseif ($effectiveCv <= $balancedCut) {
-                $riskProfile = 'balanced';
-            } else {
-                $riskProfile = 'volatile';
-            }
-        }
 
         return [
             'player_id' => $player->player_id,
@@ -200,90 +104,7 @@ class EnrichMatchupsWithPlayerData
             'injury_status' => $player->injury_status,
             'projection' => $projection,
             'stats' => $stats,
-            'volatility' => $volatility,
-            'risk_profile' => $riskProfile,
-            'projected_range_90' => $range,
         ];
-    }
-
-    /**
-     * Compute per-position CV thresholds from prior seasons (33rd/66th percentiles).
-     * Falls back to sensible defaults if insufficient data.
-     *
-     * @return array<string, array{safe_upper: float, balanced_upper: float}>
-     */
-    private function getPositionCvThresholds(): array
-    {
-        static $cache = null;
-        if (is_array($cache)) {
-            return $cache;
-        }
-
-        $defaults = [
-            'QB' => ['safe_upper' => 0.18, 'balanced_upper' => 0.32],
-            'RB' => ['safe_upper' => 0.24, 'balanced_upper' => 0.42],
-            'WR' => ['safe_upper' => 0.28, 'balanced_upper' => 0.50],
-            'TE' => ['safe_upper' => 0.30, 'balanced_upper' => 0.52],
-            'K' => ['safe_upper' => 0.20, 'balanced_upper' => 0.38],
-            'DEF' => ['safe_upper' => 0.24, 'balanced_upper' => 0.44],
-        ];
-
-        // Try to leverage cached season summaries which include CV
-        $rows = \Illuminate\Support\Facades\DB::table('player_season_summaries')
-            ->join('players', 'player_season_summaries.player_id', '=', 'players.player_id')
-            ->where('player_season_summaries.season', '>=', 2023)
-            ->select(['players.position', 'player_season_summaries.volatility'])
-            ->limit(5000)
-            ->get();
-
-        $cvByPos = [];
-        foreach ($rows as $row) {
-            $pos = $row->position ?? null;
-            if (! $pos) {
-                continue;
-            }
-            $vol = is_string($row->volatility) ? json_decode($row->volatility, true) : (array) $row->volatility;
-            $cv = $vol['coefficient_of_variation'] ?? null;
-            if (is_numeric($cv) && $cv >= 0) {
-                $cvByPos[$pos][] = (float) $cv;
-            }
-        }
-
-        $thresholds = [];
-        foreach ($cvByPos as $pos => $values) {
-            if (count($values) < 10) {
-                continue;
-            }
-            sort($values);
-            $p33 = $this->percentile($values, 33);
-            $p66 = $this->percentile($values, 66);
-            $thresholds[$pos] = [
-                'safe_upper' => round($p33, 3),
-                'balanced_upper' => round(max($p33, $p66), 3),
-            ];
-        }
-
-        // Merge with defaults where missing
-        $cache = array_merge($defaults, $thresholds);
-
-        return $cache;
-    }
-
-    private function percentile(array $sortedValues, int $percent): float
-    {
-        $count = count($sortedValues);
-        if ($count === 0) {
-            return 0.0;
-        }
-        $index = ($percent / 100) * ($count - 1);
-        $lower = (int) floor($index);
-        $upper = (int) ceil($index);
-        if ($lower === $upper) {
-            return (float) $sortedValues[$lower];
-        }
-        $weight = $index - $lower;
-
-        return (float) ($sortedValues[$lower] * (1 - $weight) + $sortedValues[$upper] * $weight);
     }
 
     private function calculateProjectedTotal(array $team): float
@@ -317,66 +138,28 @@ class EnrichMatchupsWithPlayerData
 
     private function getProjectionStandardDeviation(): float
     {
-        // Calculate historical projection accuracy from past seasons.
-        // Be robust to different DB schemas (JSON stats vs flattened columns).
-        $schema = \Illuminate\Support\Facades\Schema::getConnection();
-        $hasProjStats = \Illuminate\Support\Facades\Schema::hasColumn('player_projections', 'stats');
-        $hasProjPts = \Illuminate\Support\Facades\Schema::hasColumn('player_projections', 'pts_ppr');
-        $hasActStats = \Illuminate\Support\Facades\Schema::hasColumn('player_stats', 'stats');
-        $hasActPts = \Illuminate\Support\Facades\Schema::hasColumn('player_stats', 'pts_ppr');
-
-        $query = \Illuminate\Support\Facades\DB::table('player_projections')
+        // Calculate historical projection accuracy from past seasons
+        // Use current season and past seasons to estimate projection error
+        $projections = PlayerProjections::with('player')
             ->join('player_stats', function ($join) {
                 $join->on('player_projections.player_id', '=', 'player_stats.player_id')
                     ->on('player_projections.season', '=', 'player_stats.season')
                     ->on('player_projections.week', '=', 'player_stats.week');
             })
             ->where('player_projections.season', '>=', 2023)
-            ->limit(2000);
-
-        $selects = [
-            'player_projections.player_id',
-            'player_projections.season',
-            'player_projections.week',
-        ];
-        if ($hasProjStats) {
-            $selects[] = 'player_projections.stats as proj_stats';
-        }
-        if ($hasProjPts) {
-            $selects[] = 'player_projections.pts_ppr as proj_pts_ppr';
-        }
-        if ($hasActStats) {
-            $selects[] = 'player_stats.stats as act_stats';
-        }
-        if ($hasActPts) {
-            $selects[] = 'player_stats.pts_ppr as act_pts_ppr';
-        }
-
-        $rows = $query->select($selects)->get();
+            ->whereNotNull('player_projections.stats->pts_ppr')
+            ->whereNotNull('player_stats.stats->pts_ppr')
+            ->select([
+                'player_projections.stats',
+                'player_stats.stats as actual_stats',
+            ])
+            ->limit(1000) // Limit to avoid memory issues
+            ->get();
 
         $squaredErrors = [];
-        foreach ($rows as $row) {
-            $projected = null;
-            if ($hasProjStats && isset($row->proj_stats)) {
-                $decoded = is_string($row->proj_stats) ? json_decode($row->proj_stats, true) : (array) $row->proj_stats;
-                if (is_array($decoded) && isset($decoded['pts_ppr']) && is_numeric($decoded['pts_ppr'])) {
-                    $projected = (float) $decoded['pts_ppr'];
-                }
-            }
-            if ($projected === null && $hasProjPts && isset($row->proj_pts_ppr) && is_numeric($row->proj_pts_ppr)) {
-                $projected = (float) $row->proj_pts_ppr;
-            }
-
-            $actual = null;
-            if ($hasActStats && isset($row->act_stats)) {
-                $decodedA = is_string($row->act_stats) ? json_decode($row->act_stats, true) : (array) $row->act_stats;
-                if (is_array($decodedA) && isset($decodedA['pts_ppr']) && is_numeric($decodedA['pts_ppr'])) {
-                    $actual = (float) $decodedA['pts_ppr'];
-                }
-            }
-            if ($actual === null && $hasActPts && isset($row->act_pts_ppr) && is_numeric($row->act_pts_ppr)) {
-                $actual = (float) $row->act_pts_ppr;
-            }
+        foreach ($projections as $projection) {
+            $projected = $projection->stats['pts_ppr'] ?? null;
+            $actual = $projection->actual_stats['pts_ppr'] ?? null;
 
             if ($projected !== null && $actual !== null) {
                 $diff = (float) $actual - (float) $projected;

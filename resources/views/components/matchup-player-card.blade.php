@@ -35,21 +35,6 @@
                             {{ $player['injury_status'] }}
                         </flux:badge>
                     @endif
-
-                    <!-- Risk Profile -->
-                    @if(isset($player['risk_profile']) && $player['risk_profile'])
-                        @php
-                            // Flux Free common variants: primary, secondary, destructive, outline
-                            $variant = match($player['risk_profile']) {
-                                'safe' => 'primary',
-                                'balanced' => 'secondary',
-                                'volatile' => 'destructive',
-                                default => 'secondary'
-                            };
-                            $label = ucfirst($player['risk_profile']);
-                        @endphp
-                        <flux:badge variant="{{ $variant }}" size="sm" class="shrink-0">{{ $label }}</flux:badge>
-                    @endif
                 </div>
 
             @if($player['injury_status'] && $player['injury_status'] !== 'Healthy')
@@ -63,7 +48,6 @@
         @php
             $hasActual = isset($player['stats']['stats']['pts_ppr']) && $player['stats']['stats']['pts_ppr'] !== null;
             $hasProjected = isset($player['projection']['stats']['pts_ppr']) && $player['projection']['stats']['pts_ppr'] !== null;
-            if(!$hasProjected && isset($player['projection']['pts_ppr']) && $player['projection']['pts_ppr'] !== null) { $hasProjected = true; }
         @endphp
 
         @if($hasActual)
@@ -78,14 +62,9 @@
             @endif
         @elseif($hasProjected)
             <div class="font-semibold text-green-600">
-                {{ number_format(($player['projection']['stats']['pts_ppr'] ?? $player['projection']['pts_ppr']), 1) }}
+                {{ number_format($player['projection']['stats']['pts_ppr'], 1) }}
             </div>
             <div class="text-xs text-muted-foreground">Projected</div>
-            @if(isset($player['projected_range_90']))
-                <div class="text-[11px] text-muted-foreground mt-1">
-                    90%: {{ number_format($player['projected_range_90']['lower_90'], 1) }}–{{ number_format($player['projected_range_90']['upper_90'], 1) }}
-                </div>
-            @endif
         @else
             <div class="text-muted-foreground">-</div>
             <div class="text-xs text-muted-foreground">No Data</div>
