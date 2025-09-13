@@ -25,11 +25,8 @@ class McpActionController extends Controller
             'api.mcp.fetch-adp-players' => \App\MCP\Tools\FetchADPPlayersTool::class,
             'api.mcp.fetch-players-season-data' => \App\MCP\Tools\FetchPlayersSeasonDataTool::class,
             'api.mcp.fetch-player-season-data' => \App\MCP\Tools\FetchPlayerSeasonDataTool::class,
-            'api.mcp.fetch-league' => \App\MCP\Tools\FetchLeagueTool::class,
             'api.mcp.fetch-matchups' => \App\MCP\Tools\FetchMatchupsTool::class,
-            'api.mcp.fetch-roster' => \App\MCP\Tools\FetchRosterTool::class,
             'api.mcp.fetch-user-leagues' => \App\MCP\Tools\FetchUserLeaguesTool::class,
-            'api.mcp.fetch-players-table' => \App\MCP\Tools\FetchPlayersTableTool::class,
         ];
 
         $toolClass = $routeToToolClassMap[$routeName] ?? null;

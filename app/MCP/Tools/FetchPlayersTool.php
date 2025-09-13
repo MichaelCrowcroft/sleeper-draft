@@ -85,21 +85,23 @@ class FetchPlayersTool implements ToolInterface
 
     public function execute(array $arguments): mixed
     {
-        $perPage = (int) ($arguments['per_page'] ?? 10);
+        $league_id = (int) $arguments['league_id'] ?? '';
+        $fa_only = (bool) $arguments['fa_only'] ?? false;
+        $position = $arguments['position'] ?? null;
+        $team = $arguments['team'] ?? null;
+        $search = $arguments['search'] ?? null;
+        $page = (int) $arguments['page'] ?? 1;
+        $per_page = (int) $arguments['per_page'] ?? 10;
 
-        if(isset($arguments['page'])) {
-            request()->merge(['page' => (int) $arguments['page']]);
-        }
-
-        $rostered_players = new GetRosteredPlayers()->execute($arguments['league_id'] ?? '');
-        $excluded_player_ids = ($arguments['fa_only'] ?? false) ? array_keys($rostered_players) : [];
+        $rostered_players = new GetRosteredPlayers()->execute($league_id);
+        $excluded_player_ids = $fa_only ? array_keys($rostered_players) : [];
         $state = new GetSeasonState()->execute('nfl');
 
         $players = Player::query()
             ->where('active', true)
-            ->when($arguments['position'] ?? null, fn ($q) => $q->where('position', $arguments['position']))
-            ->when($arguments['team'] ?? null, fn ($q) => $q->where('team', $arguments['team']))
-            ->when($arguments['search'] ?? null, fn ($q) => $q->search($arguments['search']))
+            ->when($position, fn ($q) => $q->where('position', $position))
+            ->when($team, fn ($q) => $q->where('team', $team))
+            ->when($search, fn ($q) => $q->search($search))
             ->whereNotIn('player_id', $excluded_player_ids)
             ->select([
                 'players.player_id',
@@ -137,7 +139,7 @@ class FetchPlayersTool implements ToolInterface
                     ->where('season', $state['season'])
                     ->where('week', $state['week'])
             ])
-            ->paginate($perPage);
+            ->paginate($per_page, ['*'], 'page', $page);
 
         $players = new AddOwnerToPlayers()->execute($players, $rostered_players);
 
@@ -149,18 +151,18 @@ class FetchPlayersTool implements ToolInterface
             'metadata' => [
                 'executed_at' => now()->toISOString(),
                 'filters' => [
-                    'search' => $arguments['search'] ?? null,
-                    'position' => $arguments['position'] ?? null,
-                    'team' => $arguments['team'] ?? null,
-                    'league_id' => $arguments['league_id'] ?? null,
-                    'fa_only' => (bool) ($arguments['fa_only'] ?? false),
+                    'search' => $search,
+                    'position' => $position,
+                    'team' => $team,
+                    'league_id' => $league_id,
+                    'fa_only' => $fa_only,
                 ],
                 'filter_options' => [
                     'available_positions' => new AvailablePositions()->execute(),
                     'available_teams' => new AvailableTeams()->execute(),
                 ],
-                'current_week' => $state['week'] ?? null,
-                'current_season' => $state['season'] ?? null,
+                'current_week' => $state['week'],
+                'current_season' => $state['season'],
                 'pagination' => [
                     'current_page' => $players->currentPage(),
                     'per_page' => $players->perPage(),
