@@ -100,7 +100,7 @@ new class extends Component
                 ->select('weekly_ranking')
                 ->whereColumn('player_stats.player_id', 'players.player_id')
                 ->where('season', $state['season'])
-                ->where('week', (int) $state['week'])
+                ->where('week', $state['week'])
                 ->limit(1),
                 'weekly_position_rank'
             )->playablePositions()
