@@ -76,20 +76,21 @@ new class extends Component
                 </div>
 
                 <!-- Matchup Summary with Confidence Intervals and Win Probabilities -->
-                @if(isset($matchup['win_probabilities']))
+                @if(isset($teams['win_probabilities']))
                 <div class="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 rounded-lg p-6 mb-6 border border-green-200 dark:border-green-800">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         @php $teamIndex = 0; @endphp
                         @foreach($teams as $index => $team)
+                            @if(is_array($team) && isset($team['owner_id']))
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between">
                                     <h3 class="font-semibold text-lg">{{ $team['owner_name'] ?? $team['owner_id'] ?? 'Unknown Owner' }}</h3>
                                     <div class="text-right">
                                         @if($teamIndex === 0)
-                                            <div class="text-2xl font-bold text-green-600">{{ $matchup['win_probabilities']['team_a_win_probability'] }}%</div>
+                                            <div class="text-2xl font-bold text-green-600">{{ $teams['win_probabilities']['team_a_win_probability'] }}%</div>
                                             <div class="text-xs text-muted-foreground">Win Probability</div>
                                         @else
-                                            <div class="text-2xl font-bold text-blue-600">{{ $matchup['win_probabilities']['team_b_win_probability'] }}%</div>
+                                            <div class="text-2xl font-bold text-blue-600">{{ $teams['win_probabilities']['team_b_win_probability'] }}%</div>
                                             <div class="text-xs text-muted-foreground">Win Probability</div>
                                         @endif
                                     </div>
@@ -110,13 +111,14 @@ new class extends Component
                                 @endif
                             </div>
                             @php $teamIndex++; @endphp
+                            @endif
                         @endforeach
                     </div>
 
                     <!-- Matchup Insights -->
                     <div class="mt-4 pt-4 border-t border-green-200 dark:border-green-700">
                         <div class="text-center text-sm text-muted-foreground">
-                            @php $insights = $this->getMatchupInsights($matchup) @endphp
+                            @php $insights = $this->getMatchupInsights($teams) @endphp
                             <span class="font-medium">{{ $insights['favored_team'] }}</span> has a <span class="font-medium">{{ $insights['win_probability'] }}%</span> chance to win this matchup
                         </div>
                     </div>
@@ -126,6 +128,7 @@ new class extends Component
                 <!-- Teams Side by Side -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     @foreach($teams as $index => $team)
+                        @if(is_array($team) && isset($team['owner_id']))
                         <div class="space-y-4">
                             <!-- Team Header -->
                             <div class="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
@@ -176,6 +179,7 @@ new class extends Component
                                 @endif
                             </div>
                         </div>
+                        @endif
                     @endforeach
                 </div>
             </div>
