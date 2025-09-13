@@ -112,7 +112,7 @@ class FetchPlayersTool implements ToolInterface
             ->orderByAdp()
             ->with([
                 'seasonSummaries',
-                'projectionsForWeek' => fn ($query) => $query
+                'projections' => fn ($query) => $query
                     ->where('season', $state['season'])
                     ->where('week', $state['week'])
             ])

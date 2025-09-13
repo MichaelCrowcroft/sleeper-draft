@@ -142,17 +142,6 @@ class Player extends Model
     }
 
     /**
-     * Get projections for a specific season and week.
-     */
-    public function projectionsForWeek(int $season, int $week)
-    {
-        return $this->projections()
-            ->where('season', $season)
-            ->where('week', $week)
-            ->first();
-    }
-
-    /**
      * Relationship for projections limited to the 2025 season.
      */
     public function projections2025(): HasMany
