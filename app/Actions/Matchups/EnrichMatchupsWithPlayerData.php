@@ -3,8 +3,8 @@
 namespace App\Actions\Matchups;
 
 use App\Models\Player;
-use Illuminate\Support\Collection;
 use App\Models\PlayerProjections;
+use Illuminate\Support\Collection;
 
 class EnrichMatchupsWithPlayerData
 {
@@ -45,20 +45,25 @@ class EnrichMatchupsWithPlayerData
 
         $projectionStdDev = $this->getProjectionStandardDeviation();
 
-        foreach($matchups as &$matchup) {
-            $teams = array_values($matchup);
+        foreach ($matchups as &$matchup) {
             foreach ($matchup as &$team) {
                 $team = $this->enrichTeam($team, $players);
                 $team['projected_total'] = $this->calculateProjectedTotal($team);
                 $team['confidence_interval'] = $this->calculateTeamConfidenceInterval($team, $projectionStdDev);
             }
 
-            $teamA = $teams[0];
-            $teamB = $teams[1];
+            $teams = array_values($matchup);
+            $home = $teams[0] ?? [];
+            $away = $teams[1] ?? [];
+
+            $home = $this->computeTeamDistribution($home, $projectionStdDev);
+            $away = $this->computeTeamDistribution($away, $projectionStdDev);
+
+            $win_probabilities = new ComputeWinProbability()->execute($home, $away);
 
             $matchup['win_probabilities'] = [
-                'team_a_win_probability' => $this->calculateWinProbability($teamA, $teamB, $projectionStdDev),
-                'team_b_win_probability' => $this->calculateWinProbability($teamB, $teamA, $projectionStdDev),
+                'team_a_win_probability' => round($win_probabilities['home'] * 100, 1),
+                'team_b_win_probability' => round($win_probabilities['away'] * 100, 1),
             ];
         }
 
@@ -110,7 +115,7 @@ class EnrichMatchupsWithPlayerData
         $starters = $team['starters'] ?? [];
 
         foreach ($starters as $player) {
-            if (!is_array($player)) {
+            if(!is_array($player)) {
                 continue;
             }
 
@@ -146,27 +151,30 @@ class EnrichMatchupsWithPlayerData
             ->whereNotNull('player_stats.stats->pts_ppr')
             ->select([
                 'player_projections.stats',
-                'player_stats.stats as actual_stats'
+                'player_stats.stats as actual_stats',
             ])
             ->limit(1000) // Limit to avoid memory issues
             ->get();
 
-        $errors = [];
+        $squaredErrors = [];
         foreach ($projections as $projection) {
             $projected = $projection->stats['pts_ppr'] ?? null;
             $actual = $projection->actual_stats['pts_ppr'] ?? null;
 
             if ($projected !== null && $actual !== null) {
-                $errors[] = abs($actual - $projected);
+                $diff = (float) $actual - (float) $projected;
+                $squaredErrors[] = $diff * $diff;
             }
         }
 
-        if (empty($errors)) {
+        if (empty($squaredErrors)) {
             // Fallback to a reasonable default based on typical fantasy football projection accuracy
             return 8.0; // ~8 points standard deviation is typical
         }
 
-        return collect($errors)->avg();
+        $mse = collect($squaredErrors)->avg();
+
+        return sqrt($mse);
     }
 
     private function calculateTeamConfidenceInterval(array $team, float $projectionStdDev): array
@@ -176,7 +184,7 @@ class EnrichMatchupsWithPlayerData
         $varianceSum = 0.0;
 
         foreach ($starters as $player) {
-            if (!is_array($player)) {
+            if (! is_array($player)) {
                 continue;
             }
 
@@ -186,7 +194,7 @@ class EnrichMatchupsWithPlayerData
             if (isset($player['stats']['stats']['pts_ppr']) && $player['stats']['stats']['pts_ppr'] !== null) {
                 $projectedPoints = (float) $player['stats']['stats']['pts_ppr'];
                 // Actual points have no uncertainty (game already played)
-                continue;
+                // Add to total and DO NOT add variance
             } elseif (isset($player['projection']) && $player['projection']) {
                 // Try flattened column first, then JSON stats
                 $projection = $player['projection'];
@@ -203,8 +211,9 @@ class EnrichMatchupsWithPlayerData
 
             $projectedTotal += $projectedPoints;
 
-            // Add variance for projected players (assuming independent errors)
-            if ($projectedPoints > 0) {
+            // Add variance only when using projected value (not actual)
+            $hasActual = isset($player['stats']['stats']['pts_ppr']) && $player['stats']['stats']['pts_ppr'] !== null;
+            if (! $hasActual && $projectedPoints > 0) {
                 $varianceSum += pow($projectionStdDev, 2);
             }
         }
@@ -220,48 +229,53 @@ class EnrichMatchupsWithPlayerData
             'lower_90' => round(max(0, $projectedTotal - $marginOfError), 1),
             'upper_90' => round($projectedTotal + $marginOfError, 1),
             'confidence_range' => round($marginOfError * 2, 1),
+            'stddev' => round($teamStdDev, 3),
         ];
     }
 
-    private function calculateWinProbability(array $teamA, array $teamB, float $projectionStdDev): float
+    /**
+     * Build a normal distribution (mean/variance) for a team's total points.
+     * Actual points contribute mean without variance; projections add mean and variance.
+     *
+     * @return array{mean: float, variance: float}
+     */
+    private function computeTeamDistribution(array $team, float $projectionStdDev): array
     {
-        // Use the projected_total that's already calculated for the team
-        $scoreA = $teamA['projected_total'] ?? 0;
-        $scoreB = $teamB['projected_total'] ?? 0;
+        $starters = $team['starters'] ?? [];
+        $mean = 0.0;
+        $variance = 0.0;
 
-        // If either team has no starters or projections, default to 50/50
-        $startersA = $teamA['starters'] ?? [];
-        $startersB = $teamB['starters'] ?? [];
+        foreach ($starters as $player) {
+            if (! is_array($player)) {
+                continue;
+            }
 
-        if (empty($startersA) && empty($startersB)) {
-            return 50.0;
+            $actual = $player['stats']['stats']['pts_ppr'] ?? null;
+            if ($actual !== null) {
+                $mean += (float) $actual;
+
+                // no variance for completed outcomes
+                continue;
+            }
+
+            $proj = null;
+            if (isset($player['projection']['pts_ppr']) && $player['projection']['pts_ppr'] !== null) {
+                $proj = (float) $player['projection']['pts_ppr'];
+            } elseif (isset($player['projection']['stats']['pts_ppr']) && $player['projection']['stats']['pts_ppr'] !== null) {
+                $proj = (float) $player['projection']['stats']['pts_ppr'];
+            }
+
+            if ($proj !== null) {
+                $mean += $proj;
+                $variance += pow($projectionStdDev, 2);
+            }
         }
 
-        // If one team has no starters but the other does, the team with starters wins
-        if (empty($startersA) && !empty($startersB)) {
-            return 0.0; // Team A has no starters, Team B wins
-        }
-        if (!empty($startersA) && empty($startersB)) {
-            return 100.0; // Team A has starters, Team B doesn't
-        }
-
-        // Both teams have starters, use projected scores
-        // If scores are very close (within 2 points), 50/50 chance
-        if (abs($scoreA - $scoreB) < 2.0) {
-            return 50.0;
-        }
-
-        // Calculate win probability using logistic function
-        // Higher score = higher probability, with some uncertainty
-        $scoreDiff = $scoreA - $scoreB;
-
-        // Scale the difference to create reasonable probabilities
-        // A 10-point difference should be about 75% vs 25%, not 100% vs 0%
-        $zScore = $scoreDiff / 8.0; // Assume ~8 points standard deviation
-
-        // Logistic function for probability
-        $probability = 1 / (1 + exp(-$zScore));
-
-        return round($probability * 100, 1);
+        return [
+            'mean' => $mean,
+            'variance' => $variance,
+        ];
     }
+
+    // Legacy helper removed in favor of ComputeWinProbability
 }
