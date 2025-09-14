@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 use Prism\Prism\Enums\Provider;
 use Prism\Prism\Prism;
@@ -51,6 +52,7 @@ new class extends Component {
                     'reasoning' => ['effort' => 'high']
                 ])
                 ->withTools(Relay::tools('sleeperdraft'))
+                ->withSystemPrompt('You are a helpful assistant that can answer questions about fantasy football with the tools provided. The current user has the following Sleeper league: ' . Auth::user()->sleeper_user_id)
                 ->withPrompt($prompt)
                 ->withMaxSteps(50)
                 ->asStream();
