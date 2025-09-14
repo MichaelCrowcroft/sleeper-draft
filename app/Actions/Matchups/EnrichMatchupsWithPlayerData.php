@@ -15,14 +15,11 @@ class EnrichMatchupsWithPlayerData
         }
 
         $playerIds = collect($matchups)
+            ->flatten(1)
             ->flatMap(function ($matchup) {
                 $ids = [];
-                if (isset($matchup['starters']) && is_array($matchup['starters'])) {
-                    $ids = array_merge($ids, $matchup['starters']);
-                }
-                if (isset($matchup['players']) && is_array($matchup['players'])) {
-                    $ids = array_merge($ids, $matchup['players']);
-                }
+                $ids = array_merge($ids, $matchup['starters']);
+                $ids = array_merge($ids, $matchup['players']);
 
                 return $ids;
             })
@@ -42,7 +39,6 @@ class EnrichMatchupsWithPlayerData
                 'stats' => function ($query) use ($season, $week) {
                     $query->where('season', $season)->where('week', $week);
                 },
-                'stats2024', // For volatility metrics
             ])
             ->get()
             ->keyBy('player_id');
@@ -133,16 +129,6 @@ class EnrichMatchupsWithPlayerData
                 $playerData['projected_range_low'] = round(max(0, $projectedPoints - $marginOfError), 1);
                 $playerData['projected_range_high'] = round($projectedPoints + $marginOfError, 1);
                 $playerData['projection_std_dev'] = round($projectionStdDev, 2);
-            }
-
-            // Add player-level volatility metrics
-            $volatilityMetrics = $player->getVolatilityMetrics();
-            if ($volatilityMetrics['coefficient_of_variation'] !== null) {
-                $playerData['volatility'] = [
-                    'coefficient_of_variation' => round($volatilityMetrics['coefficient_of_variation'], 3),
-                    'consistency_rate' => $volatilityMetrics['consistency_rate'] !== null ? round($volatilityMetrics['consistency_rate'], 1) : null,
-                    'steadiness_score' => $volatilityMetrics['steadiness_score'] !== null ? round($volatilityMetrics['steadiness_score'], 2) : null,
-                ];
             }
 
             return array_merge($baseData, $playerData);
