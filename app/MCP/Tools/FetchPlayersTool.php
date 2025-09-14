@@ -91,7 +91,7 @@ class FetchPlayersTool implements ToolInterface
         $team = $arguments['team'] ?? null;
         $search = $arguments['search'] ?? null;
         $page = isset($arguments['page']) ? (int) $arguments['page'] : 1;
-        $per_page = (int) $arguments['per_page'] ?? 10;
+        $per_page = isset($arguments['per_page']) ? (int) $arguments['per_page'] : 10;
 
         $rostered_players = new GetRosteredPlayers()->execute($league_id);
         $excluded_player_ids = $fa_only ? array_keys($rostered_players) : [];
