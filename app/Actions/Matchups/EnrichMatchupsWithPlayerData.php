@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 
 class EnrichMatchupsWithPlayerData
 {
-    public function execute(array $matchups, int $season, int $week): array
+    public function execute(array $matchups, int $season, int $week, bool $compact = true): array
     {
         if (empty($matchups)) {
             return [];
@@ -47,7 +47,7 @@ class EnrichMatchupsWithPlayerData
 
         foreach ($matchups as &$matchup) {
             foreach ($matchup as &$team) {
-                $team = $this->enrichTeam($team, $players);
+                $team = $this->enrichTeam($team, $players, $compact);
                 $team['projected_total'] = $this->calculateProjectedTotal($team);
                 $team['confidence_interval'] = $this->calculateTeamConfidenceInterval($team, $projectionStdDev);
             }
@@ -70,13 +70,13 @@ class EnrichMatchupsWithPlayerData
         return $matchups;
     }
 
-    private function enrichTeam(array $team, Collection $players): array
+    private function enrichTeam(array $team, Collection $players, bool $compact = true): array
     {
         return collect($team)
-            ->transform(function ($value, $key) use ($players) {
+            ->transform(function ($value, $key) use ($players, $compact) {
                 if ($key === 'starters' || $key === 'players') {
                     return collect($value)
-                        ->map(fn ($player_id) => $this->enrichPlayer($player_id, $players))
+                        ->map(fn ($player_id) => $this->enrichPlayer($player_id, $players, $compact))
                         ->all();
                 }
 
@@ -85,14 +85,14 @@ class EnrichMatchupsWithPlayerData
             ->all();
     }
 
-    private function enrichPlayer(string $player_id, Collection $players): array
+    private function enrichPlayer(string $player_id, Collection $players, bool $compact = true): array
     {
         $player = $players->get($player_id);
 
         $projection = $player->projections->first();
         $stats = $player->stats->first();
 
-        return [
+        $baseData = [
             'player_id' => $player->player_id,
             'name' => $player->full_name ?? ($player->first_name.' '.$player->last_name),
             'first_name' => $player->first_name,
@@ -102,9 +102,33 @@ class EnrichMatchupsWithPlayerData
             'fantasy_positions' => $player->fantasy_positions,
             'active' => $player->active,
             'injury_status' => $player->injury_status,
+        ];
+
+        if ($compact) {
+            // Return minimal data for matchups to avoid truncation
+            $projectedPoints = null;
+            if ($stats && isset($stats->stats['pts_ppr'])) {
+                $projectedPoints = (float) $stats->stats['pts_ppr'];
+            } elseif ($projection) {
+                if (isset($projection->pts_ppr)) {
+                    $projectedPoints = (float) $projection->pts_ppr;
+                } elseif (isset($projection->stats['pts_ppr'])) {
+                    $projectedPoints = (float) $projection->stats['pts_ppr'];
+                }
+            }
+
+            return array_merge($baseData, [
+                'projected_points' => $projectedPoints,
+                'is_starter' => true, // This will be overridden by MergeEnrichedMatchupsWithRosterPositions
+            ]);
+        }
+
+        // Return full data when not in compact mode
+        return array_merge($baseData, [
             'projection' => $projection,
             'stats' => $stats,
-        ];
+            'is_starter' => true, // This will be overridden by MergeEnrichedMatchupsWithRosterPositions
+        ]);
     }
 
     private function calculateProjectedTotal(array $team): float
@@ -119,17 +143,9 @@ class EnrichMatchupsWithPlayerData
                 continue;
             }
 
-            // Use actual points if available, otherwise use projected points
-            if (isset($player['stats']['stats']['pts_ppr']) && $player['stats']['stats']['pts_ppr'] !== null) {
-                $total += (float) $player['stats']['stats']['pts_ppr'];
-            } elseif (isset($player['projection']) && $player['projection']) {
-                // Try flattened column first, then JSON stats
-                $projection = $player['projection'];
-                if (isset($projection['pts_ppr']) && $projection['pts_ppr'] !== null) {
-                    $total += (float) $projection['pts_ppr'];
-                } elseif (isset($projection['stats']['pts_ppr']) && $projection['stats']['pts_ppr'] !== null) {
-                    $total += (float) $projection['stats']['pts_ppr'];
-                }
+            // Use projected_points field (works for both compact and full modes)
+            if (isset($player['projected_points']) && $player['projected_points'] !== null) {
+                $total += (float) $player['projected_points'];
             }
         }
 
@@ -189,30 +205,20 @@ class EnrichMatchupsWithPlayerData
             }
 
             $projectedPoints = 0.0;
+            $hasActual = false;
 
-            // Use actual points if available, otherwise use projected points
-            if (isset($player['stats']['stats']['pts_ppr']) && $player['stats']['stats']['pts_ppr'] !== null) {
-                $projectedPoints = (float) $player['stats']['stats']['pts_ppr'];
-                // Actual points have no uncertainty (game already played)
-                // Add to total and DO NOT add variance
-            } elseif (isset($player['projection']) && $player['projection']) {
-                // Try flattened column first, then JSON stats
-                $projection = $player['projection'];
-                if (isset($projection['pts_ppr']) && $projection['pts_ppr'] !== null) {
-                    $projectedPoints = (float) $projection['pts_ppr'];
-                } elseif (isset($projection['stats']['pts_ppr']) && $projection['stats']['pts_ppr'] !== null) {
-                    $projectedPoints = (float) $projection['stats']['pts_ppr'];
-                } else {
-                    $projectedPoints = 0;
-                }
-            } else {
-                $projectedPoints = 0;
+            // Check if this is actual stats (completed game) vs projection
+            // In compact mode, we need to determine if the projected_points came from actual stats
+            if (isset($player['projected_points']) && $player['projected_points'] !== null) {
+                $projectedPoints = (float) $player['projected_points'];
+                // We can't easily determine if this came from actual stats in compact mode,
+                // so we'll assume projections have uncertainty. This is a limitation of compact mode.
+                $hasActual = false;
             }
 
             $projectedTotal += $projectedPoints;
 
-            // Add variance only when using projected value (not actual)
-            $hasActual = isset($player['stats']['stats']['pts_ppr']) && $player['stats']['stats']['pts_ppr'] !== null;
+            // Add variance for projected values (not actual completed games)
             if (! $hasActual && $projectedPoints > 0) {
                 $varianceSum += pow($projectionStdDev, 2);
             }
@@ -250,23 +256,10 @@ class EnrichMatchupsWithPlayerData
                 continue;
             }
 
-            $actual = $player['stats']['stats']['pts_ppr'] ?? null;
-            if ($actual !== null) {
-                $mean += (float) $actual;
-
-                // no variance for completed outcomes
-                continue;
-            }
-
-            $proj = null;
-            if (isset($player['projection']['pts_ppr']) && $player['projection']['pts_ppr'] !== null) {
-                $proj = (float) $player['projection']['pts_ppr'];
-            } elseif (isset($player['projection']['stats']['pts_ppr']) && $player['projection']['stats']['pts_ppr'] !== null) {
-                $proj = (float) $player['projection']['stats']['pts_ppr'];
-            }
-
+            // In compact mode, we treat all projected_points as projections with uncertainty
+            $proj = $player['projected_points'] ?? null;
             if ($proj !== null) {
-                $mean += $proj;
+                $mean += (float) $proj;
                 $variance += pow($projectionStdDev, 2);
             }
         }

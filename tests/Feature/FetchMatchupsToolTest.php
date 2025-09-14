@@ -17,7 +17,7 @@ beforeEach(function () {
 it('has correct tool properties', function () {
     expect($this->tool->name())->toBe('fetch-matchups');
     expect($this->tool->isStreaming())->toBeFalse();
-    expect($this->tool->description())->toContain('Fetch matchups for a league');
+    expect($this->tool->description())->toContain('Fetch enriched matchups for a league');
 });
 
 it('validates required fields', function () {
@@ -278,7 +278,7 @@ it('has correct input schema', function () {
 
     expect($schema['type'])->toBe('object');
     expect($schema['required'])->toEqual(['league_id']);
-    expect($schema['properties'])->toHaveKeys(['league_id', 'week', 'user_id', 'username', 'sport']);
+    expect($schema['properties'])->toHaveKeys(['league_id', 'week', 'user_id', 'sport', 'compact']);
     expect($schema['properties']['league_id']['type'])->toBe('string');
 
     // Check the new anyOf format for nullable fields
@@ -292,10 +292,8 @@ it('has correct input schema', function () {
     expect($schema['properties']['user_id']['anyOf'][0])->toEqual(['type' => 'string']);
     expect($schema['properties']['user_id']['anyOf'][1])->toEqual(['type' => 'null']);
 
-    expect($schema['properties']['username'])->toHaveKey('anyOf');
-    expect($schema['properties']['username']['anyOf'])->toHaveCount(2);
-    expect($schema['properties']['username']['anyOf'][0])->toEqual(['type' => 'string']);
-    expect($schema['properties']['username']['anyOf'][1])->toEqual(['type' => 'null']);
+    expect($schema['properties']['compact'])->toHaveKey('type');
+    expect($schema['properties']['compact']['type'])->toBe('boolean');
 
     expect($schema['properties']['sport']['type'])->toBe('string');
 });
@@ -303,13 +301,13 @@ it('has correct input schema', function () {
 it('has correct annotations', function () {
     $annotations = $this->tool->annotations();
 
-    expect($annotations['title'])->toBe('Fetch League Matchups');
+    expect($annotations['title'])->toBe('Fetch Enriched League Matchups');
     expect($annotations['readOnlyHint'])->toBeTrue();
     expect($annotations['destructiveHint'])->toBeFalse();
     expect($annotations['idempotentHint'])->toBeTrue();
     expect($annotations['openWorldHint'])->toBeTrue();
     expect($annotations['category'])->toBe('fantasy-sports');
-    expect($annotations['data_source'])->toBe('external_api');
+    expect($annotations['data_source'])->toBe('mixed');
     expect($annotations['cache_recommended'])->toBeTrue();
 });
 
@@ -327,11 +325,11 @@ it('returns correct metadata structure', function () {
     ]);
 
     expect($result['metadata'])->toHaveKeys([
-        'league_id', 'week', 'sport', 'total_matchups_in_week', 'filtered_matchups', 'executed_at',
+        'sport', 'season', 'user_filtered', 'compact',
     ]);
-    expect($result['metadata']['league_id'])->toBe('league_123');
-    expect($result['metadata']['week'])->toBe(3);
     expect($result['metadata']['sport'])->toBe('nfl');
+    expect($result['metadata']['user_filtered'])->toBeFalse();
+    expect($result['metadata']['compact'])->toBeTrue();
 });
 
 it('enhances matchups with player data from database', function () {

@@ -28,7 +28,7 @@ new class extends Component
     {
         $matchups = new GetMatchupsWithOwners()->execute($this->league_id, $this->week);
         $matchups = new FilterMatchups()->execute($matchups, Auth::user()->sleeper_user_id);
-        $matchups = new EnrichMatchupsWithPlayerData()->execute($matchups, 2025, $this->week);
+        $matchups = new EnrichMatchupsWithPlayerData()->execute($matchups, 2025, $this->week, false);
         $matchups = new MergeEnrichedMatchupsWithRosterPositions()->execute($matchups, $this->league_id);
 
         return $matchups;

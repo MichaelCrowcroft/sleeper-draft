@@ -43,13 +43,21 @@ class FetchMatchupsTool implements ToolInterface
                     'description' => 'Week number to fetch matchups for (defaults to current week)',
                 ],
                 'user_id' => [
-                    'type' => 'string',
+                    'anyOf' => [
+                        ['type' => 'string'],
+                        ['type' => 'null'],
+                    ],
                     'description' => 'Optional Sleeper user ID to filter matchups to only show this user\'s matchups',
                 ],
                 'sport' => [
                     'type' => 'string',
                     'description' => 'Sport type (default: nfl)',
                     'default' => 'nfl',
+                ],
+                'compact' => [
+                    'type' => 'boolean',
+                    'description' => 'Return minimal player data to avoid truncation (default: true). Set to false for detailed player projections/stats.',
+                    'default' => true,
                 ],
             ],
             'required' => ['league_id'],
@@ -79,6 +87,7 @@ class FetchMatchupsTool implements ToolInterface
         $week = $arguments['week'] ?? null;
         $user_id = $arguments['user_id'] ?? null;
         $sport = $arguments['sport'] ?? 'nfl';
+        $compact = $arguments['compact'] ?? true;
 
         if ($week === null) {
             $week = new GetSeasonState($sport)->execute()['week'];
@@ -113,7 +122,7 @@ class FetchMatchupsTool implements ToolInterface
         $season = $seasonState['season'];
 
         // Enrich with player data, projections, and calculate win probabilities
-        $matchups = new EnrichMatchupsWithPlayerData()->execute($matchups, $season, $week);
+        $matchups = new EnrichMatchupsWithPlayerData()->execute($matchups, $season, $week, $compact);
 
         // Merge with roster positions
         $matchups = new MergeEnrichedMatchupsWithRosterPositions()->execute($matchups, $league_id);
@@ -126,11 +135,12 @@ class FetchMatchupsTool implements ToolInterface
                 'matchups' => $matchups,
             ],
             'count' => count($matchups),
-            'message' => 'Fetched '.count($matchups).' enriched matchups for week '.(int) $week.($user_id ? ' (filtered for user '.$user_id.')' : ''),
+            'message' => 'Fetched '.count($matchups).' enriched matchups for week '.(int) $week.($user_id ? ' (filtered for user '.$user_id.')' : '').($compact ? ' (compact mode)' : ''),
             'metadata' => [
                 'sport' => $sport,
                 'season' => $season,
                 'user_filtered' => $user_id !== null,
+                'compact' => $compact,
             ],
         ];
     }
