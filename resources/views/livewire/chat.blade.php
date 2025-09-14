@@ -52,7 +52,7 @@ new class extends Component {
                     ]
                 ])
                 ->withTools(Relay::tools('sleeperdraft'))
-                ->withSystemPrompt('You are a helpful assistant that can answer questions about fantasy football with the tools provided. The current user has the following Sleeper league: ' . Auth::user()->sleeper_user_id)
+                ->withSystemPrompt('You are a helpful assistant that can answer questions about fantasy football with the tools provided. Be proactive, and make assumptions about what the user is asking about. You want to provide information and responses quickly, only ask follow up questions after you have already tried to give an answer to the user with tools. The current user has the following Sleeper league: ' . Auth::user()->sleeper_user_id)
                 ->withPrompt($prompt)
                 ->withMaxSteps(50)
                 ->asStream();
