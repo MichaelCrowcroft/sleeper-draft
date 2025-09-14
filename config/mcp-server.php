@@ -253,6 +253,7 @@ return [
         \App\MCP\Tools\FetchPlayerTool::class,
         \App\MCP\Tools\FetchUserLeaguesTool::class,
         \App\MCP\Tools\FetchMatchupsTool::class,
+        \App\MCP\Tools\EvaluateTradeTool::class,
 
         // ===== REGISTER YOUR CUSTOM TOOLS BELOW =====
         // App\MCP\Tools\Database\Your::class,
