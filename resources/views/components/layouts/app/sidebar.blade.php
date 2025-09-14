@@ -16,7 +16,7 @@
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
                     <flux:navlist.item icon="squares-2x2" :href="route('leagues.index')" :current="request()->routeIs('leagues.index')" wire:navigate>{{ __('Leagues') }}</flux:navlist.item>
                     <flux:navlist.item icon="arrows-right-left" :href="route('trade-evaluator.index')" :current="request()->routeIs('trade-evaluator.index')" wire:navigate>{{ __('Trade Evaluator') }}</flux:navlist.item>
-                    <flux:navlist.item icon="chat-bubble-left-ellipsis" :href="route('chat')" :current="request()->routeIs('chat')" wire:navigate>{{ __('AI Commissioner') }}</flux:navlist.item>
+                    <flux:navlist.item icon="chat-bubble-left-ellipsis" :href="route('chat')" :current="request()->routeIs('chat')" wire:navigate>{{ __('Chat') }}</flux:navlist.item>
                     <flux:navlist.item icon="user-group" :href="route('players.index')" :current="request()->routeIs('players.index')" wire:navigate>{{ __('All Players') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
