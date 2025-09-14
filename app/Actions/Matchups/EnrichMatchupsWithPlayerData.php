@@ -15,11 +15,14 @@ class EnrichMatchupsWithPlayerData
         }
 
         $playerIds = collect($matchups)
-            ->flatten(1)
             ->flatMap(function ($matchup) {
                 $ids = [];
-                $ids = array_merge($ids, $matchup['starters']);
-                $ids = array_merge($ids, $matchup['players']);
+                if (isset($matchup['starters']) && is_array($matchup['starters'])) {
+                    $ids = array_merge($ids, $matchup['starters']);
+                }
+                if (isset($matchup['players']) && is_array($matchup['players'])) {
+                    $ids = array_merge($ids, $matchup['players']);
+                }
 
                 return $ids;
             })
@@ -39,6 +42,7 @@ class EnrichMatchupsWithPlayerData
                 'stats' => function ($query) use ($season, $week) {
                     $query->where('season', $season)->where('week', $week);
                 },
+                'stats2024', // For volatility metrics
             ])
             ->get()
             ->keyBy('player_id');
@@ -47,7 +51,7 @@ class EnrichMatchupsWithPlayerData
 
         foreach ($matchups as &$matchup) {
             foreach ($matchup as &$team) {
-                $team = $this->enrichTeam($team, $players, $compact);
+                $team = $this->enrichTeam($team, $players, $compact, $projectionStdDev);
                 $team['projected_total'] = $this->calculateProjectedTotal($team);
                 $team['confidence_interval'] = $this->calculateTeamConfidenceInterval($team, $projectionStdDev);
             }
@@ -70,13 +74,13 @@ class EnrichMatchupsWithPlayerData
         return $matchups;
     }
 
-    private function enrichTeam(array $team, Collection $players, bool $compact = true): array
+    private function enrichTeam(array $team, Collection $players, bool $compact = true, ?float $projectionStdDev = null): array
     {
         return collect($team)
-            ->transform(function ($value, $key) use ($players, $compact) {
+            ->transform(function ($value, $key) use ($players, $compact, $projectionStdDev) {
                 if ($key === 'starters' || $key === 'players') {
                     return collect($value)
-                        ->map(fn ($player_id) => $this->enrichPlayer($player_id, $players, $compact))
+                        ->map(fn ($player_id) => $this->enrichPlayer($player_id, $players, $compact, $projectionStdDev))
                         ->all();
                 }
 
@@ -85,7 +89,7 @@ class EnrichMatchupsWithPlayerData
             ->all();
     }
 
-    private function enrichPlayer(string $player_id, Collection $players, bool $compact = true): array
+    private function enrichPlayer(string $player_id, Collection $players, bool $compact = true, ?float $projectionStdDev = null): array
     {
         $player = $players->get($player_id);
 
@@ -117,10 +121,31 @@ class EnrichMatchupsWithPlayerData
                 }
             }
 
-            return array_merge($baseData, [
+            // Add volatility/range information if we have projected points and std dev
+            $playerData = [
                 'projected_points' => $projectedPoints,
                 'is_starter' => true, // This will be overridden by MergeEnrichedMatchupsWithRosterPositions
-            ]);
+            ];
+
+            if ($projectedPoints !== null && $projectionStdDev !== null) {
+                $confidenceZ = 1.645; // 90% confidence interval
+                $marginOfError = $confidenceZ * $projectionStdDev;
+                $playerData['projected_range_low'] = round(max(0, $projectedPoints - $marginOfError), 1);
+                $playerData['projected_range_high'] = round($projectedPoints + $marginOfError, 1);
+                $playerData['projection_std_dev'] = round($projectionStdDev, 2);
+            }
+
+            // Add player-level volatility metrics
+            $volatilityMetrics = $player->getVolatilityMetrics();
+            if ($volatilityMetrics['coefficient_of_variation'] !== null) {
+                $playerData['volatility'] = [
+                    'coefficient_of_variation' => round($volatilityMetrics['coefficient_of_variation'], 3),
+                    'consistency_rate' => $volatilityMetrics['consistency_rate'] !== null ? round($volatilityMetrics['consistency_rate'], 1) : null,
+                    'steadiness_score' => $volatilityMetrics['steadiness_score'] !== null ? round($volatilityMetrics['steadiness_score'], 2) : null,
+                ];
+            }
+
+            return array_merge($baseData, $playerData);
         }
 
         // Return full data when not in compact mode
