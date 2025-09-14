@@ -55,7 +55,9 @@ it('returns player data when found by id', function () {
         'first_name' => 'Test',
         'last_name' => 'Player',
         'position' => 'QB',
+        'fantasy_positions' => ['QB'],
         'team' => 'TB',
+        'active' => true,
     ]);
 
     $result = $this->tool->execute(['player_id' => $player->player_id]);
@@ -75,7 +77,9 @@ it('returns player data when found by search', function () {
         'first_name' => 'Christian',
         'last_name' => 'McCaffrey',
         'position' => 'RB',
+        'fantasy_positions' => ['RB'],
         'team' => 'SF',
+        'active' => true,
     ]);
 
     $result = $this->tool->execute(['search' => 'McCaffrey']);
@@ -92,7 +96,9 @@ it('includes all required data sections', function () {
         'first_name' => 'Josh',
         'last_name' => 'Allen',
         'position' => 'QB',
+        'fantasy_positions' => ['QB'],
         'team' => 'BUF',
+        'active' => true,
     ]);
 
     $result = $this->tool->execute(['player_id' => $player->player_id]);

@@ -63,12 +63,22 @@ class FetchPlayerTool implements ToolInterface
         $player = null;
 
         if (isset($arguments['player_id'])) {
-            $player = Player::where('player_id', $arguments['player_id'])->first();
+            $player = Player::where('player_id', $arguments['player_id'])
+                ->where('active', true)
+                ->first();
         } elseif (isset($arguments['search'])) {
             $searchTerm = trim($arguments['search']);
             $player = Player::search($searchTerm)
-                ->orderBy('first_name')
-                ->orderBy('last_name')
+                ->active()
+                ->playablePositions()
+                ->leftJoin('player_season_summaries', function ($join) {
+                    $join->on('players.player_id', '=', 'player_season_summaries.player_id')
+                         ->where('player_season_summaries.season', '=', 2024);
+                })
+                ->orderByRaw('COALESCE(player_season_summaries.total_points, 0) DESC')
+                ->orderBy('players.first_name')
+                ->orderBy('players.last_name')
+                ->select('players.*')
                 ->first();
         }
 

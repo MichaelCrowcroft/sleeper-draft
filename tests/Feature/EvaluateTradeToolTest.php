@@ -235,11 +235,17 @@ it('works with search terms instead of player IDs', function () {
     $player1 = Player::factory()->create([
         'first_name' => 'Patrick',
         'last_name' => 'Mahomes',
+        'position' => 'QB',
+        'fantasy_positions' => ['QB'],
+        'active' => true,
     ]);
 
     $player2 = Player::factory()->create([
         'first_name' => 'Lamar',
         'last_name' => 'Jackson',
+        'position' => 'QB',
+        'fantasy_positions' => ['QB'],
+        'active' => true,
     ]);
 
     $result = $this->tool->execute([
@@ -250,4 +256,101 @@ it('works with search terms instead of player IDs', function () {
     expect($result)->toHaveKey('success', true);
     expect($result['data']['receiving']['players'][0]['basic_info']['last_name'])->toBe('Mahomes');
     expect($result['data']['sending']['players'][0]['basic_info']['last_name'])->toBe('Jackson');
+});
+
+it('filters to active players in fantasy positions when searching', function () {
+    // Create an active QB
+    $activeQB = Player::factory()->create([
+        'first_name' => 'Active',
+        'last_name' => 'QB',
+        'position' => 'QB',
+        'fantasy_positions' => ['QB'],
+        'active' => true,
+    ]);
+
+    // Create an inactive QB with same name
+    $inactiveQB = Player::factory()->create([
+        'first_name' => 'Active',
+        'last_name' => 'QB',
+        'position' => 'QB',
+        'fantasy_positions' => ['QB'],
+        'active' => false,
+    ]);
+
+    // Create a non-fantasy position player with same name
+    $nonFantasyPlayer = Player::factory()->create([
+        'first_name' => 'Active',
+        'last_name' => 'QB',
+        'position' => 'OL', // Offensive Line - not a fantasy position
+        'fantasy_positions' => ['OL'],
+        'active' => true,
+    ]);
+
+    $result = $this->tool->execute([
+        'receiving' => [['player_id' => $activeQB->player_id]],
+        'sending' => [],
+    ]);
+
+    expect($result)->toHaveKey('success', true);
+    expect($result['data']['receiving']['players'])->toHaveCount(1);
+    expect($result['data']['receiving']['players'][0]['basic_info']['position'])->toBe('QB');
+    expect($result['data']['receiving']['players'][0]['basic_info']['active'])->toBe(true);
+});
+
+it('picks player with highest points from last season when multiple matches', function () {
+    // Create two players with same name but different performance
+    $highScorer = Player::factory()->create([
+        'first_name' => 'Top',
+        'last_name' => 'Player',
+        'position' => 'QB',
+        'fantasy_positions' => ['QB'],
+        'active' => true,
+    ]);
+
+    $lowScorer = Player::factory()->create([
+        'first_name' => 'Top',
+        'last_name' => 'Player',
+        'position' => 'QB',
+        'fantasy_positions' => ['QB'],
+        'active' => true,
+    ]);
+
+    // Create season summaries with different total points
+    \App\Models\PlayerSeasonSummary::create([
+        'player_id' => $highScorer->player_id,
+        'season' => 2024,
+        'total_points' => 450.5, // Higher score
+        'min_points' => 10.0,
+        'max_points' => 35.0,
+        'average_points_per_game' => 25.0,
+        'stddev_below' => 20.0,
+        'stddev_above' => 30.0,
+        'games_active' => 16,
+        'position_rank' => 1,
+    ]);
+
+    \App\Models\PlayerSeasonSummary::create([
+        'player_id' => $lowScorer->player_id,
+        'season' => 2024,
+        'total_points' => 250.0, // Lower score
+        'min_points' => 8.0,
+        'max_points' => 20.0,
+        'average_points_per_game' => 15.6,
+        'stddev_below' => 12.0,
+        'stddev_above' => 18.0,
+        'games_active' => 16,
+        'position_rank' => 2,
+    ]);
+
+    $result = $this->tool->execute([
+        'receiving' => [['player_id' => $highScorer->player_id]],
+        'sending' => [],
+    ]);
+
+    expect($result)->toHaveKey('success', true);
+    expect($result['data']['receiving']['players'])->toHaveCount(1);
+
+    // Should pick the high scorer (450.5 points vs 250.0 points)
+    $selectedPlayerId = $result['data']['receiving']['players'][0]['basic_info']['player_id'];
+    expect($selectedPlayerId)->toBe($highScorer->player_id);
 });

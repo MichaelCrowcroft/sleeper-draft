@@ -157,12 +157,22 @@ class EvaluateTradeTool implements ToolInterface
             $player = null;
 
             if (isset($request['player_id'])) {
-                $player = Player::where('player_id', $request['player_id'])->first();
+                $player = Player::where('player_id', $request['player_id'])
+                    ->where('active', true)
+                    ->first();
             } elseif (isset($request['search'])) {
                 $searchTerm = trim($request['search']);
                 $player = Player::search($searchTerm)
-                    ->orderBy('first_name')
-                    ->orderBy('last_name')
+                    ->active()
+                    ->playablePositions()
+                    ->leftJoin('player_season_summaries', function ($join) {
+                        $join->on('players.player_id', '=', 'player_season_summaries.player_id')
+                             ->where('player_season_summaries.season', '=', 2024);
+                    })
+                    ->orderByRaw('COALESCE(player_season_summaries.total_points, 0) DESC')
+                    ->orderBy('players.first_name')
+                    ->orderBy('players.last_name')
+                    ->select('players.*')
                     ->first();
             }
 
@@ -229,6 +239,7 @@ class EvaluateTradeTool implements ToolInterface
             'position' => $this->getPosition($player),
             'team' => $player->team,
             'age' => $player->age,
+            'active' => $player->active,
             'injury_status' => $player->injury_status,
             'adp' => $player->adp,
         ];

@@ -52,10 +52,11 @@ servers:
 
 paths:
   # Individual tool endpoints for better GPT Actions compatibility
+
   /mcp/tools/fetch-trending-players:
     post:
       summary: Fetch trending players
-      description: "Get trending fantasy football players based on waiver wire activity in the last 24 hours. Returns players being added (trending up) or dropped (trending down) with complete player profiles and trending metrics."
+      description: "Fetches trending players from the database based on adds or drops within the last 24 hours. Returns players ordered by trending value in descending order."
       operationId: fetchTrendingPlayers
       tags:
         - Player Data
@@ -77,37 +78,11 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /mcp/tools/fetch-adp-players:
+  /mcp/tools/fetch-players:
     post:
-      summary: Fetch players by ADP
-      description: "Get players ranked by Average Draft Position (ADP) for draft preparation. Returns players ordered by consensus draft value with optional position filtering (QB, RB, WR, TE, K, DEF)."
-      operationId: fetchADPPlayers
-      tags:
-        - Player Data
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FetchADPPlayersRequest'
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FetchADPPlayersResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-
-  /mcp/tools/fetch-players-season-data:
-    post:
-      summary: Fetch players season data
-      description: "Get comprehensive season data for multiple players including historical stats and current projections. Supports position filtering and pagination for efficient data access."
-      operationId: fetchPlayersSeasonData
+      summary: Fetch players
+      description: "Fetch a paginated, enriched list of players with comprehensive filtering and league integration. Pass a league ID and you can see free agents and rostered player owner information."
+      operationId: fetchPlayers
       tags:
         - Player Data
       requestBody:
@@ -115,24 +90,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FetchPlayersSeasonDataRequest'
+              $ref: '#/components/schemas/FetchPlayersRequest'
       responses:
         '200':
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FetchPlayersSeasonDataResponse'
+                $ref: '#/components/schemas/FetchPlayersResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /mcp/tools/fetch-player-season-data:
+  /mcp/tools/fetch-player:
     post:
-      summary: Fetch a player's season data
-      description: "Get detailed season analysis for a specific player by ID or name. Returns historical stats, current projections, and advanced fantasy metrics for individual player research."
-      operationId: fetchPlayerSeasonData
+      summary: Fetch player
+      description: "Fetch comprehensive player data including stats, projections, volatility metrics, and performance analysis. Accepts either a player ID or search term to find a player."
+      operationId: fetchPlayer
       tags:
         - Player Data
       requestBody:
@@ -140,39 +115,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FetchPlayerSeasonDataRequest'
+              $ref: '#/components/schemas/FetchPlayerRequest'
       responses:
         '200':
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FetchPlayerSeasonDataResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /mcp/tools/fetch-league:
-    post:
-      summary: Fetch league details and users
-      description: "Get complete league information including settings, all members, and team data. Finds league by name or ID from user's league list and returns comprehensive league context."
-      operationId: fetchLeague
-      tags:
-        - League Data
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FetchLeagueRequest'
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FetchLeagueResponse'
+                $ref: '#/components/schemas/FetchPlayerResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
         '500':
@@ -180,8 +130,8 @@ paths:
 
   /mcp/tools/fetch-matchups:
     post:
-      summary: Fetch league matchups
-      description: "Get weekly head-to-head matchup data for a fantasy league. Returns scoring information and team details for all matchups, with automatic current week detection or manual week selection."
+      summary: Fetch matchups
+      description: "Fetch enriched matchups for a league and week, including player data, projections, win probabilities, and confidence intervals. If user_id is provided, returns only matchups for that user; otherwise returns all matchups in the league."
       operationId: fetchMatchups
       tags:
         - League Data
@@ -203,35 +153,10 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /mcp/tools/fetch-roster:
-    post:
-      summary: Fetch user roster
-      description: "Get complete roster information for a team owner including starters, bench players, and enhanced player details. Combines roster structure with detailed player statistics and owner information."
-      operationId: fetchRoster
-      tags:
-        - League Data
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FetchRosterRequest'
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FetchRosterResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
   /mcp/tools/fetch-user-leagues:
     post:
       summary: Fetch user leagues
-      description: "Get all fantasy leagues for a user by username or ID. Returns league IDs and names with support for sport and season filtering. Handles both direct user ID lookup and username resolution."
+      description: "Fetches all leagues for a user by username or user ID. Returns league IDs and names for the specified sport and season."
       operationId: fetchUserLeagues
       tags:
         - League Data
@@ -248,6 +173,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FetchUserLeaguesResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/evaluate-trade:
+    post:
+      summary: Evaluate trade
+      description: "Evaluate a fantasy football trade by analyzing player stats, projections, and providing aggregate comparison between receiving and sending sides."
+      operationId: evaluateTrade
+      tags:
+        - Trade Analysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluateTradeRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluateTradeResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
         '500':
@@ -293,169 +243,81 @@ components:
     # Request Schemas
     FetchTrendingPlayersRequest:
       type: object
-      description: |
-        Request parameters for fetching trending players based on waiver wire activity.
-
-        The trending system tracks player movement across all Sleeper leagues in the last 24 hours, providing insights into which players are gaining or losing popularity in the fantasy football community.
       properties:
+        position:
+          type: string
+          enum: ["QB", "RB", "WR", "TE", "K", "DEF", "DST"]
+          description: The position of the players to fetch
         type:
           type: string
-          enum: [add, drop]
-          description: |
-            The type of trending activity to retrieve:
-            - **add**: Players being added to rosters (trending up due to good performance, opportunity, or news)
-            - **drop**: Players being dropped from rosters (trending down due to poor performance, injury, or lost opportunity)
-          example: "add"
+          enum: ["add", "drop"]
+          description: The type of trending data to fetch
+        league_id:
+          type: integer
+          description: The league ID to fetch players from
+        fa_only:
+          type: boolean
+          description: Whether to fetch only free agents (only works if league_id is provided)
       required:
         - type
       example:
         type: "add"
-
-    FetchADPPlayersRequest:
-      type: object
-      description: |
-        Request parameters for fetching players ranked by Average Draft Position (ADP).
-
-        ADP represents the consensus value of players based on where they're being selected in fantasy football drafts. This data is crucial for draft preparation and understanding player market value.
-      properties:
-        position:
-          type: string
-          description: |
-            Optional position filter to limit results to specific player positions:
-            - **QB**: Quarterbacks
-            - **RB**: Running Backs
-            - **WR**: Wide Receivers
-            - **TE**: Tight Ends
-            - **K**: Kickers
-            - **DEF**: Team Defenses/Special Teams
-
-            When omitted, returns players from all positions ranked by overall ADP.
-          example: "QB"
-          enum: ["QB", "RB", "WR", "TE", "K", "DEF"]
-      example:
         position: "QB"
+        league_id: 123456789
+        fa_only: false
 
-
-
-
-    FetchPlayersSeasonDataRequest:
+    FetchPlayersRequest:
       type: object
-      description: |
-        Request parameters for fetching comprehensive season data for multiple players.
-
-        This endpoint supports both traditional offset/limit pagination and cursor-based pagination for efficient handling of large datasets. The response includes historical statistics and current season projections.
       properties:
+        search:
+          type: string
+          description: The search query to filter players by
         position:
           type: string
-          description: |
-            Optional position filter to limit results to specific player positions:
-            - **QB**: Quarterbacks - typically 1 starter per team
-            - **RB**: Running Backs - high-volume skill position players
-            - **WR**: Wide Receivers - primary pass-catching targets
-            - **TE**: Tight Ends - hybrid blocking/receiving players
-            - **K**: Kickers - scoring through field goals and extra points
-            - **DEF**: Team Defenses/Special Teams - unit-based scoring
-          example: "QB"
-          enum: ["QB", "RB", "WR", "TE", "K", "DEF"]
-        limit:
-          type: integer
-          minimum: 1
-          maximum: 1000
-          description: |
-            Maximum number of players to return in a single request.
-            - **Default**: 10 players
-            - **Range**: 1-1000 players
-            - **Performance**: Larger limits may increase response time
-            - **Pagination**: Use with offset for traditional pagination
-          example: 25
-          default: 10
-        offset:
-          type: integer
-          minimum: 0
-          description: |
-            Number of players to skip before returning results.
-            - **Default**: 0 (start from beginning)
-            - **Pagination**: Increment by limit size for next page
-            - **Alternative**: Use cursor for more efficient pagination
-          example: 50
-          default: 0
-        cursor:
+          enum: ["QB", "RB", "WR", "TE", "K", "DEF", "DST"]
+          description: The position of the players to fetch
+        team:
           type: string
-          description: |
-            Opaque pagination cursor for efficient large dataset handling.
-            - **Priority**: When provided, overrides offset/limit parameters
-            - **Efficiency**: More performant for large datasets
-            - **Stateless**: Each cursor is valid for the current dataset state
-            - **Next Page**: Use nextCursor from previous response
+          description: The team of the players to fetch
         league_id:
           type: string
-          description: |
-            Optional Sleeper league ID to provide league-specific context.
-            - **Team Context**: Shows which team owns each player
-            - **Availability**: Indicates if players are free agents
-            - **League Settings**: Applies league-specific scoring context
-          example: "987654321"
+          description: The league ID to fetch players from
+        fa_only:
+          type: boolean
+          description: Whether to fetch only free agents (only works if league_id is provided)
+        per_page:
+          type: integer
+          minimum: 1
+          maximum: 40
+          description: The number of players to fetch per page
+        page:
+          type: integer
+          minimum: 1
+          description: The page number to fetch
       example:
-        position: "RB"
-        limit: 25
-        offset: 0
+        position: "QB"
+        per_page: 10
+        page: 1
+        league_id: "987654321"
+        fa_only: false
 
-    FetchPlayerSeasonDataRequest:
+    FetchPlayerRequest:
       type: object
-      description: |
-        Request parameters for fetching detailed season data for a specific player.
-
-        This endpoint supports two search methods: exact player ID lookup for precision, or name-based search for flexibility. Name searches can return multiple players if the search term matches multiple players.
       properties:
         player_id:
           type: string
-          description: |
-            Sleeper's unique player identifier for exact player lookup.
-            - **Format**: Numeric string (e.g., "1234", "5678")
-            - **Uniqueness**: Each ID corresponds to exactly one player
-            - **Performance**: Fastest lookup method
-            - **Reliability**: Guaranteed to find the correct player
-            - **Source**: Available from other API endpoints or Sleeper platform
-          example: "4046"
-        name:
+          description: The Sleeper player ID to fetch data for
+        search:
           type: string
-          description: |
-            Player name for flexible search with partial matching.
-            - **Case Insensitive**: "mahomes", "MAHOMES", "Mahomes" all work
-            - **Partial Matching**: "Mahomes" finds "Patrick Mahomes"
-            - **Multiple Results**: May return several players with similar names
-            - **Nickname Support**: Common nicknames and variations included
-            - **Team Context**: Useful when combined with team information
-          example: "Mahomes"
-      anyOf:
-        - required: [player_id]
-        - required: [name]
+          description: Search term to find a player by name (first name, last name, or full name)
+      oneOf:
+        - required: ["player_id"]
+        - required: ["search"]
       example:
         player_id: "4046"
 
-    FetchLeagueRequest:
-      type: object
-      properties:
-        user_id:
-          type: string
-          description: Sleeper user ID to fetch leagues for
-          example: "123456789"
-        league_identifier:
-          type: string
-          description: League name or league ID to find and return
-          example: "My Fantasy League"
-        sport:
-          type: string
-          description: "Sport type (default: nfl)"
-          default: nfl
-          example: "nfl"
-        season:
-          type: string
-          description: "Season year (default: current season)"
-          example: "2024"
-      required:
-        - user_id
-        - league_identifier
+
+
 
     FetchMatchupsRequest:
       type: object
@@ -463,51 +325,32 @@ components:
         league_id:
           type: string
           description: Sleeper league ID to fetch matchups for
-          example: "987654321"
         week:
-          type: integer
-          minimum: 1
-          maximum: 18
-          nullable: true
-          description: |
-            Week number to fetch matchups for (1-18).
-            - **Null/Omitted**: Defaults to current NFL week
-            - **Regular Season**: Weeks 1-14 typically
-            - **Playoffs**: Weeks 15-18 for fantasy playoffs
-            - **Historical**: Access past weeks for analysis
-          example: 5
+          anyOf:
+            - type: integer
+              minimum: 1
+              maximum: 18
+            - type: "null"
+          description: Week number to fetch matchups for (defaults to current week)
+        user_id:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Optional Sleeper user ID to filter matchups to only show this user's matchups
         sport:
           type: string
-          description: "Sport type (default: nfl)"
+          description: Sport type (default: nfl)
           default: nfl
-          example: "nfl"
+        compact:
+          type: boolean
+          description: Return minimal player data to avoid truncation (default: true). Set to false for detailed player projections/stats.
+          default: true
       required:
         - league_id
-
-    FetchRosterRequest:
-      type: object
-      properties:
-        league_id:
-          type: string
-          description: Sleeper league ID
-          example: "987654321"
-        user_id:
-          type: string
-          description: Sleeper user ID whose roster to fetch
-          example: "123456789"
-        include_player_details:
-          type: boolean
-          description: "Whether to include detailed player information from database (default: true)"
-          default: true
-          example: true
-        include_owner_details:
-          type: boolean
-          description: "Whether to include owner/user details from Sleeper API (default: true)"
-          default: true
-          example: true
-      required:
-        - league_id
-        - user_id
+      example:
+        league_id: "987654321"
+        week: 5
+        compact: true
 
     FetchUserLeaguesRequest:
       type: object
@@ -515,18 +358,64 @@ components:
         user_identifier:
           type: string
           description: Sleeper username or user ID to fetch leagues for
-          example: "fantasyfan123"
         sport:
           type: string
-          description: "Sport type (default: nfl)"
+          description: Sport type (default: nfl)
           default: nfl
-          example: "nfl"
         season:
           type: string
-          description: "Season year (default: current season)"
-          example: "2024"
+          description: Season year (default: current season)
       required:
         - user_identifier
+      example:
+        user_identifier: "fantasyfan123"
+        sport: "nfl"
+        season: "2024"
+
+    EvaluateTradeRequest:
+      type: object
+      properties:
+        receiving:
+          type: array
+          description: List of players being received in the trade
+          items:
+            type: object
+            properties:
+              player_id:
+                type: string
+                description: Sleeper player ID
+              search:
+                type: string
+                description: Search term to find player by name
+            oneOf:
+              - required: ["player_id"]
+              - required: ["search"]
+          minItems: 1
+        sending:
+          type: array
+          description: List of players being sent in the trade
+          items:
+            type: object
+            properties:
+              player_id:
+                type: string
+                description: Sleeper player ID
+              search:
+                type: string
+                description: Search term to find player by name
+            oneOf:
+              - required: ["player_id"]
+              - required: ["search"]
+          minItems: 1
+      required:
+        - receiving
+        - sending
+      example:
+        receiving:
+          - player_id: "4046"
+        sending:
+          - player_id: "1234"
+
 
     # Response Schemas
     FetchTrendingPlayersResponse:
@@ -536,60 +425,55 @@ components:
           type: boolean
           example: true
         data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Player'
+          description: Tool-specific response data (array or object)
         count:
           type: integer
           example: 25
         message:
           type: string
-          example: "Successfully fetched 25 trending players for type 'add'"
+          example: "Successfully executed tool"
         metadata:
           type: object
-          properties:
-            type:
-              type: string
-              example: "add"
-            column:
-              type: string
-              example: "adds_24h"
-            executed_at:
-              type: string
-              format: date-time
+          additionalProperties: true
+      required:
+        - success
 
-    FetchADPPlayersResponse:
+    FetchPlayersResponse:
       type: object
       properties:
         success:
           type: boolean
           example: true
         data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Player'
+          description: Tool-specific response data (array or object)
         count:
           type: integer
-          example: 50
+          example: 10
         message:
           type: string
-          example: "Successfully fetched 50 players by ADP for all positions"
+          example: "Fetched 10 players with comprehensive data"
         metadata:
           type: object
-          properties:
-            position_filter:
-              type: string
-              nullable: true
-              example: "QB"
-            order_by:
-              type: string
-              example: "adp"
-            order_direction:
-              type: string
-              example: "asc"
-            executed_at:
-              type: string
-              format: date-time
+          additionalProperties: true
+      required:
+        - success
+
+    FetchPlayerResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          description: Tool-specific response data (array or object)
+        message:
+          type: string
+          example: "Fetched comprehensive data for player"
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - success
 
 
 
@@ -694,174 +578,6 @@ components:
               $ref: '#/components/schemas/PlayerSeasonSummary'
             season_2025_projection_summary:
               $ref: '#/components/schemas/PlayerSeasonSummary'
-    FetchPlayersSeasonDataResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/PlayerWithSeasonSummaries'
-        count:
-          type: integer
-          example: 250
-        nextCursor:
-          type: string
-          nullable: true
-          description: Opaque cursor to fetch the next page. When absent, there are no more results.
-        message:
-          type: string
-          example: "Fetched 250 players with season data"
-        metadata:
-          type: object
-          properties:
-            filters:
-              type: object
-              properties:
-                position:
-                  type: string
-                  nullable: false
-            pagination:
-              type: object
-              properties:
-                limit:
-                  type: integer
-                  max: 10
-                offset:
-                  type: integer
-                mode:
-                  type: string
-                  example: cursor
-            seasons:
-              type: object
-              properties:
-                stats:
-                  type: integer
-                  example: 2024
-                projections:
-                  type: integer
-                  example: 2025
-            executed_at:
-              type: string
-              format: date-time
-
-    FetchPlayerSeasonDataResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/PlayerWithSeasonSummaries'
-        count:
-          type: integer
-          example: 1
-        message:
-          type: string
-          example: "Fetched 1 player(s) season data"
-        metadata:
-          type: object
-          properties:
-            mode:
-              type: string
-              enum: [by_id, by_name]
-              example: by_id
-            filters:
-              type: object
-              properties:
-                player_id:
-                  type: string
-                  nullable: true
-                name:
-                  type: string
-                  nullable: true
-            seasons:
-              type: object
-              properties:
-                stats:
-                  type: integer
-                  example: 2024
-                projections:
-                  type: integer
-                  example: 2025
-            executed_at:
-              type: string
-              format: date-time
-
-    FetchLeagueResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: object
-          properties:
-            league:
-              type: object
-              description: League details from Sleeper API
-              additionalProperties: true
-            users:
-              type: array
-              items:
-                type: object
-                properties:
-                  user_id:
-                    type: string
-                    example: "123456789"
-                  username:
-                    type: string
-                    nullable: true
-                    example: "fantasyfan"
-                  display_name:
-                    type: string
-                    nullable: true
-                    example: "Fantasy Fan"
-                  team_name:
-                    type: string
-                    example: "Dream Team"
-                  wins:
-                    type: integer
-                    example: 8
-                  losses:
-                    type: integer
-                    example: 6
-                  fpts:
-                    type: number
-                    example: 1456.78
-        count:
-          type: integer
-          description: Number of users in the league
-          example: 12
-        message:
-          type: string
-          example: "Fetched league details and users"
-        metadata:
-          type: object
-          properties:
-            league_id:
-              type: string
-              example: "987654321"
-            user_id:
-              type: string
-              example: "123456789"
-            league_identifier:
-              type: string
-              example: "My Fantasy League"
-            sport:
-              type: string
-              example: "nfl"
-            season:
-              type: string
-              example: "2024"
-            executed_at:
-              type: string
-              format: date-time
-
     FetchMatchupsResponse:
       type: object
       properties:
@@ -869,57 +585,7 @@ components:
           type: boolean
           example: true
         data:
-          type: object
-          properties:
-            league_id:
-              type: string
-              example: "987654321"
-            week:
-              type: integer
-              example: 5
-            matchups:
-              type: array
-              items:
-                type: object
-                properties:
-                  matchup_id:
-                    type: integer
-                    example: 1
-                  teams:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        points:
-                          type: number
-                          nullable: true
-                          example: 125.6
-                        custom_points:
-                          type: number
-                          nullable: true
-                          example: 120.0
-                        user:
-                          type: object
-                          nullable: true
-                          properties:
-                            user_id:
-                              type: string
-                              example: "123456789"
-                            username:
-                              type: string
-                              nullable: true
-                              example: "fantasyfan"
-                            display_name:
-                              type: string
-                              nullable: true
-                              example: "Fantasy Fan"
-                            team_name:
-                              type: string
-                              example: "Dream Team"
-                            avatar:
-                              type: string
-                              nullable: true
-                              example: "https://sleepercdn.com/avatars/123456789"
+          description: Tool-specific response data (array or object)
         count:
           type: integer
           example: 6
@@ -928,112 +594,9 @@ components:
           example: "Fetched 6 matchups for week 5"
         metadata:
           type: object
-          properties:
-            sport:
-              type: string
-              example: "nfl"
-            executed_at:
-              type: string
-              format: date-time
-
-    FetchRosterResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: object
-          description: Roster data with enhanced player details
           additionalProperties: true
-          properties:
-            roster_id:
-              type: integer
-              example: 1
-            owner_id:
-              type: string
-              example: "123456789"
-            starters:
-              type: array
-              items:
-                type: string
-              example: ["1234", "5678"]
-            bench:
-              type: array
-              items:
-                type: string
-              example: ["9012", "3456"]
-            players:
-              type: array
-              items:
-                type: string
-              example: ["1234", "5678", "9012", "3456"]
-            starters_detailed:
-              type: array
-              items:
-                type: object
-                properties:
-                  player_id:
-                    type: string
-                    example: "1234"
-                  player_data:
-                    $ref: '#/components/schemas/Player'
-            bench_detailed:
-              type: array
-              items:
-                type: object
-                properties:
-                  player_id:
-                    type: string
-                    example: "5678"
-                  player_data:
-                    $ref: '#/components/schemas/Player'
-            owner:
-              type: object
-              properties:
-                user_id:
-                  type: string
-                  example: "123456789"
-                username:
-                  type: string
-                  nullable: true
-                  example: "fantasyfan"
-                display_name:
-                  type: string
-                  nullable: true
-                  example: "Fantasy Fan"
-                avatar:
-                  type: string
-                  nullable: true
-                  example: "https://sleepercdn.com/avatars/123456789"
-                team_name:
-                  type: string
-                  example: "Dream Team"
-        count:
-          type: integer
-          description: Number of players on the roster
-          example: 16
-        message:
-          type: string
-          example: "Successfully fetched roster for user 123456789 in league 987654321"
-        metadata:
-          type: object
-          properties:
-            league_id:
-              type: string
-              example: "987654321"
-            user_id:
-              type: string
-              example: "123456789"
-            include_player_details:
-              type: boolean
-              example: true
-            include_owner_details:
-              type: boolean
-              example: true
-            executed_at:
-              type: string
-              format: date-time
+      required:
+        - success
 
     FetchUserLeaguesResponse:
       type: object
@@ -1042,42 +605,36 @@ components:
           type: boolean
           example: true
         data:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-                description: League ID
-                example: "987654321"
-              name:
-                type: string
-                description: League name
-                example: "My Fantasy League"
+          description: Tool-specific response data (array or object)
         count:
           type: integer
           example: 3
         message:
           type: string
-          example: "Successfully fetched 3 leagues for user 'fantasyfan123'"
+          example: "Successfully fetched 3 leagues for user"
         metadata:
           type: object
-          properties:
-            user_identifier:
-              type: string
-              example: "fantasyfan123"
-            resolved_user_id:
-              type: string
-              example: "123456789"
-            sport:
-              type: string
-              example: "nfl"
-            season:
-              type: string
-              example: "2024"
-            executed_at:
-              type: string
-              format: date-time
+          additionalProperties: true
+      required:
+        - success
+
+    EvaluateTradeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          description: Tool-specific response data (array or object)
+        message:
+          type: string
+          example: "Trade evaluation completed successfully"
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - success
+
     Player:
       type: object
       description: |
@@ -1220,3 +777,5 @@ tags:
     description: Player statistics, rankings, trending data, and ADP analysis
   - name: League Data
     description: League information, user rosters, matchups, and league management
+  - name: Trade Analysis
+    description: Fantasy football trade evaluation and analysis tools
