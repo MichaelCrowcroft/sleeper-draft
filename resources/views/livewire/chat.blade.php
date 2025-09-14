@@ -44,12 +44,12 @@ new class extends Component {
     {
         try {
             $generator = Prism::text()
-                ->using(Provider::Groq, 'openai/gpt-oss-120b')
+                ->using(Provider::Gemini, 'gemini-2.5-flash')
+                // ->using(Provider::Groq, 'openai/gpt-oss-120b')
                 ->withProviderTools([
-                    new ProviderTool(type: 'browser_search')
-                ])
-                ->withProviderOptions([
-                    'reasoning' => ['effort' => 'high']
+                    'thinking' => [
+                        'budget' => -1  // Low budget for faster responses
+                    ]
                 ])
                 ->withTools(Relay::tools('sleeperdraft'))
                 ->withSystemPrompt('You are a helpful assistant that can answer questions about fantasy football with the tools provided. The current user has the following Sleeper league: ' . Auth::user()->sleeper_user_id)
