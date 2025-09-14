@@ -44,9 +44,9 @@ new class extends Component {
     {
         try {
             $generator = Prism::text()
-                ->using(Provider::OpenAI, 'gpt-5-mini')
+                ->using(Provider::OpenAI, 'gpt-5')
                 ->withProviderOptions([
-                    'reasoning' => ['effort' => 'high']
+                    'reasoning' => ['effort' => 'medium']
                 ])
                 ->withTools(Relay::tools('sleeperdraft'))
                 ->withSystemPrompt('You are a helpful assistant that can answer questions about fantasy football with the tools provided. Be proactive, and make assumptions about what the user is asking about. You want to provide information and responses quickly, only ask follow up questions after you have already tried to give an answer to the user with tools. The current user has the following Sleeper league: ' . Auth::user()->sleeper_user_id)
