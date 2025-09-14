@@ -48,7 +48,7 @@ new class extends Component {
                 // ->using(Provider::Groq, 'openai/gpt-oss-120b')
                 ->withProviderTools([
                     'thinking' => [
-                        'budget' => -1  // Low budget for faster responses
+                        'budget' => 24576  // Low budget for faster responses
                     ]
                 ])
                 ->withTools(Relay::tools('sleeperdraft'))
