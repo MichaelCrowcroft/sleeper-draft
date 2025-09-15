@@ -1,44 +1,7 @@
-openapi: 3.1.0
+openapi: 3.0.3
 info:
   title: Sleeper Draft MCP Actions API
-  description: |
-    # Sleeper Draft Fantasy Football API
-
-    A comprehensive REST API providing access to fantasy football data from the Sleeper platform. This API serves as a bridge between the Sleeper Draft MCP (Model Context Protocol) server and HTTP clients, offering simplified endpoints for player statistics, league management, and fantasy football analytics.
-
-    ## Core Features
-
-    ### Player Data
-    - **Trending Players**: Get players being added or dropped in the last 24 hours
-    - **ADP Rankings**: Average Draft Position data for draft preparation
-    - **Season Statistics**: Historical performance data and current season projections
-    - **Player Search**: Find players by name or Sleeper ID with detailed stats
-
-    ### League Management
-    - **League Information**: Access league details, settings, and metadata
-    - **User Rosters**: Complete roster data with player details and owner information
-    - **Matchups**: Weekly head-to-head matchup data with scoring
-    - **User Leagues**: Find all leagues for a specific user
-
-    ## Data Sources
-    This API aggregates data from multiple sources:
-    - Sleeper API for real-time league and player data
-    - Internal database for enhanced player statistics and projections
-    - Fantasy football analytics for trending and ADP calculations
-
-    ## Authentication
-    No authentication required for public endpoints. All data is publicly available fantasy football information.
-
-    ## Rate Limits
-    Standard rate limiting applies to prevent abuse. Contact support if you need higher limits for commercial use.
-
-    ## Response Format
-    All endpoints return JSON with a consistent structure:
-    - `success`: Boolean indicating operation success
-    - `data`: The requested data (array or object)
-    - `count`: Number of items returned (when applicable)
-    - `message`: Human-readable success/error message
-    - `metadata`: Additional context about the request and response
+  description: A REST API for fantasy football data from the Sleeper platform, providing player statistics, league management, and trade analysis.
   version: 1.0.0
   contact:
     name: API Support
@@ -46,8 +9,8 @@ info:
     email: support@sleeperdraft.com
 
 servers:
-  - url: https://www.sleeperdraft.com/api
-    description: Production server
+  - url: https://sleeper-draft.test/api
+    description: Development server
 
 
 paths:
@@ -310,9 +273,6 @@ components:
         search:
           type: string
           description: Search term to find a player by name (first name, last name, or full name)
-      oneOf:
-        - required: ["player_id"]
-        - required: ["search"]
       example:
         player_id: "4046"
 
@@ -326,16 +286,12 @@ components:
           type: string
           description: Sleeper league ID to fetch matchups for
         week:
-          anyOf:
-            - type: integer
-              minimum: 1
-              maximum: 18
-            - type: "null"
+          type: integer
+          minimum: 1
+          maximum: 18
           description: Week number to fetch matchups for (defaults to current week)
         user_id:
-          anyOf:
-            - type: string
-            - type: "null"
+          type: string
           description: Optional Sleeper user ID to filter matchups to only show this user's matchups
         sport:
           type: string
@@ -377,44 +333,22 @@ components:
       properties:
         receiving:
           type: array
-          description: List of players being received in the trade
+          description: List of player IDs being received in the trade
           items:
-            type: object
-            properties:
-              player_id:
-                type: string
-                description: Sleeper player ID
-              search:
-                type: string
-                description: Search term to find player by name
-            oneOf:
-              - required: ["player_id"]
-              - required: ["search"]
+            type: string
           minItems: 1
         sending:
           type: array
-          description: List of players being sent in the trade
+          description: List of player IDs being sent in the trade
           items:
-            type: object
-            properties:
-              player_id:
-                type: string
-                description: Sleeper player ID
-              search:
-                type: string
-                description: Search term to find player by name
-            oneOf:
-              - required: ["player_id"]
-              - required: ["search"]
+            type: string
           minItems: 1
       required:
         - receiving
         - sending
       example:
-        receiving:
-          - player_id: "4046"
-        sending:
-          - player_id: "1234"
+        receiving: ["4046"]
+        sending: ["1234"]
 
 
     # Response Schemas

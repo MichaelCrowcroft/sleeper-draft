@@ -1,0 +1,100 @@
+openapi: 3.0.3
+info:
+  title: Sleeper Draft MCP Actions API
+  description: |
+    # Sleeper Draft Fantasy Football API
+
+    A comprehensive REST API providing access to fantasy football data from the Sleeper platform. This API serves as a bridge between the Sleeper Draft MCP (Model Context Protocol) server and HTTP clients, offering simplified endpoints for player statistics, league management, and fantasy football analytics.
+
+    ## Core Features
+
+    ### Player Data
+    - **Trending Players**: Get players being added or dropped in the last 24 hours
+    - **ADP Rankings**: Average Draft Position data for draft preparation
+    - **Season Statistics**: Historical performance data and current season projections
+    - **Player Search**: Find players by name or Sleeper ID with detailed stats
+
+    ### League Management
+    - **League Information**: Access league details, settings, and metadata
+    - **User Rosters**: Complete roster data with player details and owner information
+    - **Matchups**: Weekly head-to-head matchup data with scoring
+    - **User Leagues**: Find all leagues for a specific user
+
+    ## Data Sources
+    This API aggregates data from multiple sources:
+    - Sleeper API for real-time league and player data
+    - Internal database for enhanced player statistics and projections
+    - Fantasy football analytics for trending and ADP calculations
+
+    ## Authentication
+    No authentication required for public endpoints. All data is publicly available fantasy football information.
+
+    ## Rate Limits
+    Standard rate limiting applies to prevent abuse. Contact support if you need higher limits for commercial use.
+
+    ## Response Format
+    All endpoints return JSON with a consistent structure:
+    - `success`: Boolean indicating operation success
+    - `data`: The requested data (array or object)
+    - `count`: Number of items returned (when applicable)
+    - `message`: Human-readable success/error message
+    - `metadata`: Additional context about the request and response
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://www.sleeperdraft.com
+    email: support@sleeperdraft.com
+
+servers:
+  - url: https://www.sleeperdraft.com/api
+    description: Production server
+
+
+paths:
+  # Individual tool endpoints for better GPT Actions compatibility
+
+  /mcp/tools/fetch-trending-players:
+    post:
+      summary: Fetch trending players
+      description: "Fetches trending players from the database based on adds or drops within the last 24 hours. Returns players ordered by trending value in descending order."
+      operationId: fetchTrendingPlayers
+      tags:
+        - Player Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchTrendingPlayersRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchTrendingPlayersResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mcp/tools/fetch-players:
+    post:
+      summary: Fetch players
+      description: "Fetch a paginated, enriched list of players with comprehensive filtering and league integration. Pass a league ID and you can see free agents and rostered player owner information."
+      operationId: fetchPlayers
+      tags:
+        - Player Data
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchPlayersRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchPlayersResponse'

@@ -1,0 +1,21 @@
+openapi: 3.0.3
+info:
+  title: Test API
+  version: 1.0.0
+  description: Test API for validation
+servers:
+  - url: https://api.example.com
+paths:
+  /test:
+    get:
+      summary: Test endpoint
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
