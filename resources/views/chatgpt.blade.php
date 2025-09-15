@@ -1,8 +1,9 @@
 @php
-$title = 'Fantasy Football AI Assistant CustomGPT';
+$title = 'Sleeper Draft Fantasy Football ChatGPT - AI Assistant with Real-Time Analytics';
+$description = 'Experience fantasy football like never before with our Sleeper Draft AI Assistant. Get comprehensive player data, ADP rankings, trade evaluations, and detailed analytics powered by real-time data from the Sleeper platform.';
 @endphp
 
-<x-layouts.app.marketing :title="$title">
+<x-layouts.app.marketing :title="$title" :description="$description">
 
             <!-- Hero Section -->
             <div class="relative pt-16 pb-16 sm:pt-20 sm:pb-20">
@@ -17,13 +18,13 @@ $title = 'Fantasy Football AI Assistant CustomGPT';
                             </div>
 
                             <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-6">
-                                <span class="bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-700 dark:from-zinc-100 dark:via-zinc-200 dark:to-zinc-300 bg-clip-text text-transparent">Fantasy Football</span>
+                                <span class="bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-700 dark:from-zinc-100 dark:via-zinc-200 dark:to-zinc-300 bg-clip-text text-transparent">Sleeper Draft</span>
                                 <br>
-                                <span class="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">AI Assistant</span>
+                                <span class="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">Fantasy Football AI</span>
                             </h1>
 
                             <p class="text-xl text-zinc-600 dark:text-zinc-400 mb-8 leading-relaxed">
-                                Experience fantasy football like never before with our specialized ChatGPT that seamlessly integrates with MCP Tools. Get comprehensive player data, ADP rankings, and detailed analytics powered by real-time data.
+                                Experience fantasy football like never before with our Sleeper Draft AI Assistant. Seamlessly integrated with the Sleeper platform, it provides comprehensive player analytics, trade evaluations, league management, and real-time data through our advanced MCP (Model Context Protocol) tools.
                             </p>
 
                             <div class="flex flex-col sm:flex-row gap-4">
@@ -99,45 +100,45 @@ $title = 'Fantasy Football AI Assistant CustomGPT';
 
                         <div class="grid sm:grid-cols-2 gap-6">
                             <div class="space-y-4">
-                                <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Player Analytics</h3>
+                                <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Player Analytics & Data</h3>
                                 <ul class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
                                     <li class="flex items-center gap-2">
                                         <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                        Live player statistics and projections
+                                        Live player statistics and projections from Sleeper
                                     </li>
                                     <li class="flex items-center gap-2">
                                         <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                        Current ADP values from multiple sources
+                                        Current ADP rankings and draft positioning
                                     </li>
                                     <li class="flex items-center gap-2">
                                         <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                        Trending adds/drops data (24h)
+                                        Trending players with 24-hour add/drop data
                                     </li>
                                     <li class="flex items-center gap-2">
                                         <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                        Paginated player statistics
+                                        Comprehensive season statistics and performance
                                     </li>
                         </ul>
                     </div>
 
                             <div class="space-y-4">
-                                <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Smart Analysis</h3>
+                                <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">League Management & AI Tools</h3>
                                 <ul class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
                                     <li class="flex items-center gap-2">
                                         <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                        ADP ranking comparisons
+                                        AI-powered trade evaluation and analysis
                                     </li>
                                     <li class="flex items-center gap-2">
                                         <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                        Player performance trends
+                                        Weekly matchup data and scoring analysis
                                     </li>
                                     <li class="flex items-center gap-2">
                                         <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                        Season statistics analysis
+                                        Roster management and free agent tracking
                                     </li>
                                     <li class="flex items-center gap-2">
                                         <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                        Position-based filtering
+                                        User league discovery and management
                                     </li>
                         </ul>
                     </div>
@@ -166,8 +167,8 @@ $title = 'Fantasy Football AI Assistant CustomGPT';
                                         </svg>
                                     </div>
                                     <div>
-                                        <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">ADP Rankings</div>
-                                        <div class="text-sm text-zinc-600 dark:text-zinc-400 italic">"What's the current ADP for Patrick Mahomes?"</div>
+                                        <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Trade Evaluation</div>
+                                        <div class="text-sm text-zinc-600 dark:text-zinc-400 italic">"Should I trade Patrick Mahomes for Josh Allen and a draft pick?"</div>
                                     </div>
                                 </div>
                             </div>
@@ -194,8 +195,8 @@ $title = 'Fantasy Football AI Assistant CustomGPT';
                                         </svg>
                                     </div>
                                     <div>
-                                        <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Season Statistics</div>
-                                        <div class="text-sm text-zinc-600 dark:text-zinc-400 italic">"Show me all running back stats for the 2024 season"</div>
+                                        <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">League Matchups</div>
+                                        <div class="text-sm text-zinc-600 dark:text-zinc-400 italic">"Show me my matchup for this week in league 123456789"</div>
                                     </div>
                                 </div>
                             </div>
@@ -208,8 +209,8 @@ $title = 'Fantasy Football AI Assistant CustomGPT';
                                         </svg>
                                     </div>
                                     <div>
-                                        <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Player Lookup</div>
-                                        <div class="text-sm text-zinc-600 dark:text-zinc-400 italic">"Get detailed stats and projections for Josh Allen"</div>
+                                        <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Player Research</div>
+                                        <div class="text-sm text-zinc-600 dark:text-zinc-400 italic">"Compare Christian McCaffrey and Bijan Robinson for my RB2 spot"</div>
                                     </div>
                     </div>
                     </div>

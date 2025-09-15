@@ -3,6 +3,29 @@
 
 <title>{{ $title ?? config('app.name') }}</title>
 
+@if(isset($description))
+<meta name="description" content="{{ $description }}">
+@endif
+
+<!-- SEO Meta Tags -->
+<meta name="keywords" content="fantasy football, sleeper, fantasy football ai, sleeper draft, nfl fantasy, fantasy football chatgpt, trade evaluation, player rankings, adp, trending players">
+<meta name="author" content="Sleeper Draft">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ $title ?? config('app.name') }}">
+@if(isset($description))
+<meta property="og:description" content="{{ $description }}">
+@endif
+<meta property="og:site_name" content="Sleeper Draft">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ $title ?? config('app.name') }}">
+@if(isset($description))
+<meta name="twitter:description" content="{{ $description }}">
+@endif
+
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">

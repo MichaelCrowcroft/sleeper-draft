@@ -1,6 +1,56 @@
 @php
-$title = 'Model Context Protocol for Fantasy Football';
+$title = 'Fantasy Football MCP - AI-Powered Fantasy Analytics & Trade Evaluation';
+$description = 'Connect AI assistants to comprehensive fantasy football data through our Model Context Protocol server. Access real-time player analytics, trade evaluation, matchup analysis, and season projections for fantasy football.';
+$keywords = 'fantasy football, MCP, model context protocol, AI analytics, trade evaluation, player projections, sleeper API, fantasy football tools, GPT actions';
 @endphp
+
+@section('head')
+    <meta name="description" content="{{ $description }}">
+    <meta name="keywords" content="{{ $keywords }}">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="Sleeper Draft">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ $title }}">
+    <meta property="og:description" content="{{ $description }}">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:site_name" content="Sleeper Draft">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $title }}">
+    <meta name="twitter:description" content="{{ $description }}">
+
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Fantasy Football MCP",
+        "description": "{{ $description }}",
+        "applicationCategory": "SportsApplication",
+        "operatingSystem": "Web",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "featureList": [
+            "AI-powered trade evaluation",
+            "Real-time player analytics",
+            "Matchup analysis with win probabilities",
+            "Season projections and statistics",
+            "GPT Actions integration",
+            "Sleeper API integration"
+        ],
+        "provider": {
+            "@type": "Organization",
+            "name": "Sleeper Draft"
+        }
+    }
+    </script>
+@endsection
 
 <x-layouts.app.marketing :title="$title">
             <!-- Hero Section -->
@@ -15,13 +65,13 @@ $title = 'Model Context Protocol for Fantasy Football';
                         </div>
 
                         <h1 class="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight mb-6">
-                            <span class="bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-700 dark:from-zinc-100 dark:via-zinc-200 dark:to-zinc-300 bg-clip-text text-transparent">Model Context Protocol</span>
+                            <span class="bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-700 dark:from-zinc-100 dark:via-zinc-200 dark:to-zinc-300 bg-clip-text text-transparent">Fantasy Football MCP</span>
                             <br>
-                            <span class="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">for Fantasy Football</span>
+                            <span class="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">AI-Powered Analytics</span>
                         </h1>
 
                         <p class="text-xl text-zinc-600 dark:text-zinc-400 max-w-4xl mx-auto mb-12 leading-relaxed">
-                            This Laravel server exposes a Model Context Protocol endpoint with tools for Sleeper fantasy football analytics: player trending data, ADP rankings, season statistics, and projections powered by Laravel's robust data layer.
+                            Connect AI assistants to comprehensive fantasy football data through our Model Context Protocol server. Access real-time player analytics, trade evaluation, matchup analysis, and season projections powered by Laravel's robust data layer and Sleeper API integration.
                         </p>
 
                         <div class="flex flex-col sm:flex-row justify-center gap-4">
@@ -155,27 +205,27 @@ $title = 'Model Context Protocol for Fantasy Football';
                         <ul class="space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
                             <li class="flex items-start gap-3">
                                 <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
-                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Player Analytics</span>: trending players, ADP rankings, season statistics</div>
+                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Trade Evaluation</span>: AI-powered trade analysis with stat comparisons and confidence recommendations</div>
                             </li>
                             <li class="flex items-start gap-3">
                                 <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
-                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Fantasy Data Access</span>: comprehensive player data with projections and performance metrics</div>
+                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Matchup Analysis</span>: enriched matchups with win probabilities and player projections</div>
                             </li>
                             <li class="flex items-start gap-3">
                                 <div class="w-1.5 h-1.5 bg-emerald-600 rounded-full mt-2 flex-shrink-0"></div>
-                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Market Intelligence</span>: real-time player trends and draft positioning</div>
+                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Player Analytics</span>: comprehensive stats, projections, and volatility metrics for all players</div>
                             </li>
                             <li class="flex items-start gap-3">
                                 <div class="w-1.5 h-1.5 bg-emerald-700 rounded-full mt-2 flex-shrink-0"></div>
-                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Season Analysis</span>: historical stats and current season projections</div>
+                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Trending Data</span>: real-time player adds/drops and market intelligence</div>
                             </li>
                             <li class="flex items-start gap-3">
                                 <div class="w-1.5 h-1.5 bg-teal-500 rounded-full mt-2 flex-shrink-0"></div>
-                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">GPT Actions Compatible</span>: optimized endpoints for OpenAI Custom GPT integration</div>
+                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">League Integration</span>: free agent tracking and roster management for your leagues</div>
                             </li>
                             <li class="flex items-start gap-3">
                                 <div class="w-1.5 h-1.5 bg-emerald-800 rounded-full mt-2 flex-shrink-0"></div>
-                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">Laravel Powered</span>: built with Laravel's robust ORM and caching capabilities</div>
+                                <div><span class="font-semibold text-zinc-900 dark:text-zinc-100">GPT Actions Ready</span>: optimized endpoints for seamless OpenAI Custom GPT integration</div>
                             </li>
                         </ul>
                     </div>
@@ -194,23 +244,31 @@ $title = 'Model Context Protocol for Fantasy Football';
 
                         <div class="space-y-4">
                             <div class="rounded-xl border border-emerald-200/50 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 p-4 dark:border-emerald-800/50 dark:from-emerald-900/5 dark:to-teal-900/5">
-                                <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Player Analytics & Data</h3>
+                                <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Fantasy Football Tools</h3>
                                 <ul class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
                                     <li class="flex items-start gap-2">
+                                        <span class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300 mt-0.5 flex-shrink-0">evaluate-trade</span>
+                                        <span>AI-powered trade analysis with stat comparisons and confidence recommendations</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <span class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300 mt-0.5 flex-shrink-0">fetch-matchups</span>
+                                        <span>Get enriched matchups with win probabilities and player projections</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <span class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300 mt-0.5 flex-shrink-0">fetch-player</span>
+                                        <span>Comprehensive player data including stats, projections, and performance analysis</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <span class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300 mt-0.5 flex-shrink-0">fetch-players</span>
+                                        <span>Paginated player list with filtering and league integration</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
                                         <span class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300 mt-0.5 flex-shrink-0">fetch-trending-players</span>
-                                        <span>Get trending players based on adds/drops in the last 24 hours</span>
+                                        <span>Real-time trending data based on adds/drops in the last 24 hours</span>
                                     </li>
                                     <li class="flex items-start gap-2">
-                                        <span class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300 mt-0.5 flex-shrink-0">fetch-adp-players</span>
-                                        <span>Get top players by Average Draft Position (ADP)</span>
-                                    </li>
-                                    <li class="flex items-start gap-2">
-                                        <span class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300 mt-0.5 flex-shrink-0">fetch-players-season-data</span>
-                                        <span>Get season stats and projections for multiple players</span>
-                                    </li>
-                                    <li class="flex items-start gap-2">
-                                        <span class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300 mt-0.5 flex-shrink-0">fetch-player-season-data</span>
-                                        <span>Get detailed season data for a specific player by ID or name</span>
+                                        <span class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded text-emerald-700 dark:text-emerald-300 mt-0.5 flex-shrink-0">fetch-user-leagues</span>
+                                        <span>Get all leagues for a user by username or user ID</span>
                                     </li>
                                 </ul>
                             </div>
@@ -236,34 +294,56 @@ $title = 'Model Context Protocol for Fantasy Football';
 
                     <div class="space-y-6">
                         <div>
-                            <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Fetch Trending Players</div>
+                            <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Evaluate a Fantasy Trade</div>
                             <div class="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 overflow-hidden">
                                 <div class="w-full overflow-x-auto p-4">
-                                    <pre class="text-xs text-zinc-800 dark:text-zinc-200 whitespace-pre"><code>POST /api/mcp/tools/fetch-trending-players
+                                    <pre class="text-xs text-zinc-800 dark:text-zinc-200 whitespace-pre"><code>POST /api/mcp/tools/evaluate-trade
 {
-  "type": "add"
+  "receiving": [
+    {"search": "Josh Allen"},
+    {"search": "Travis Kelce"}
+  ],
+  "sending": [
+    {"search": "Patrick Mahomes"},
+    {"search": "Tyreek Hill"}
+  ]
 }</code></pre>
                                 </div>
                             </div>
                         </div>
 
                         <div>
-                            <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Get ADP Rankings</div>
+                            <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Get League Matchups</div>
                             <div class="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 overflow-hidden">
                                 <div class="w-full overflow-x-auto p-4">
-                                    <pre class="text-xs text-zinc-800 dark:text-zinc-200 whitespace-pre"><code>POST /api/mcp/tools/fetch-adp-players
-{}</code></pre>
+                                    <pre class="text-xs text-zinc-800 dark:text-zinc-200 whitespace-pre"><code>POST /api/mcp/tools/fetch-matchups
+{
+  "league_id": "123456789012345678",
+  "week": 5
+}</code></pre>
                                 </div>
                             </div>
                         </div>
 
                         <div>
-                            <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Get Player Season Data</div>
+                            <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Get Player Details</div>
                             <div class="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 overflow-hidden">
                                 <div class="w-full overflow-x-auto p-4">
-                                    <pre class="text-xs text-zinc-800 dark:text-zinc-200 whitespace-pre"><code>POST /api/mcp/tools/fetch-player-season-data
+                                    <pre class="text-xs text-zinc-800 dark:text-zinc-200 whitespace-pre"><code>POST /api/mcp/tools/fetch-player
 {
-  "player_id": "4046"
+  "search": "Christian McCaffrey"
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Get Trending Players</div>
+                            <div class="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 overflow-hidden">
+                                <div class="w-full overflow-x-auto p-4">
+                                    <pre class="text-xs text-zinc-800 dark:text-zinc-200 whitespace-pre"><code>POST /api/mcp/tools/fetch-trending-players
+{
+  "type": "add"
 }</code></pre>
                                 </div>
                             </div>
@@ -314,7 +394,10 @@ $title = 'Model Context Protocol for Fantasy Football';
                         </div>
 
                         <div class="group rounded-xl border border-emerald-200/50 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 p-4 transition-all hover:border-emerald-300/50 dark:border-emerald-800/50 dark:from-emerald-900/5 dark:to-teal-900/5 dark:hover:border-emerald-700/50">
-                            <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Tools List</div>
+                            <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Available Tools</div>
+                            <div class="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
+                                evaluate-trade, fetch-matchups, fetch-player, fetch-players, fetch-trending-players, fetch-user-leagues
+                            </div>
                             <div class="relative rounded-lg bg-zinc-100 p-3 dark:bg-zinc-800">
                                 <code class="text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all select-all">https://www.sleeperdraft.com/api/mcp/tools</code>
                                 <div class="absolute top-2 right-2">

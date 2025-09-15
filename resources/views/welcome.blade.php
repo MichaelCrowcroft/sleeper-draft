@@ -1,6 +1,20 @@
 @php
-$title = 'AI Tools for Fantasy Football';
+$title = 'Fantasy Football AI - AI-Powered Trade Analysis & Matchup Predictions';
+$description = 'Advanced AI-powered fantasy football analytics with intelligent trade evaluation, matchup predictions, and real-time player insights. Get AI-driven recommendations for trades, waiver wire pickups, and lineup optimization with comprehensive Sleeper integration.';
+$keywords = 'fantasy football AI, trade analysis, matchup predictions, player analytics, waiver wire, lineup optimization, Sleeper integration, AI assistant, fantasy football tools, trade evaluation';
 @endphp
+
+@section('meta')
+<meta name="description" content="{{ $description }}">
+<meta name="keywords" content="{{ $keywords }}">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="{{ $title }}">
+<meta property="og:description" content="{{ $description }}">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ $title }}">
+<meta name="twitter:description" content="{{ $description }}">
+@endsection
 
 <x-layouts.app.marketing :title="$title">
 
@@ -15,13 +29,13 @@ $title = 'AI Tools for Fantasy Football';
                     </div>
 
                     <h1 class="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-700 dark:from-zinc-100 dark:via-zinc-200 dark:to-zinc-300 bg-clip-text text-transparent mb-8">
-                        MCP Tools for
-                        <span class="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">Fantasy Football</span>
+                        Fantasy Football AI
+                        <span class="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">Trade Analysis & Predictions</span>
                     </h1>
 
-                    <p class="text-xl sm:text-2xl text-zinc-600 dark:text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed">
-                        Connect your AI assistant to Sleeper fantasy football data with our
-                        <span class="font-semibold text-emerald-600 dark:text-emerald-400">Model Context Protocol</span> server.
+                    <p class="text-xl sm:text-2xl text-zinc-600 dark:text-zinc-400 max-w-4xl mx-auto mb-12 leading-relaxed">
+                        Get AI-powered trade recommendations, matchup predictions, and waiver wire insights.
+                        <span class="font-semibold text-emerald-600 dark:text-emerald-400">Make data-driven fantasy football decisions</span> with intelligent analysis and real-time player data.
                     </p>
 
                     <!-- Primary CTAs -->
@@ -120,43 +134,49 @@ $title = 'AI Tools for Fantasy Football';
                 <!-- How it Works -->
                 <div class="relative rounded-3xl border border-zinc-200/60 bg-white/60 backdrop-blur-sm p-8 shadow-2xl shadow-zinc-900/5 dark:border-zinc-800/60 dark:bg-zinc-900/60 dark:shadow-zinc-100/5">
                     <div class="text-center mb-12">
-                        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">How it works</h2>
+                        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">AI-Powered Fantasy Football Analysis</h2>
                         <p class="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-                            Three simple steps to unlock AI-powered fantasy football insights
+                            Three simple steps to unlock intelligent trade analysis and matchup predictions
                         </p>
                     </div>
 
                     <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                         <div class="relative text-center group">
                             <div class="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/25 text-white font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
-                                1
+                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                                </svg>
                                 <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity blur-xl"></div>
                             </div>
-                            <h3 class="text-xl font-bold mb-3">Choose Your AI</h3>
+                            <h3 class="text-xl font-bold mb-3">Ask About Trades</h3>
                             <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                                Use our Custom GPT or connect Claude Desktop and Cursor with MCP support
+                                "Should I trade Christian McCaffrey for Austin Ekeler?" Get AI-powered analysis with value comparisons and risk assessment
                             </p>
                         </div>
 
                         <div class="relative text-center group">
                             <div class="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/25 text-white font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
-                                2
+                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                </svg>
                                 <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity blur-xl"></div>
                             </div>
-                            <h3 class="text-xl font-bold mb-3">Connect</h3>
+                            <h3 class="text-xl font-bold mb-3">Matchup Analysis</h3>
                             <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                                AI automatically connects to live Sleeper data through our optimized MCP server
+                                "What's the matchup outlook for Week 8?" Receive win probabilities, player projections, and matchup insights
                             </p>
                         </div>
 
                         <div class="relative text-center group">
                             <div class="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-600 to-green-700 shadow-xl shadow-emerald-600/25 text-white font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
-                                3
+                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                </svg>
                                 <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 opacity-0 group-hover:opacity-100 transition-opacity blur-xl"></div>
                             </div>
-                            <h3 class="text-xl font-bold mb-3">Get Insights</h3>
+                            <h3 class="text-xl font-bold mb-3">Waiver Wire Picks</h3>
                             <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                                Ask questions and get intelligent fantasy football recommendations and analysis
+                                "Who should I pick up this week?" Get trending player analysis and AI recommendations for roster optimization
                             </p>
                         </div>
                     </div>
@@ -169,6 +189,74 @@ $title = 'AI Tools for Fantasy Football';
                                 <path fill-rule="evenodd" d="M5 10a1 1 0 011-1h5.586L9.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 11-1.414-1.414L11.586 11H6a1 1 0 01-1-1z" clip-rule="evenodd" />
                             </svg>
                         </a>
+                    </div>
+                </div>
+
+                <!-- AI Capabilities Showcase -->
+                <div class="relative rounded-3xl border border-zinc-200/60 bg-white/60 backdrop-blur-sm p-8 shadow-2xl shadow-zinc-900/5 dark:border-zinc-800/60 dark:bg-zinc-900/60 dark:shadow-zinc-100/5 mt-16">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Intelligent Fantasy Football Tools</h2>
+                        <p class="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
+                            Advanced AI analysis for every aspect of fantasy football decision making
+                        </p>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                        <div class="space-y-6">
+                            <div class="flex items-start gap-4 p-6 rounded-xl bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-900/10 dark:to-teal-900/10 border border-emerald-200/30 dark:border-emerald-800/30">
+                                <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Trade Evaluation Engine</h3>
+                                    <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-3">AI analyzes player stats, projections, and positional value to provide intelligent trade recommendations with confidence scores and risk assessment.</p>
+                                    <div class="text-xs font-mono bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 rounded text-emerald-700 dark:text-emerald-300 inline-block">evaluate-trade</div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-4 p-6 rounded-xl bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/10 border border-blue-200/30 dark:border-blue-800/30">
+                                <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Matchup Prediction AI</h3>
+                                    <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-3">Machine learning models calculate win probabilities, identify key matchups, and provide confidence intervals for accurate forecasting.</p>
+                                    <div class="text-xs font-mono bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded text-blue-700 dark:text-blue-300 inline-block">fetch-matchups</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="flex items-start gap-4 p-6 rounded-xl bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10 border border-purple-200/30 dark:border-purple-800/30">
+                                <div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Real-Time Trend Analysis</h3>
+                                    <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-3">Monitor player trending patterns, waiver wire movements, and market sentiment with automated alerts and data-driven insights.</p>
+                                    <div class="text-xs font-mono bg-purple-100 dark:bg-purple-900/30 px-3 py-1 rounded text-purple-700 dark:text-purple-300 inline-block">fetch-trending-players</div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-4 p-6 rounded-xl bg-gradient-to-r from-orange-50/50 to-red-50/50 dark:from-orange-900/10 dark:to-red-900/10 border border-orange-200/30 dark:border-orange-800/30">
+                                <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Comprehensive Player Analytics</h3>
+                                    <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-3">Detailed player data including stats, projections, volatility metrics, performance analysis, and comparative rankings.</p>
+                                    <div class="text-xs font-mono bg-orange-100 dark:bg-orange-900/30 px-3 py-1 rounded text-orange-700 dark:text-orange-300 inline-block">fetch-player</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
