@@ -22,9 +22,9 @@ class McpActionController extends Controller
         // Map route names to tool class names
         $routeToToolClassMap = [
             'api.mcp.fetch-trending-players' => \App\MCP\Tools\FetchTrendingPlayersTool::class,
-            'api.mcp.fetch-adp-players' => \App\MCP\Tools\FetchADPPlayersTool::class,
-            'api.mcp.fetch-players-season-data' => \App\MCP\Tools\FetchPlayersSeasonDataTool::class,
-            'api.mcp.fetch-player-season-data' => \App\MCP\Tools\FetchPlayerSeasonDataTool::class,
+            'api.mcp.fetch-players' => \App\MCP\Tools\FetchPlayersTool::class,
+            'api.mcp.fetch-player' => \App\MCP\Tools\FetchPlayerTool::class,
+            'api.mcp.evaluate-trade' => \App\MCP\Tools\EvaluateTradeTool::class,
             'api.mcp.fetch-matchups' => \App\MCP\Tools\FetchMatchupsTool::class,
             'api.mcp.fetch-user-leagues' => \App\MCP\Tools\FetchUserLeaguesTool::class,
         ];
@@ -176,14 +176,11 @@ class McpActionController extends Controller
     {
         return [
             'fetch-trending-players',
-            'fetch-adp-players',
-            'fetch-players-season-data',
-            'fetch-player-season-data',
-            'fetch-league',
+            'fetch-players',
+            'fetch-player',
+            'evaluate-trade',
             'fetch-matchups',
-            'fetch-roster',
             'fetch-user-leagues',
-            'fetch-players-table',
         ];
     }
 
@@ -194,14 +191,11 @@ class McpActionController extends Controller
     {
         $mapping = [
             'fetch-trending-players' => 'fetch-trending-players',
-            'fetch-adp-players' => 'fetch-adp-players',
-            'fetch-players-season-data' => 'fetch-players-season-data',
-            'fetch-player-season-data' => 'fetch-player-season-data',
-            'fetch-league' => 'fetch-league',
+            'fetch-players' => 'fetch-players',
+            'fetch-player' => 'fetch-player',
+            'evaluate-trade' => 'evaluate-trade',
             'fetch-matchups' => 'fetch-matchups',
-            'fetch-roster' => 'fetch-roster',
             'fetch-user-leagues' => 'fetch-user-leagues',
-            'fetch-players-table' => 'fetch-players-table',
         ];
 
         return $mapping[$tool] ?? $tool;

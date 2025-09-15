@@ -14,13 +14,27 @@ class GetMatchupsWithOwners
         $cacheKey = "sleeper:matchups:{$leagueId}:{$week}";
 
         return Cache::remember($cacheKey, now()->addSeconds($this->ttlSeconds ?? 300), function () use ($leagueId, $week) {
-            $matchups = Sleeper::leagues()->matchups($leagueId, $week)->collect();
-            if ($matchups === []) {
+            // Fetch matchups with robust guards against non-JSON/failed responses
+            $matchupsResponse = Sleeper::leagues()->matchups($leagueId, $week);
+            if (! $matchupsResponse->successful()) {
                 return [];
             }
 
-            $users = Sleeper::leagues()->users($leagueId)->collect();
-            $rosters = Sleeper::leagues()->rosters($leagueId)->collect();
+            $matchupsData = $matchupsResponse->json();
+            if (! is_array($matchupsData) || empty($matchupsData)) {
+                return [];
+            }
+
+            $matchups = collect($matchupsData);
+
+            // Fetch users and rosters; if these calls fail, continue with minimal data
+            $usersResponse = Sleeper::leagues()->users($leagueId);
+            $usersJson = $usersResponse->successful() ? $usersResponse->json() : [];
+            $users = collect(is_array($usersJson) ? $usersJson : []);
+
+            $rostersResponse = Sleeper::leagues()->rosters($leagueId);
+            $rostersJson = $rostersResponse->successful() ? $rostersResponse->json() : [];
+            $rosters = collect(is_array($rostersJson) ? $rostersJson : []);
 
             $rosters = $rosters->keyBy(fn ($roster) => (int) $roster['roster_id']);
             $users = $users->keyBy('user_id');

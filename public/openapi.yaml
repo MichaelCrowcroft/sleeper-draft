@@ -1,16 +1,56 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Sleeper Draft MCP Actions API
-  description: A REST API for fantasy football data from the Sleeper platform, providing player statistics, league management, and trade analysis.
+  description: |
+    # Sleeper Draft Fantasy Football API
+
+    A comprehensive REST API providing access to fantasy football data from the Sleeper platform. This API serves as a bridge between the Sleeper Draft MCP (Model Context Protocol) server and HTTP clients, offering simplified endpoints for player statistics, league management, and fantasy football analytics.
+
+    ## Core Features
+
+    ### Player Data
+    - **Trending Players**: Get players being added or dropped in the last 24 hours
+    - **ADP Rankings**: Average Draft Position data for draft preparation
+    - **Season Statistics**: Historical performance data and current season projections
+    - **Player Search**: Find players by name or Sleeper ID with detailed stats
+
+    ### League Management
+    - **League Information**: Access league details, settings, and metadata
+    - **User Rosters**: Complete roster data with player details and owner information
+    - **Matchups**: Weekly head-to-head matchup data with scoring
+    - **User Leagues**: Find all leagues for a specific user
+
+    ## Data Sources
+    This API aggregates data from multiple sources:
+    - Sleeper API for real-time league and player data
+    - Internal database for enhanced player statistics and projections
+    - Fantasy football analytics for trending and ADP calculations
+
+    ## Authentication
+    No authentication required for public endpoints. All data is publicly available fantasy football information.
+
+    ## Rate Limits
+    Standard rate limiting applies to prevent abuse. Contact support if you need higher limits for commercial use.
+
+    ## Response Format
+    All endpoints return JSON with a consistent structure:
+    - `success`: Boolean indicating operation success
+    - `data`: The requested data (array or object)
+    - `count`: Number of items returned (when applicable)
+    - `message`: Human-readable success/error message
+    - `metadata`: Additional context about the request and response
   version: 1.0.0
   contact:
     name: API Support
     url: https://www.sleeperdraft.com
     email: support@sleeperdraft.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://sleeper-draft.test/api
-    description: Development server
+  - url: https://www.sleeperdraft.com/api
+    description: Production server
 
 
 paths:
@@ -18,6 +58,7 @@ paths:
 
   /mcp/tools/fetch-trending-players:
     post:
+      security: []
       summary: Fetch trending players
       description: "Fetches trending players from the database based on adds or drops within the last 24 hours. Returns players ordered by trending value in descending order."
       operationId: fetchTrendingPlayers
@@ -43,6 +84,7 @@ paths:
 
   /mcp/tools/fetch-players:
     post:
+      security: []
       summary: Fetch players
       description: "Fetch a paginated, enriched list of players with comprehensive filtering and league integration. Pass a league ID and you can see free agents and rostered player owner information."
       operationId: fetchPlayers
@@ -68,6 +110,7 @@ paths:
 
   /mcp/tools/fetch-player:
     post:
+      security: []
       summary: Fetch player
       description: "Fetch comprehensive player data including stats, projections, volatility metrics, and performance analysis. Accepts either a player ID or search term to find a player."
       operationId: fetchPlayer
@@ -93,6 +136,7 @@ paths:
 
   /mcp/tools/fetch-matchups:
     post:
+      security: []
       summary: Fetch matchups
       description: "Fetch enriched matchups for a league and week, including player data, projections, win probabilities, and confidence intervals. If user_id is provided, returns only matchups for that user; otherwise returns all matchups in the league."
       operationId: fetchMatchups
@@ -118,6 +162,7 @@ paths:
 
   /mcp/tools/fetch-user-leagues:
     post:
+      security: []
       summary: Fetch user leagues
       description: "Fetches all leagues for a user by username or user ID. Returns league IDs and names for the specified sport and season."
       operationId: fetchUserLeagues
@@ -143,6 +188,7 @@ paths:
 
   /mcp/tools/evaluate-trade:
     post:
+      security: []
       summary: Evaluate trade
       description: "Evaluate a fantasy football trade by analyzing player stats, projections, and providing aggregate comparison between receiving and sending sides."
       operationId: evaluateTrade
@@ -171,38 +217,6 @@ paths:
 
 components:
   schemas:
-    # Generic MCP Tool Request Schema
-    McpToolRequest:
-      type: object
-      description: Generic request schema for MCP tool invocations
-      properties: {}
-      additionalProperties: true
-      example:
-        type: "add"
-
-    # Generic MCP Tool Response Schema
-    McpToolResponse:
-      type: object
-      description: Generic response schema for MCP tool results
-      additionalProperties: true
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          description: Tool-specific response data (array or object)
-        count:
-          type: integer
-          example: 25
-        message:
-          type: string
-          example: "Successfully executed tool"
-        metadata:
-          type: object
-          additionalProperties: true
-      required:
-        - success
-
     # Request Schemas
     FetchTrendingPlayersRequest:
       type: object
@@ -273,6 +287,9 @@ components:
         search:
           type: string
           description: Search term to find a player by name (first name, last name, or full name)
+      oneOf:
+        - required: [player_id]
+        - required: [search]
       example:
         player_id: "4046"
 
@@ -286,20 +303,24 @@ components:
           type: string
           description: Sleeper league ID to fetch matchups for
         week:
-          type: integer
-          minimum: 1
-          maximum: 18
+          anyOf:
+            - type: integer
+              minimum: 1
+              maximum: 18
+            - type: 'null'
           description: Week number to fetch matchups for (defaults to current week)
         user_id:
-          type: string
-          description: Optional Sleeper user ID to filter matchups to only show this user's matchups
+          anyOf:
+            - type: string
+            - type: 'null'
+          description: "Optional Sleeper user ID to filter matchups to only show this user's matchups"
         sport:
           type: string
-          description: Sport type (default: nfl)
+          description: "Sport type (default: nfl)"
           default: nfl
         compact:
           type: boolean
-          description: Return minimal player data to avoid truncation (default: true). Set to false for detailed player projections/stats.
+          description: "Return minimal player data to avoid truncation (default: true). Set to false for detailed player projections/stats."
           default: true
       required:
         - league_id
@@ -316,11 +337,11 @@ components:
           description: Sleeper username or user ID to fetch leagues for
         sport:
           type: string
-          description: Sport type (default: nfl)
+          description: "Sport type (default: nfl)"
           default: nfl
         season:
           type: string
-          description: Season year (default: current season)
+          description: "Season year (default: current season)"
       required:
         - user_identifier
       example:
@@ -333,22 +354,44 @@ components:
       properties:
         receiving:
           type: array
-          description: List of player IDs being received in the trade
+          description: List of players being received in the trade
           items:
-            type: string
+            type: object
+            properties:
+              player_id:
+                type: string
+                description: Sleeper player ID
+              search:
+                type: string
+                description: Search term to find a player by name
+            oneOf:
+              - required: [player_id]
+              - required: [search]
           minItems: 1
+          example: [{ player_id: "4046" }, { search: "Travis Kelce" }]
         sending:
           type: array
-          description: List of player IDs being sent in the trade
+          description: List of players being sent in the trade
           items:
-            type: string
+            type: object
+            properties:
+              player_id:
+                type: string
+                description: Sleeper player ID
+              search:
+                type: string
+                description: Search term to find a player by name
+            oneOf:
+              - required: [player_id]
+              - required: [search]
           minItems: 1
+          example: [{ player_id: "1234" }]
       required:
         - receiving
         - sending
       example:
-        receiving: ["4046"]
-        sending: ["1234"]
+        receiving: [{ player_id: "4046" }]
+        sending: [{ player_id: "1234" }]
 
 
     # Response Schemas
@@ -359,16 +402,19 @@ components:
           type: boolean
           example: true
         data:
-          description: Tool-specific response data (array or object)
+          type: array
+          items:
+            type: object
+            description: Player trending data
         count:
           type: integer
           example: 25
         message:
           type: string
-          example: "Successfully executed tool"
+          example: "Successfully fetched trending players"
         metadata:
           type: object
-          additionalProperties: true
+          description: Additional context about the request and response
       required:
         - success
 
@@ -379,16 +425,17 @@ components:
           type: boolean
           example: true
         data:
-          description: Tool-specific response data (array or object)
+          type: object
+          description: Paginated player data as returned by Laravel paginator
         count:
           type: integer
           example: 10
         message:
           type: string
-          example: "Fetched 10 players with comprehensive data"
+          example: "Successfully fetched players"
         metadata:
           type: object
-          additionalProperties: true
+          description: Additional context including filters and pagination
       required:
         - success
 
@@ -399,13 +446,14 @@ components:
           type: boolean
           example: true
         data:
-          description: Tool-specific response data (array or object)
+          type: object
+          description: Player data
         message:
           type: string
-          example: "Fetched comprehensive data for player"
+          example: "Successfully fetched player data"
         metadata:
           type: object
-          additionalProperties: true
+          description: Additional context about the request and response
       required:
         - success
 
@@ -413,105 +461,6 @@ components:
 
 
 
-    PlayerSeasonSummary:
-      type: object
-      description: |
-        Statistical summary of a player's performance over a complete fantasy football season.
-
-        This schema provides key metrics for evaluating player consistency, ceiling, floor, and overall fantasy value across an entire season's worth of games.
-      properties:
-        total_points:
-          type: number
-          description: |
-            Total fantasy points scored across all games in the season.
-            - **Calculation**: Sum of all weekly fantasy point totals
-            - **Usage**: Primary measure of overall fantasy value
-            - **Context**: Higher totals indicate more productive players
-            - **Comparison**: Compare across players for season-long value
-          example: 250.5
-        min_points:
-          type: number
-          description: |
-            Lowest single-game fantasy point total in the season.
-            - **Floor Analysis**: Indicates worst-case weekly performance
-            - **Risk Assessment**: Lower floors suggest higher volatility
-            - **Injury Context**: May reflect games with limited snaps
-            - **Reliability**: Higher floors indicate more consistent players
-          example: 2.1
-        max_points:
-          type: number
-          description: |
-            Highest single-game fantasy point total in the season.
-            - **Ceiling Analysis**: Shows player's peak performance capability
-            - **Upside Potential**: Higher ceilings indicate game-winning ability
-            - **Matchup Context**: Often correlates with favorable game scripts
-            - **Tournament Value**: Important for DFS and high-stakes leagues
-          example: 42.3
-        average_points_per_game:
-          type: number
-          description: |
-            Mean fantasy points per game across all active games.
-            - **Consistency Metric**: Primary measure of weekly reliability
-            - **Projection Basis**: Used for future performance estimates
-            - **Value Assessment**: Higher averages indicate better weekly starts
-            - **Position Ranking**: Compare within position groups for relative value
-          example: 15.6
-        stddev_below:
-          type: number
-          description: |
-            One standard deviation below the average (floor estimate).
-            - **Floor Projection**: Expected low-end weekly performance
-            - **Risk Management**: Lower values indicate safer weekly plays
-            - **Consistency**: Smaller gap from average suggests reliability
-            - **Usage**: Helps set realistic expectations for down weeks
-          example: 12.2
-        stddev_above:
-          type: number
-          description: |
-            One standard deviation above the average (ceiling estimate).
-            - **Ceiling Projection**: Expected high-end weekly performance
-            - **Upside Potential**: Higher values indicate boom-week capability
-            - **Volatility**: Larger gap from average suggests higher variance
-            - **Tournament Play**: Important for GPP and playoff scenarios
-          example: 19.0
-        games:
-          type: integer
-          nullable: true
-          description: |
-            Total number of games the player appeared in during the season.
-            - **Availability**: Indicates overall health and roster status
-            - **Context**: NFL regular season typically 17 games
-            - **Injury Impact**: Lower numbers may indicate injury issues
-            - **Usage**: Affects per-game averages and total value calculations
-          example: 17
-        games_active:
-          type: integer
-          nullable: true
-          description: |
-            Number of games where the player had meaningful fantasy production.
-            - **Active Definition**: Games with significant snaps or touches
-            - **Usage Rate**: Indicates role consistency within the offense
-            - **Injury Context**: May be lower than total games due to limited snaps
-            - **Reliability**: Higher percentage suggests more dependable weekly value
-          example: 16
-    PlayerWithSeasonSummaries:
-      allOf:
-        - $ref: '#/components/schemas/Player'
-        - type: object
-          properties:
-            full_name:
-              type: string
-              example: "Patrick Mahomes"
-            bye_week:
-              type: integer
-              example: 10
-            times_drafted:
-              type: integer
-              example: 1200
-            season_2024_summary:
-              $ref: '#/components/schemas/PlayerSeasonSummary'
-            season_2025_projection_summary:
-              $ref: '#/components/schemas/PlayerSeasonSummary'
     FetchMatchupsResponse:
       type: object
       properties:
@@ -519,16 +468,19 @@ components:
           type: boolean
           example: true
         data:
-          description: Tool-specific response data (array or object)
+          type: array
+          items:
+            type: object
+            description: Matchup data
         count:
           type: integer
           example: 6
         message:
           type: string
-          example: "Fetched 6 matchups for week 5"
+          example: "Successfully fetched matchups"
         metadata:
           type: object
-          additionalProperties: true
+          description: Additional context about the request and response
       required:
         - success
 
@@ -539,16 +491,19 @@ components:
           type: boolean
           example: true
         data:
-          description: Tool-specific response data (array or object)
+          type: array
+          items:
+            type: object
+            description: League data
         count:
           type: integer
           example: 3
         message:
           type: string
-          example: "Successfully fetched 3 leagues for user"
+          example: "Successfully fetched user leagues"
         metadata:
           type: object
-          additionalProperties: true
+          description: Additional context about the request and response
       required:
         - success
 
@@ -559,113 +514,17 @@ components:
           type: boolean
           example: true
         data:
-          description: Tool-specific response data (array or object)
+          type: object
+          description: Trade evaluation data
         message:
           type: string
           example: "Trade evaluation completed successfully"
         metadata:
           type: object
-          additionalProperties: true
+          description: Additional context about the request and response
       required:
         - success
 
-    Player:
-      type: object
-      description: |
-        Complete player profile with fantasy football relevant information.
-
-        This schema represents a player with all essential data for fantasy football analysis, including basic profile information, draft positioning, and trending activity.
-      properties:
-        id:
-          type: integer
-          description: |
-            Internal database primary key for the player record.
-            - **Usage**: Internal system references and database operations
-            - **Uniqueness**: Unique within the application database
-            - **Stability**: May change if data is reimported or migrated
-          example: 12345
-        player_id:
-          type: string
-          description: |
-            Sleeper platform's unique identifier for this player.
-            - **Format**: Numeric string representation
-            - **Stability**: Permanent identifier that doesn't change
-            - **Cross-Platform**: Used across all Sleeper API endpoints
-            - **Recommended**: Use this for external integrations
-          example: "4046"
-        name:
-          type: string
-          description: |
-            Player's full name as registered in the NFL.
-            - **Format**: "First Last" or "First Middle Last"
-            - **Consistency**: Standardized across all data sources
-            - **Searchable**: Used for name-based player searches
-          example: "Patrick Mahomes"
-        position:
-          type: string
-          description: |
-            Primary playing position in fantasy football context.
-            - **QB**: Quarterback - passing specialists, typically highest scoring
-            - **RB**: Running Back - rushing specialists, high volume touches
-            - **WR**: Wide Receiver - pass-catching specialists, target-dependent
-            - **TE**: Tight End - hybrid players, lower volume but consistent
-            - **K**: Kicker - scoring specialists, weather and game-script dependent
-            - **DEF**: Defense/Special Teams - team-based unit scoring
-          example: "QB"
-          enum: ["QB", "RB", "WR", "TE", "K", "DEF"]
-        team:
-          type: string
-          description: |
-            NFL team abbreviation where the player is currently rostered.
-            - **Format**: Standard 2-3 character NFL team codes
-            - **Examples**: "KC" (Kansas City), "BUF" (Buffalo), "SF" (San Francisco)
-            - **Updates**: Changes with trades, signings, and releases
-            - **Impact**: Team context affects fantasy value significantly
-          example: "KC"
-        age:
-          type: integer
-          description: |
-            Player's current age in years.
-            - **Calculation**: Based on birthdate and current date
-            - **Fantasy Relevance**: Age curves vary by position
-            - **Trends**: Younger players often have higher upside
-            - **Range**: Typically 21-40 for active NFL players
-          example: 29
-        adp:
-          type: number
-          description: |
-            Average Draft Position across recent fantasy football drafts.
-            - **Scale**: Lower numbers indicate higher value (1.0 = first overall)
-            - **Format**: Decimal representation of draft position
-            - **Calculation**: Weighted average across multiple draft platforms
-            - **Updates**: Refreshed daily during draft season
-          example: 5.2
-        adp_formatted:
-          type: string
-          description: |
-            Human-readable ADP in round.pick format for easy interpretation.
-            - **Format**: "Round.Pick" (e.g., "1.05" = 1st round, 5th pick)
-            - **Context**: Based on standard 12-team league format
-            - **Usage**: More intuitive for draft planning than raw ADP
-          example: "1.05"
-        adds_24h:
-          type: integer
-          description: |
-            Number of times this player was added to rosters in the last 24 hours.
-            - **Trending Indicator**: Higher values suggest increasing interest
-            - **Breakout Signal**: Sudden spikes often indicate news or performance
-            - **Waiver Priority**: Helps identify players to target before others
-            - **Updates**: Refreshed hourly with latest waiver wire activity
-          example: 1250
-        drops_24h:
-          type: integer
-          description: |
-            Number of times this player was dropped from rosters in the last 24 hours.
-            - **Declining Interest**: Higher values suggest decreasing value
-            - **Injury Indicator**: Spikes often correlate with negative news
-            - **Opportunity**: High drops may create waiver wire opportunities
-            - **Context**: Compare with adds_24h for net trending direction
-          example: 450
 
 
   responses:
