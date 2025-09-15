@@ -98,7 +98,7 @@ $keywords = 'fantasy football AI, trade analysis, matchup predictions, player an
                         </p>
                     </div>
 
-                    <div class="grid lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div class="max-w-6xl mx-auto">
                         <div class="group relative rounded-2xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-6 shadow-lg transition-all hover:shadow-xl dark:border-zinc-700 dark:from-zinc-800 dark:to-zinc-900">
                             <div class="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             <div class="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Live Endpoint</div>
@@ -106,21 +106,6 @@ $keywords = 'fantasy football AI, trade analysis, matchup predictions, player an
                                 <code class="text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all select-all">https://www.sleeperdraft.com/mcp</code>
                                 <div class="absolute top-2 right-2">
                                     <button class="rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors" onclick="navigator.clipboard.writeText('https://www.sleeperdraft.com/mcp')">
-                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="group relative rounded-2xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-6 shadow-lg transition-all hover:shadow-xl dark:border-zinc-700 dark:from-zinc-800 dark:to-zinc-900">
-                            <div class="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <div class="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Local Development</div>
-                            <div class="relative rounded-lg bg-zinc-100 p-4 dark:bg-zinc-800">
-                                <code class="text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all select-all">{{ url('/mcp') }}</code>
-                                <div class="absolute top-2 right-2">
-                                    <button class="rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors" data-copy="{{ url('/mcp') }}" onclick="navigator.clipboard.writeText(this.dataset.copy)">
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                         </svg>
