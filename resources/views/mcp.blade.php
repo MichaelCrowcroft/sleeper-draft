@@ -4,7 +4,7 @@ $description = 'Connect AI assistants to comprehensive fantasy football data thr
 $keywords = 'fantasy football, MCP, model context protocol, AI analytics, trade evaluation, player projections, sleeper API, fantasy football tools, GPT actions';
 @endphp
 
-@section('head')
+@push('head')
     <meta name="description" content="{{ $description }}">
     <meta name="keywords" content="{{ $keywords }}">
     <meta name="robots" content="index, follow">
@@ -25,8 +25,8 @@ $keywords = 'fantasy football, MCP, model context protocol, AI analytics, trade 
     <!-- Structured Data for SEO -->
     <script type="application/ld+json">
     {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
+        "\u0040context": "https://schema.org",
+        "\u0040type": "WebApplication",
         "name": "Fantasy Football MCP",
         "description": "{{ $description }}",
         "applicationCategory": "SportsApplication",
@@ -50,7 +50,7 @@ $keywords = 'fantasy football, MCP, model context protocol, AI analytics, trade 
         }
     }
     </script>
-@endsection
+@endpush
 
 <x-layouts.app.marketing :title="$title">
             <!-- Hero Section -->
@@ -361,7 +361,6 @@ $keywords = 'fantasy football, MCP, model context protocol, AI analytics, trade 
                             Endpoints
                         </div>
                         <h2 class="text-2xl font-bold tracking-tight mb-4">API Endpoints</h2>
-                        <p class="text-zinc-600 dark:text-zinc-400">Live and local server endpoints</p>
                     </div>
 
                     <div class="space-y-6">
@@ -371,20 +370,6 @@ $keywords = 'fantasy football, MCP, model context protocol, AI analytics, trade 
                                 <code class="text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all select-all">https://www.sleeperdraft.com/mcp</code>
                                 <div class="absolute top-2 right-2">
                                     <button class="rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors" onclick="navigator.clipboard.writeText('https://www.sleeperdraft.com/mcp')">
-                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="group rounded-xl border border-emerald-200/50 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 p-4 transition-all hover:border-emerald-300/50 dark:border-emerald-800/50 dark:from-emerald-900/5 dark:to-teal-900/5 dark:hover:border-emerald-700/50">
-                            <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Local MCP Endpoint</div>
-                            <div class="relative rounded-lg bg-zinc-100 p-3 dark:bg-zinc-800">
-                                <code class="text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all select-all">{{ url('/mcp') }}</code>
-                                <div class="absolute top-2 right-2">
-                                    <button class="rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors" data-copy="{{ url('/mcp') }}" onclick="navigator.clipboard.writeText(this.dataset.copy)">
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                         </svg>
