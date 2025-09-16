@@ -18,8 +18,8 @@ class EnrichMatchupsWithPlayerData
             ->flatten(1)
             ->flatMap(function ($matchup) {
                 $ids = [];
-                $ids = array_merge($ids, $matchup['starters']);
-                $ids = array_merge($ids, $matchup['players']);
+                $ids = array_merge($ids, $matchup['starters'] ?? []);
+                $ids = array_merge($ids, $matchup['players'] ?? []);
 
                 return $ids;
             })
